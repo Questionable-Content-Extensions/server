@@ -1,0 +1,15 @@
+body > .container {
+	height: 100%;
+}
+
+#root {
+	height: 100%;
+}
+
+.ui.menu.inverted .header{
+	color: rgba(255,255,255,.9);
+}
+
+.nowrap {
+	white-space: nowrap;
+}
