@@ -1,13 +1,16 @@
 namespace QCExtensions.Server.Models.ViewModels
 {
-	public class ItemViewModel
+	public abstract class ItemViewModelBase
 	{
 		public int Id { get; set; }
 		public string ShortName { get; set; }
 		public string Name { get; set; }
 		public string Type { get; set; }
 		public string Color { get; set; }
+	}
 
+	public class ItemViewModel : ItemViewModelBase
+	{
 		public int? First { get; set; }
 		public int? Last { get; set; }
 		public int Appearances { get; set; }
@@ -22,5 +25,10 @@ namespace QCExtensions.Server.Models.ViewModels
 			}
 		}
 		public bool HasImage { get; set; }
+	}
+
+	public class ItemWithTypeViewModel : ItemViewModelBase
+	{
+		public int Count { get; set; }
 	}
 }

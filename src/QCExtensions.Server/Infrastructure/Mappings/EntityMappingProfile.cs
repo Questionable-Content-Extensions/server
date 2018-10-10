@@ -10,6 +10,7 @@ namespace QCExtensions.Server.Infrastructure.Mappings
 		public EntityMappingProfile()
 		{
 			CreateMap<Item, ItemViewModel>();
+			CreateMap<Item, ItemWithTypeViewModel>();
 		}
 	}
 }

@@ -17,6 +17,7 @@ using System.Text;
 using QCExtensions.Server.Extensions;
 using QCExtensions.Server.Models;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using QCExtensions.Server.Infrastructure.Services;
 
 namespace QCExtensions.Server
 {
@@ -33,21 +34,27 @@ namespace QCExtensions.Server
 
 		public void ConfigureServices(IServiceCollection services)
 		{
+			services.AddScoped<ITokenHandler, TokenHandler>();
+			services.AddScoped<IActionLogger, ActionLogger>();
+
 			// Add Entity Framework services.
 			services.AddDbContextPool<ApplicationDbContext>(
-                options => options.UseMySql(_configuration.GetConnectionString("Default"),
-                    mysqlOptions =>
-                    {
-                        mysqlOptions.ServerVersion(
+				options => options.UseMySql(_configuration.GetConnectionString("Default"),
+					mysqlOptions =>
+					{
+						mysqlOptions.ServerVersion(
 							new Version(10, 0, 36),
 							ServerType.MariaDb);
-                    }
-            ));
+					}
+			));
 
 			services.AddAuthorization();
 
 			services
-				.AddAutoMapper()
+				.AddAutoMapper(opts =>
+				{
+					opts.CreateMissingTypeMaps = true;
+				})
 				.AddMvc()
 				.AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<ApplicationDbContext>());
 		}
@@ -88,7 +95,8 @@ namespace QCExtensions.Server
 						.AllowAnyHeader()
 						.AllowCredentials()
 				)
-				.UseMvc(routes => {
+				.UseMvc(routes =>
+				{
 					routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}");
 
 					routes.MapRoute("Spa", "{*url}", defaults: new { controller = "Home", action = "Spa" });
