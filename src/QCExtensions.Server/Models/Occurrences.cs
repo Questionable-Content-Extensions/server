@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace QCExtensions.Server.Models
 {
 	[Table("occurences")]
-	public class Occurrences
+	public class Occurrence
 	{
 		[Column("comic_id")]
 		public int ComicId { get; set; }

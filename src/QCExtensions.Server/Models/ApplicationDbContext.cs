@@ -15,13 +15,14 @@ namespace QCExtensions.Server.Models
 		{
 			base.OnModelCreating(builder);
 
-			builder.Entity<Occurrences>()
+			builder.Entity<Occurrence>()
 				.HasKey(o => new { o.ComicId, o.ItemId });
 		}
 
 		public DbSet<News> News { get; set; }
 		public DbSet<Comic> Comics { get; set; }
 		public DbSet<Item> Items { get; set; }
+		public DbSet<Occurrence> Occurrences { get; set; }
 		public DbSet<Token> Tokens { get; set; }
 		public DbSet<LogEntry> LogEntries { get; set; }
 	}

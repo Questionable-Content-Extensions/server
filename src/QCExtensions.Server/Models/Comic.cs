@@ -34,6 +34,6 @@ namespace QCExtensions.Server.Models
 		[ForeignKey("Id")]
 		public News News { get; set; }
 
-		public ICollection<Occurrences> Occurrences { get; set; }
+		public ICollection<Occurrence> Occurrences { get; set; }
 	}
 }

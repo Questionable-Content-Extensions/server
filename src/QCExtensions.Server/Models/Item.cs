@@ -57,6 +57,6 @@ namespace QCExtensions.Server.Models
 		public string Color { get; set; }
 
 		[JsonIgnore]
-		public ICollection<Occurrences> Occurrences { get; set; }
+		public ICollection<Occurrence> Occurrences { get; set; }
 	}
 }
