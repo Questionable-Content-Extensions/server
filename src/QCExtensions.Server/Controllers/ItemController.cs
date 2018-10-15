@@ -1,12 +1,16 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
+using Force.Crc32;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using QCExtensions.Server.Infrastructure.Services;
@@ -25,17 +29,20 @@ namespace QCExtensions.Server.Controllers
 		private readonly ApplicationDbContext _applicationDbContext;
 		private readonly ITokenHandler _tokenHandler;
 		private readonly IActionLogger _actionLogger;
+		private readonly IMemoryCache _memoryCache;
 
 		public ItemController(
 			IMapper mapper,
 			ApplicationDbContext applicationDbContext,
 			ITokenHandler tokenHandler,
-			IActionLogger actionLogger)
+			IActionLogger actionLogger,
+			IMemoryCache memoryCache)
 		{
 			_mapper = mapper;
 			_applicationDbContext = applicationDbContext;
 			_tokenHandler = tokenHandler;
 			_actionLogger = actionLogger;
+			_memoryCache = memoryCache;
 		}
 
 		[HttpGet("")]
@@ -118,6 +125,83 @@ namespace QCExtensions.Server.Controllers
 			}
 
 			return Ok(await FindTypeWith(id, "location"));
+		}
+
+		[HttpGet("{id}/images")]
+		public async Task<IActionResult> ItemImages(int id)
+		{
+			var item = await _applicationDbContext.Items.Include(i => i.Images).SingleOrDefaultAsync(i => i.Id == id);
+			if (item == null)
+			{
+				return BadRequest();
+			}
+
+			var viewModel = _mapper.Map<List<ItemImageViewModel>>(item.Images);
+			return Ok(viewModel);
+		}
+
+		[HttpGet("image/{id}")]
+		public async Task<IActionResult> Image(int id)
+		{
+			var itemImage = await _memoryCache.GetOrCreateAsync(id, async entry =>
+			{
+				var imageData = await _applicationDbContext.ItemImages.Where(i => i.Id == id).Select(i => i.Image).SingleOrDefaultAsync();
+				if (imageData == null)
+				{
+					return null;
+				}
+
+				return imageData;
+			});
+
+			if (itemImage == null)
+			{
+				_memoryCache.Remove(id);
+				return BadRequest();
+			}
+
+			return File(itemImage, "image/png");
+		}
+
+		[HttpPost("image/upload")]
+		public async Task<IActionResult> UploadImage([FromForm] ItemImageUploadViewModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(new ModelStateErrorViewModel(ModelState));
+			}
+			if (!await _tokenHandler.IsValidAsync(model.Token))
+			{
+				return Unauthorized();
+			}
+			if (model.Image.ContentType != "image/png")
+			{
+				return BadRequest("Only PNG images are supported");
+			}
+
+			byte[] imageData = null;
+			using (var memoryStream = new MemoryStream())
+			{
+				await model.Image.CopyToAsync(memoryStream);
+				imageData = memoryStream.GetBuffer();
+			}
+
+			var crc32CHash = Crc32CAlgorithm.Compute(imageData);
+			if (model.CRC32CHash.HasValue && model.CRC32CHash.Value != crc32CHash)
+			{
+				return BadRequest("CRC32C value of image does not match with value provided in upload");
+			}
+
+			var itemImage = new ItemImage
+			{
+				ItemId = model.ItemId,
+				CRC32CHash = crc32CHash,
+				Image = imageData
+			};
+			await _applicationDbContext.ItemImages.AddAsync(itemImage);
+			await _applicationDbContext.SaveChangesAsync();
+
+			return Ok();
 		}
 
 		[HttpPost("setproperty")]

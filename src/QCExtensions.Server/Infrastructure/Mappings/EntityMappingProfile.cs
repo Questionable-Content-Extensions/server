@@ -11,6 +11,8 @@ namespace QCExtensions.Server.Infrastructure.Mappings
 		{
 			CreateMap<Item, ItemViewModel>();
 			CreateMap<Item, ItemWithTypeViewModel>();
+			
+			CreateMap<ItemImage, ItemImageViewModel>();
 		}
 	}
 }

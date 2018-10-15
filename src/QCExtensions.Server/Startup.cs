@@ -55,6 +55,7 @@ namespace QCExtensions.Server
 				{
 					opts.CreateMissingTypeMaps = true;
 				})
+				.AddMemoryCache()
 				.AddMvc()
 				.AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<ApplicationDbContext>());
 		}

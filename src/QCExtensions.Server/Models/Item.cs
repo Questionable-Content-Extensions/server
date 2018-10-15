@@ -67,5 +67,7 @@ namespace QCExtensions.Server.Models
 
 		[JsonIgnore]
 		public ICollection<Occurrence> Occurrences { get; set; }
+
+		public ICollection<ItemImage> Images { get; set; }
 	}
 }
