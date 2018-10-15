@@ -18,8 +18,10 @@ namespace QCExtensions.Server.Models
 		[ForeignKey("UserToken")]
 		public Token Token { get; set; }
 
+		[Required]
 		public DateTime DateTime { get; set; }
 
+		[Required]
 		public string Action { get; set; }
 	}
 }

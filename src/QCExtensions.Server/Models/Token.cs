@@ -13,6 +13,8 @@ namespace QCExtensions.Server.Models
 		[Column("id")]
 		public Guid Id { get; set; }
 
+		[Required]
+		[MaxLength(50)]
 		public string Identifier { get; set; }
 
 		[InverseProperty("Token")]

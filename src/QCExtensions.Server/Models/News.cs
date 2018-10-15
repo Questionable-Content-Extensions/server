@@ -14,15 +14,19 @@ namespace QCExtensions.Server.Models
 		public int Comic { get; set; }
 
 		[Column("lastUpdated")]
+		[Required]
 		public DateTime LastUpdated { get; set; }
 
 		[Column("news")]
+		[Required]
 		public string NewsText { get; set; }
 
 		[Column("updateFactor")]
+		[Required]
 		public double UpdateFactor { get; set; }
 
 		[Column("isLocked")]
+		[Required]
 		public bool IsLocked { get; set; }
 	}
 }

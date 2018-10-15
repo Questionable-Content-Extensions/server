@@ -35,10 +35,13 @@ namespace QCExtensions.Server.Migrations
                         .HasColumnName("publishDate");
 
                     b.Property<string>("Tagline")
-                        .HasColumnName("tagline");
+                        .HasColumnName("tagline")
+                        .HasMaxLength(255);
 
                     b.Property<string>("Title")
-                        .HasColumnName("title");
+                        .IsRequired()
+                        .HasColumnName("title")
+                        .HasMaxLength(255);
 
                     b.HasKey("Id");
 
@@ -52,16 +55,24 @@ namespace QCExtensions.Server.Migrations
                         .HasColumnName("id");
 
                     b.Property<string>("Color")
-                        .HasColumnName("color");
+                        .IsRequired()
+                        .HasColumnName("color")
+                        .HasMaxLength(6);
 
                     b.Property<string>("Name")
-                        .HasColumnName("name");
+                        .IsRequired()
+                        .HasColumnName("name")
+                        .HasMaxLength(255);
 
                     b.Property<string>("ShortName")
-                        .HasColumnName("shortName");
+                        .IsRequired()
+                        .HasColumnName("shortName")
+                        .HasMaxLength(50);
 
                     b.Property<string>("Type")
-                        .HasColumnName("type");
+                        .IsRequired()
+                        .HasColumnName("type")
+                        .HasMaxLength(255);
 
                     b.HasKey("Id");
 
@@ -74,7 +85,8 @@ namespace QCExtensions.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnName("id");
 
-                    b.Property<string>("Action");
+                    b.Property<string>("Action")
+                        .IsRequired();
 
                     b.Property<DateTime>("DateTime");
 
@@ -100,6 +112,7 @@ namespace QCExtensions.Server.Migrations
                         .HasColumnName("lastUpdated");
 
                     b.Property<string>("NewsText")
+                        .IsRequired()
                         .HasColumnName("news");
 
                     b.Property<double>("UpdateFactor")
@@ -110,7 +123,7 @@ namespace QCExtensions.Server.Migrations
                     b.ToTable("news");
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.Occurrences", b =>
+            modelBuilder.Entity("QCExtensions.Server.Models.Occurrence", b =>
                 {
                     b.Property<int>("ComicId")
                         .HasColumnName("comic_id");
@@ -131,7 +144,9 @@ namespace QCExtensions.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnName("id");
 
-                    b.Property<string>("Identifier");
+                    b.Property<string>("Identifier")
+                        .IsRequired()
+                        .HasMaxLength(50);
 
                     b.HasKey("Id");
 
@@ -154,7 +169,7 @@ namespace QCExtensions.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.Occurrences", b =>
+            modelBuilder.Entity("QCExtensions.Server.Models.Occurrence", b =>
                 {
                     b.HasOne("QCExtensions.Server.Models.Comic", "Comic")
                         .WithMany("Occurrences")

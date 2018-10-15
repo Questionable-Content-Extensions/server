@@ -14,10 +14,10 @@ namespace QCExtensions.Server.Migrations
                 {
                     id = table.Column<int>(nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    shortName = table.Column<string>(nullable: true),
-                    name = table.Column<string>(nullable: true),
-                    type = table.Column<string>(nullable: true),
-                    color = table.Column<string>(nullable: true)
+                    shortName = table.Column<string>(maxLength: 50, nullable: false),
+                    name = table.Column<string>(maxLength: 255, nullable: false),
+                    type = table.Column<string>(maxLength: 255, nullable: false),
+                    color = table.Column<string>(maxLength: 6, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -31,7 +31,7 @@ namespace QCExtensions.Server.Migrations
                     comic = table.Column<int>(nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     lastUpdated = table.Column<DateTime>(nullable: false),
-                    news = table.Column<string>(nullable: true),
+                    news = table.Column<string>(nullable: false),
                     updateFactor = table.Column<double>(nullable: false),
                     isLocked = table.Column<bool>(nullable: false)
                 },
@@ -45,7 +45,7 @@ namespace QCExtensions.Server.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(nullable: false),
-                    Identifier = table.Column<string>(nullable: true)
+                    Identifier = table.Column<string>(maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -59,8 +59,8 @@ namespace QCExtensions.Server.Migrations
                     id = table.Column<int>(nullable: false),
                     isGuestComic = table.Column<bool>(nullable: false),
                     isNonCanon = table.Column<bool>(nullable: false),
-                    title = table.Column<string>(nullable: true),
-                    tagline = table.Column<string>(nullable: true),
+                    title = table.Column<string>(maxLength: 255, nullable: false),
+                    tagline = table.Column<string>(maxLength: 255, nullable: true),
                     publishDate = table.Column<DateTime>(nullable: true),
                     isAccuratePublishDate = table.Column<bool>(nullable: false)
                 },
@@ -83,7 +83,7 @@ namespace QCExtensions.Server.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     UserToken = table.Column<Guid>(nullable: false),
                     DateTime = table.Column<DateTime>(nullable: false),
-                    Action = table.Column<string>(nullable: true)
+                    Action = table.Column<string>(nullable: false)
                 },
                 constraints: table =>
                 {

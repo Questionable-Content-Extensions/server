@@ -14,21 +14,27 @@ namespace QCExtensions.Server.Models
 		public int Id { get; set; }
 
 		[Column("isGuestComic")]
+		[Required]
 		public bool IsGuestComic { get; set; }
 
 		[Column("isNonCanon")]
+		[Required]
 		public bool IsNonCanon { get; set; }
 
 		[Column("title")]
+		[MaxLength(255)]
+		[Required]
 		public string Title { get; set; }
 
 		[Column("tagline")]
+		[MaxLength(255)]
 		public string Tagline { get; set; }
 
 		[Column("publishDate")]
 		public DateTime? PublishDate { get; set; }
 
 		[Column("isAccuratePublishDate")]
+		[Required]
 		public bool IsAccuratePublishDate { get; set; }
 
 		[ForeignKey("Id")]

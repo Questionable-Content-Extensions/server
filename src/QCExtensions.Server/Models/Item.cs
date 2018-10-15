@@ -15,12 +15,18 @@ namespace QCExtensions.Server.Models
 		public int Id { get; set; }
 
 		[Column("shortName")]
+		[MaxLength(50)]
+		[Required]
 		public string ShortName { get; set; }
 
 		[Column("name")]
+		[MaxLength(255)]
+		[Required]
 		public string Name { get; set; }
 
 		[Column("type")]
+		[MaxLength(255)]
+		[Required]
 		public string Type
 		{
 			get
@@ -49,11 +55,14 @@ namespace QCExtensions.Server.Models
 				}
 			}
 		}
+
 		[NotMapped]
 		[JsonIgnore]
 		public ItemType TypeValue { get; set; }
 
 		[Column("color")]
+		[MaxLength(6)]
+		[Required]
 		public string Color { get; set; }
 
 		[JsonIgnore]
