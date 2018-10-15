@@ -100,6 +100,11 @@ namespace QCExtensions.Server.Controllers
 		[HttpGet("{id}/friends")]
 		public async Task<IActionResult> Friends(int id)
 		{
+			if (!await _applicationDbContext.Items.AnyAsync(i => i.Id == id))
+			{
+				return BadRequest();
+			}
+
 			return Ok(await FindTypeWith(id, "cast"));
 		}
 
@@ -107,6 +112,11 @@ namespace QCExtensions.Server.Controllers
 		[HttpGet("{id}/locations")]
 		public async Task<IActionResult> Locations(int id)
 		{
+			if (!await _applicationDbContext.Items.AnyAsync(i => i.Id == id))
+			{
+				return BadRequest();
+			}
+
 			return Ok(await FindTypeWith(id, "location"));
 		}
 
