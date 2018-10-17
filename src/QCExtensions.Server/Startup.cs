@@ -1,23 +1,20 @@
 using AutoMapper;
 using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Tokens;
 using System;
-using System.IO;
 using System.Net;
-using System.Text;
 using QCExtensions.Server.Extensions;
 using QCExtensions.Server.Models;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using QCExtensions.Server.Infrastructure.Services;
+using Microsoft.Extensions.Hosting;
+using QCExtensions.Server.Infrastructure.Services.Hosted;
 
 namespace QCExtensions.Server
 {
@@ -36,6 +33,9 @@ namespace QCExtensions.Server
 		{
 			services.AddScoped<ITokenHandler, TokenHandler>();
 			services.AddScoped<IActionLogger, ActionLogger>();
+			
+			services.AddSingleton<INewsUpdater, NewsUpdater>();
+			services.AddSingleton<IHostedService, BackgroundNewsUpdatingService>();
 
 			// Add Entity Framework services.
 			services.AddDbContextPool<ApplicationDbContext>(

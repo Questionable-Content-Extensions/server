@@ -28,5 +28,16 @@ namespace QCExtensions.Server.Models
 		[Column("isLocked")]
 		[Required]
 		public bool IsLocked { get; set; }
+
+		[NotMapped]
+		public bool IsOutdated
+		{
+			get
+			{
+				return !IsLocked
+					&& UpdateFactor < 12
+					&& (DateTime.UtcNow - DateTime.SpecifyKind(LastUpdated, DateTimeKind.Utc)).TotalDays > 31 * UpdateFactor;
+			}
+		}
 	}
 }

@@ -29,7 +29,7 @@ namespace QCExtensions.Server.Infrastructure.Services
 				Action = action
 			};
 
-			await _applicationDbContext.LogEntries.AddAsync(logEntry);
+			_applicationDbContext.LogEntries.Add(logEntry);
 			if (saveChanges)
 			{
 				await _applicationDbContext.SaveChangesAsync();

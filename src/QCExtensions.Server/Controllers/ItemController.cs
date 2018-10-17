@@ -48,7 +48,7 @@ namespace QCExtensions.Server.Controllers
 		[HttpGet("")]
 		public async Task<IActionResult> GetAll()
 		{
-			var items = await _applicationDbContext.Items.ToArrayAsync();
+			var items = await _applicationDbContext.Items.Select(i => new { i.Id, i.ShortName }).ToArrayAsync();
 			return Ok(items);
 		}
 
@@ -198,7 +198,7 @@ namespace QCExtensions.Server.Controllers
 				CRC32CHash = crc32CHash,
 				Image = imageData
 			};
-			await _applicationDbContext.ItemImages.AddAsync(itemImage);
+			_applicationDbContext.ItemImages.Add(itemImage);
 			await _applicationDbContext.SaveChangesAsync();
 
 			return Ok();
