@@ -7,6 +7,7 @@ using AngleSharp.Parser.Html;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using QCExtensions.Server.Extensions.DbContext;
 using QCExtensions.Server.Models;
 
 namespace QCExtensions.Server.Infrastructure.Services.Hosted
@@ -43,24 +44,24 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 					using (IServiceScope scope = _provider.CreateScope())
 					{
 						var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-						foreach (var item in updateEntries)
+						foreach (var comicId in updateEntries)
 						{
-							var comicExists = await context.Comics.AnyAsync(c => c.Id == item);
+							var comicExists = await context.Comics.ExistsAsync(comicId);
 							if (!comicExists)
 							{
-								_logger.LogInformation($"Cannot update news for comic #{item}; comic data does not yet exist.");
+								_logger.LogInformation($"Cannot update news for comic #{comicId}; comic data does not yet exist.");
 								continue;
 							}
 
-							var newsEntity = await context.News.SingleOrDefaultAsync(n => n.Comic == item);
+							var newsEntity = await context.News.SingleOrDefaultAsync(n => n.Comic == comicId);
 							if (newsEntity != null && !newsEntity.IsOutdated)
 							{
-								_logger.LogInformation($"News for comic #{item} is not outdated.");
+								_logger.LogInformation($"News for comic #{comicId} is not outdated.");
 								continue;
 							}
 
-							_logger.LogInformation($"Fetching news in the background for comic #{item}...");
-							var newsText = await FetchNewsForAsync(item);
+							_logger.LogInformation($"Fetching news in the background for comic #{comicId}...");
+							var newsText = await FetchNewsForAsync(comicId);
 							if (newsText == null)
 							{
 								continue;
@@ -71,7 +72,7 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 								// New news
 								newsEntity = new News
 								{
-									Comic = item,
+									Comic = comicId,
 									LastUpdated = DateTime.UtcNow,
 									UpdateFactor = 1,
 									NewsText = newsText
@@ -83,12 +84,12 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 								// Old news. Compare news text with old.
 								if (newsEntity.NewsText == newsText)
 								{
-									_logger.LogInformation($"News text for comic #{item} is the same. Increasing update factor.");
+									_logger.LogInformation($"News text for comic #{comicId} is the same. Increasing update factor.");
 									newsEntity.UpdateFactor += 0.5;
 								}
 								else
 								{
-									_logger.LogInformation($"News text for comic #{item} has changed. Resetting update factor and updating text.");
+									_logger.LogInformation($"News text for comic #{comicId} has changed. Resetting update factor and updating text.");
 									newsEntity.UpdateFactor = 1;
 									newsEntity.NewsText = newsText;
 								}

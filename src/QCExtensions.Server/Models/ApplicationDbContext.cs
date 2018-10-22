@@ -17,6 +17,9 @@ namespace QCExtensions.Server.Models
 
 			builder.Entity<Occurrence>()
 				.HasKey(o => new { o.ComicId, o.ItemId });
+			
+			builder.Query<ComicEditorData>();
+			builder.Query<ComicItemNavigationData>();
 		}
 
 		public DbSet<News> News { get; set; }

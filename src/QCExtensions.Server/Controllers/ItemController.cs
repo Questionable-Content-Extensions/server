@@ -17,6 +17,8 @@ using QCExtensions.Server.Infrastructure.Services;
 using QCExtensions.Server.Models;
 using QCExtensions.Server.Models.ViewModels;
 using QCExtensions.Server.Models.ViewModels.Results;
+using QCExtensions.Server.Extensions.DbContext;
+using System;
 
 namespace QCExtensions.Server.Controllers
 {
@@ -48,14 +50,26 @@ namespace QCExtensions.Server.Controllers
 		[HttpGet("")]
 		public async Task<IActionResult> GetAll()
 		{
-			var items = await _applicationDbContext.Items.Select(i => new { i.Id, i.ShortName }).ToArrayAsync();
-			return Ok(items);
+			var items = await _applicationDbContext.Items.ToArrayAsync();
+			var itemVMs = _mapper.Map<ItemWithTypeViewModel[]>(items);
+
+			var comicItemNavigationData = await _applicationDbContext.QueryComicAllItemNavigationData(1).ToDictionaryAsync(n => n.Id);
+
+			foreach (var item in itemVMs)
+			{
+				_mapper.Map(comicItemNavigationData[item.Id], item);
+			}
+
+			Array.Sort(itemVMs.Select(i => i.Count).ToArray(), itemVMs);
+			Array.Reverse(itemVMs);
+
+			return Ok(itemVMs);
 		}
 
 		[HttpGet("{id}")]
 		public async Task<IActionResult> Get(int id)
 		{
-			var item = await _applicationDbContext.Items.Include(i => i.Occurrences).SingleOrDefaultAsync(i => i.Id == id);
+			var item = await _applicationDbContext.Items.GetByIdAsync(id, includeOccurrences: true);
 			if (item == null)
 			{
 				return BadRequest();
@@ -107,7 +121,7 @@ namespace QCExtensions.Server.Controllers
 		[HttpGet("{id}/friends")]
 		public async Task<IActionResult> Friends(int id)
 		{
-			if (!await _applicationDbContext.Items.AnyAsync(i => i.Id == id))
+			if (!await _applicationDbContext.Items.ExistsAsync(id))
 			{
 				return BadRequest();
 			}
@@ -119,7 +133,7 @@ namespace QCExtensions.Server.Controllers
 		[HttpGet("{id}/locations")]
 		public async Task<IActionResult> Locations(int id)
 		{
-			if (!await _applicationDbContext.Items.AnyAsync(i => i.Id == id))
+			if (!await _applicationDbContext.Items.ExistsAsync(id))
 			{
 				return BadRequest();
 			}
@@ -130,7 +144,7 @@ namespace QCExtensions.Server.Controllers
 		[HttpGet("{id}/images")]
 		public async Task<IActionResult> ItemImages(int id)
 		{
-			var item = await _applicationDbContext.Items.Include(i => i.Images).SingleOrDefaultAsync(i => i.Id == id);
+			var item = await _applicationDbContext.Items.GetByIdAsync(id, includeImages: true);
 			if (item == null)
 			{
 				return BadRequest();
@@ -216,7 +230,7 @@ namespace QCExtensions.Server.Controllers
 				return Unauthorized();
 			}
 
-			var item = await _applicationDbContext.Items.SingleOrDefaultAsync(i => i.Id == model.Item);
+			var item = await _applicationDbContext.Items.GetByIdAsync(model.Item);
 			if (item == null)
 			{
 				return BadRequest();

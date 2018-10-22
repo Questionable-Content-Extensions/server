@@ -25,7 +25,7 @@ namespace QCExtensions.Server.Infrastructure.Services
 			var logEntry = new LogEntry
 			{
 				UserToken = token,
-				DateTime = DateTime.Now,
+				DateTime = DateTime.UtcNow,
 				Action = action
 			};
 

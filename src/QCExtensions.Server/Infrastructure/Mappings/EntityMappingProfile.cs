@@ -11,15 +11,17 @@ namespace QCExtensions.Server.Infrastructure.Mappings
 		{
 			CreateMap<Item, ItemViewModel>();
 			CreateMap<Item, ItemWithTypeViewModel>();
+			CreateMap<Item, ItemWithNavigationData>()
+				.ForMember(i => i.Color, m => m.ResolveUsing(vm => $"#{vm.Color}"));
 
 			CreateMap<ItemImage, ItemImageViewModel>();
 
 			CreateMap<Comic, ComicViewModel>()
-				.ForMember(vm => vm.Comic, c => c.MapFrom(cs => cs.Id))
-				.ForMember(vm => vm.HasData, c => c.UseValue(true))
+				.ForMember(vm => vm.Comic, m => m.MapFrom(c => c.Id))
+				.ForMember(vm => vm.HasData, m => m.UseValue(true))
 				.ForMember(vm => vm.PublishDate,
-					c => c.ResolveUsing(cs => cs.PublishDate.HasValue
-						? DateTime.SpecifyKind(cs.PublishDate.Value, DateTimeKind.Utc)
+					m => m.ResolveUsing(c => c.PublishDate.HasValue
+						? DateTime.SpecifyKind(c.PublishDate.Value, DateTimeKind.Utc)
 						: (DateTime?)null));
 		}
 	}

@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 namespace QCExtensions.Server.Models.ViewModels
 {
 	public abstract class ItemViewModelBase
@@ -30,5 +32,16 @@ namespace QCExtensions.Server.Models.ViewModels
 	public class ItemWithTypeViewModel : ItemViewModelBase
 	{
 		public int Count { get; set; }
+	}
+
+	public class ItemWithNavigationData : ItemViewModelBase
+	{
+		public int? First { get; set; }
+		public int? Previous { get; set; }
+		public int? Next { get; set; }
+		public int? Last { get; set; }
+
+		[JsonIgnore]
+		public int? Count { get; set; }
 	}
 }

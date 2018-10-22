@@ -63,7 +63,7 @@ namespace QCExtensions.Server.Models
 		[Column("color")]
 		[MaxLength(6)]
 		[Required]
-		public string Color { get; set; }
+		public string Color { get; set; } = "7F7F7F";
 
 		[JsonIgnore]
 		public ICollection<Occurrence> Occurrences { get; set; }
