@@ -139,9 +139,9 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 			{
 				newsElement.RemoveChild(newsElement.FirstElementChild);
 			}
-			while (newsElement.FirstElementChild?.NodeName == "BR")
+			while (newsElement.FirstChild.NodeName == "BR" || (newsElement.FirstChild.NodeName == "#text" && string.IsNullOrEmpty(newsElement.FirstChild.NodeValue.Trim())))
 			{
-				newsElement.RemoveChild(newsElement.FirstElementChild);
+				newsElement.RemoveChild(newsElement.FirstChild);
 			}
 
 			return newsElement.InnerHtml
