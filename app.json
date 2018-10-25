@@ -11,5 +11,10 @@
     {
       "url": "https://github.com/jincod/dotnetcore-buildpack"
     }
-  ]
+  ],
+  "env": {
+	  "DATABASE_URL": {
+		"required": true
+	  }
+  }
 }

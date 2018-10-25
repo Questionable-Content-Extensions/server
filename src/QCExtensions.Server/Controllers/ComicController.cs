@@ -166,8 +166,10 @@ namespace QCExtensions.Server.Controllers
 				comicVM.EditorData = await GetEditorDataForComicAsync(comicId);
 			}
 
-			var comicItems = comic.Occurrences.Select(o => o.Item);
-			comicVM.Items = _mapper.Map<ItemWithNavigationData[]>(comicItems);
+			var comicItems = comic?.Occurrences.Select(o => o.Item);
+			comicVM.Items = comicItems != null
+				? _mapper.Map<ItemWithNavigationData[]>(comicItems)
+				: new ItemWithNavigationData[0];
 
 			Dictionary<int, ComicItemNavigationData> comicItemNavigationData;
 			if (include == "all")
@@ -176,7 +178,9 @@ namespace QCExtensions.Server.Controllers
 			}
 			else
 			{
-				comicItemNavigationData = await _applicationDbContext.QueryComicItemNavigationData(comicId, exclude).ToDictionaryAsync(n => n.Id);
+				comicItemNavigationData = comicVM.Items.Length > 0
+				? await _applicationDbContext.QueryComicItemNavigationData(comicId, exclude).ToDictionaryAsync(n => n.Id)
+				: new Dictionary<int, ComicItemNavigationData>();
 			}
 			foreach (var item in comicVM.Items)
 			{
