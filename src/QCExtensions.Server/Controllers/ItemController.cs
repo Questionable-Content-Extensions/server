@@ -194,6 +194,10 @@ namespace QCExtensions.Server.Controllers
 			{
 				return BadRequest("Only PNG images are supported");
 			}
+			if (!await _applicationDbContext.Items.ExistsAsync(model.ItemId))
+			{
+				return BadRequest("Given ItemId does not exist");
+			}
 
 			byte[] imageData = null;
 			using (var memoryStream = new MemoryStream())
@@ -216,6 +220,8 @@ namespace QCExtensions.Server.Controllers
 			};
 			_applicationDbContext.ItemImages.Add(itemImage);
 			await _applicationDbContext.SaveChangesAsync();
+
+			await _actionLogger.LogAsync(model.Token, $"Uploaded image #{itemImage.Id} for item #{model.ItemId}");
 
 			return Ok();
 		}
