@@ -69,7 +69,7 @@ namespace QCExtensions.Server.Controllers
 		[HttpGet("{id}")]
 		public async Task<IActionResult> Get(int id)
 		{
-			var item = await _applicationDbContext.Items.GetByIdAsync(id, includeOccurrences: true);
+			var item = await _applicationDbContext.Items.GetByIdAsync(id, includeOccurrences: true, includeImages: true);
 			if (item == null)
 			{
 				return BadRequest();
@@ -88,6 +88,8 @@ namespace QCExtensions.Server.Controllers
 
 			itemVM.First = first;
 			itemVM.Last = last;
+
+			itemVM.HasImage = item.Images.Any();
 
 			return Ok(itemVM);
 		}
