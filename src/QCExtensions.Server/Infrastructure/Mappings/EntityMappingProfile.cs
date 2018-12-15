@@ -18,11 +18,7 @@ namespace QCExtensions.Server.Infrastructure.Mappings
 
 			CreateMap<Comic, ComicViewModel>()
 				.ForMember(vm => vm.Comic, m => m.MapFrom(c => c.Id))
-				.ForMember(vm => vm.HasData, m => m.UseValue(true))
-				.ForMember(vm => vm.PublishDate,
-					m => m.ResolveUsing(c => c.PublishDate.HasValue
-						? DateTime.SpecifyKind(c.PublishDate.Value, DateTimeKind.Utc)
-						: (DateTime?)null));
+				.ForMember(vm => vm.HasData, m => m.UseValue(true));
 		}
 	}
 }

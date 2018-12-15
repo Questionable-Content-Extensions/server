@@ -15,6 +15,8 @@ using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using QCExtensions.Server.Infrastructure.Services;
 using Microsoft.Extensions.Hosting;
 using QCExtensions.Server.Infrastructure.Services.Hosted;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using QCExtensions.Server.Infrastructure.EntityMaterializerSource;
 
 namespace QCExtensions.Server
 {
@@ -33,7 +35,7 @@ namespace QCExtensions.Server
 		{
 			services.AddScoped<ITokenHandler, TokenHandler>();
 			services.AddScoped<IActionLogger, ActionLogger>();
-			
+
 			services.AddSingleton<INewsUpdater, NewsUpdater>();
 			services.AddSingleton<IHostedService, BackgroundNewsUpdatingService>();
 
@@ -46,7 +48,8 @@ namespace QCExtensions.Server
 							new Version(10, 0, 36),
 							ServerType.MariaDb);
 					}
-			));
+				).ReplaceService<IEntityMaterializerSource, DateTimeKindEntityMaterializerSource>()
+			);
 
 			services.AddAuthorization();
 

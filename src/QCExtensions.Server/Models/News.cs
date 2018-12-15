@@ -36,7 +36,7 @@ namespace QCExtensions.Server.Models
 			{
 				return !IsLocked
 					&& UpdateFactor < 12
-					&& (DateTime.UtcNow - DateTime.SpecifyKind(LastUpdated, DateTimeKind.Utc)).TotalDays > 31 * UpdateFactor;
+					&& (DateTime.UtcNow - LastUpdated).TotalDays > 31 * UpdateFactor;
 			}
 		}
 	}
