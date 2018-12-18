@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MySql.Data.MySqlClient;
+using QCExtensions.Server.Extensions;
 using QCExtensions.Server.Extensions.DbContext;
 using QCExtensions.Server.Infrastructure.Services;
 using QCExtensions.Server.Models;
@@ -105,6 +107,23 @@ namespace QCExtensions.Server.Controllers
 
 			return comic;
 		}
+
+		private async Task<IActionResult> SetFlag(
+			ComicBoolValueViewModel model,
+			Expression<Func<Comic, bool>> flagProperty,
+			string trueValueLogText,
+			string falseValueLogText,
+			string flagName)
+			=> await ValidateModelAndTokenThen(model.Token, async () =>
+			{
+				var comic = await GetOrCreateComicAsync(model.Comic);
+				comic.SetPropertyValue(flagProperty, model.Value);
+				await _applicationDbContext.SaveChangesAsync();
+
+				await _actionLogger.LogAsync(model.Token, $"Set comic #{model.Comic} {(model.Value ? trueValueLogText : falseValueLogText)}");
+
+				return Ok($"{flagName} flag updated for comic");
+			});
 
 		[HttpGet("")]
 		public async Task<IActionResult> GetAll()
@@ -206,8 +225,7 @@ namespace QCExtensions.Server.Controllers
 
 		[HttpPost("additem")]
 		public async Task<IActionResult> AddItem([FromBody] ComicItemAssociationViewModel model)
-		{
-			return await ValidateModelAndTokenThen(model.Token, async () =>
+			=> await ValidateModelAndTokenThen(model.Token, async () =>
 			{
 				var comic = await GetOrCreateComicAsync(model.Comic);
 				var itemData = model.Item;
@@ -246,12 +264,10 @@ namespace QCExtensions.Server.Controllers
 
 				return Ok("Item added to comic");
 			});
-		}
 
 		[HttpPost("removeitem")]
 		public async Task<IActionResult> RemoveItem([FromBody] ComicItemAssociationViewModel model)
-		{
-			return await ValidateModelAndTokenThen(model.Token, async () =>
+			=> await ValidateModelAndTokenThen(model.Token, async () =>
 			{
 				if (!await _applicationDbContext.Comics.ExistsAsync(model.Comic))
 				{
@@ -276,12 +292,10 @@ namespace QCExtensions.Server.Controllers
 
 				return Ok("Item removed from comic");
 			});
-		}
 
 		[HttpPost("settitle")]
 		public async Task<IActionResult> SetTitle([FromBody] ComicTitleViewModel model)
-		{
-			return await ValidateModelAndTokenThen(model.Token, async () =>
+			=> await ValidateModelAndTokenThen(model.Token, async () =>
 			{
 				var comic = await _applicationDbContext.Comics.GetByIdAsync(model.Comic);
 				if (comic == null)
@@ -304,12 +318,10 @@ namespace QCExtensions.Server.Controllers
 
 				return Ok("Title set or updated for comic");
 			});
-		}
 
 		[HttpPost("settagline")]
 		public async Task<IActionResult> SetTagline([FromBody] ComicTaglineViewModel model)
-		{
-			return await ValidateModelAndTokenThen(model.Token, async () =>
+			=> await ValidateModelAndTokenThen(model.Token, async () =>
 			{
 				var comic = await _applicationDbContext.Comics.GetByIdAsync(model.Comic);
 				if (comic == null)
@@ -332,12 +344,10 @@ namespace QCExtensions.Server.Controllers
 
 				return Ok("Tagline set or updated for comic");
 			});
-		}
 
 		[HttpPost("setpublishdate")]
 		public async Task<IActionResult> SetPublishDate([FromBody] ComicPublishDateViewModel model)
-		{
-			return await ValidateModelAndTokenThen(model.Token, async () =>
+			=> await ValidateModelAndTokenThen(model.Token, async () =>
 			{
 				var comic = await GetOrCreateComicAsync(model.Comic);
 				var oldPublishDate = comic.PublishDate;
@@ -356,50 +366,33 @@ namespace QCExtensions.Server.Controllers
 
 				return Ok("Publish date set or updated for comic");
 			});
-		}
 
 		[HttpPost("setguest")]
 		public async Task<IActionResult> SetGuest([FromBody] ComicBoolValueViewModel model)
-		{
-			return await ValidateModelAndTokenThen(model.Token, async () =>
-			{
-				var comic = await GetOrCreateComicAsync(model.Comic);
-				comic.IsGuestComic = model.Value;
-				await _applicationDbContext.SaveChangesAsync();
-
-				if (model.Value)
-				{
-					await _actionLogger.LogAsync(model.Token, $"Set comic #{model.Comic} to be a guest comic");
-				}
-				else
-				{
-					await _actionLogger.LogAsync(model.Token, $"Set comic #{model.Comic} to be a Jeph comic");
-				}
-
-				return Ok("Guest comic flag updated for comic");
-			});
-		}
+			=> await SetFlag(model, c => c.IsGuestComic, "to be a guest comic", "to be a Jeph comic", "Guest comic");
 
 		[HttpPost("setnoncanon")]
 		public async Task<IActionResult> SetNonCanon([FromBody] ComicBoolValueViewModel model)
-		{
-			return await ValidateModelAndTokenThen(model.Token, async () =>
-			{
-				var comic = await GetOrCreateComicAsync(model.Comic);
-				comic.IsNonCanon = model.Value;
-				await _applicationDbContext.SaveChangesAsync();
+			=> await SetFlag(model, c => c.IsNonCanon, "to be non-canon", "to be canon", "Non-canon");
 
-				if (model.Value)
-				{
-					await _actionLogger.LogAsync(model.Token, $"Set comic #{model.Comic} to be non-canon");
-				}
-				else
-				{
-					await _actionLogger.LogAsync(model.Token, $"Set comic #{model.Comic} to be a canon");
-				}
+		[HttpPost("setnocast")]
+		public async Task<IActionResult> SetNoCast([FromBody] ComicBoolValueViewModel model)
+			=> await SetFlag(model, c => c.HasNoCast, "to have no cast", "to have cast", "No cast");
 
-				return Ok("Non-canon flag updated for comic");
-			});
-		}
+		[HttpPost("setnolocation")]
+		public async Task<IActionResult> SetNoLocation([FromBody] ComicBoolValueViewModel model)
+			=> await SetFlag(model, c => c.HasNoLocation, "to have no locations", "to have locations", "No location");
+
+		[HttpPost("setnostoryline")]
+		public async Task<IActionResult> SetNoStoryline([FromBody] ComicBoolValueViewModel model)
+			=> await SetFlag(model, c => c.HasNoStoryline, "to have no storylines", "to have storylines", "No storyline");
+
+		[HttpPost("setnotitle")]
+		public async Task<IActionResult> SetNoTitle([FromBody] ComicBoolValueViewModel model)
+			=> await SetFlag(model, c => c.HasNoTitle, "to have no title", "to have a title", "No title");
+
+		[HttpPost("setnotagline")]
+		public async Task<IActionResult> SetNoTagline([FromBody] ComicBoolValueViewModel model)
+			=> await SetFlag(model, c => c.HasNoTagline, "to have no tagline", "to have a tagline", "No tagline");
 	}
 }

@@ -13,6 +13,11 @@ namespace QCExtensions.Server.Models.ViewModels
 		public string Tagline { get; set; }
 		public bool IsGuestComic { get; set; }
 		public bool IsNonCanon { get; set; }
+		public bool HasNoCast { get; set; }
+		public bool HasNoLocation { get; set; }
+		public bool HasNoStoryline { get; set; }
+		public bool HasNoTitle { get; set; }
+		public bool HasNoTagline { get; set; }
 		public string News { get; set; }
 		public int? Previous { get; set; }
 		public int? Next { get; set; }

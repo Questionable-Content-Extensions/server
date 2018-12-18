@@ -21,6 +21,21 @@ namespace QCExtensions.Server.Models
 		[Required]
 		public bool IsNonCanon { get; set; }
 
+		[Required]
+		public bool HasNoCast { get; set; }
+
+		[Required]
+		public bool HasNoLocation { get; set; }
+
+		[Required]
+		public bool HasNoStoryline { get; set; }
+
+		[Required]
+		public bool HasNoTitle { get; set; }
+
+		[Required]
+		public bool HasNoTagline { get; set; }
+
 		[Column("title")]
 		[MaxLength(255)]
 		[Required]

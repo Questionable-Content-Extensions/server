@@ -27,8 +27,7 @@ namespace QCExtensions.Server.Controllers
 		}
 
 		protected async Task<IActionResult> ValidateModelAndTokenThen(Guid token, Func<Task<IActionResult>> whenValid)
-		{
-			return await ValidateModelThen(async () =>
+			=> await ValidateModelThen(async () =>
 			{
 				if (!await _tokenHandler.IsValidAsync(token))
 				{
@@ -37,6 +36,5 @@ namespace QCExtensions.Server.Controllers
 
 				return await whenValid();
 			});
-		}
 	}
 }
