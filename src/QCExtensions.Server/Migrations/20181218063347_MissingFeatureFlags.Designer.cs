@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using QCExtensions.Domain.Entities;
 using QCExtensions.Server.Models;
 
 namespace QCExtensions.Server.Migrations

@@ -32,6 +32,10 @@
     <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="2.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\QCExtensions.Domain\QCExtensions.Domain.csproj" />
+  </ItemGroup>
+
   <Target Name="PrePublishTarget" BeforeTargets="PrepareForPublish">
     <Exec Command="npm install" />
     <Exec Command="npm run build" />

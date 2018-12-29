@@ -1,6 +1,6 @@
 using System;
 using AutoMapper;
-using QCExtensions.Server.Models;
+using QCExtensions.Domain.Entities;
 using QCExtensions.Server.Models.ViewModels;
 
 namespace QCExtensions.Server.Infrastructure.Mappings
@@ -12,7 +12,7 @@ namespace QCExtensions.Server.Infrastructure.Mappings
 			CreateMap<Item, ItemViewModel>();
 			CreateMap<Item, ItemWithTypeViewModel>();
 			CreateMap<Item, ItemWithNavigationData>()
-				.ForMember(i => i.Color, m => m.ResolveUsing(vm => $"#{vm.Color}"));
+				.ForMember(vm => vm.Color, m => m.ResolveUsing(i => $"#{i.Color}"));
 
 			CreateMap<ItemImage, ItemImageViewModel>();
 

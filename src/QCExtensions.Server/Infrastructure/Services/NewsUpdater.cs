@@ -1,4 +1,3 @@
-
 using System.Collections.Generic;
 
 namespace QCExtensions.Server.Infrastructure.Services

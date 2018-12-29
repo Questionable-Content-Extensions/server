@@ -1,19 +1,17 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using MySql.Data.MySqlClient;
-using QCExtensions.Server.Extensions;
+using QCExtensions.Domain.Entities;
 using QCExtensions.Server.Extensions.DbContext;
 using QCExtensions.Server.Infrastructure.Services;
-using QCExtensions.Server.Models;
 using QCExtensions.Server.Models.ViewModels;
-using QCExtensions.Server.Models.ViewModels.Results;
+using QCExtensions.Server.Models;
+using QCExtensions.Server.Extensions;
 
 namespace QCExtensions.Server.Controllers
 {

@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QCExtensions.Server.Infrastructure.Services;
-using QCExtensions.Server.Models;
 using QCExtensions.Server.Models.ViewModels;
+using QCExtensions.Server.Models;
 
 namespace QCExtensions.Server.Controllers
 {

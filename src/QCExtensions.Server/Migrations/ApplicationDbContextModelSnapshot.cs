@@ -17,7 +17,7 @@ namespace QCExtensions.Server.Migrations
                 .HasAnnotation("ProductVersion", "2.1.4-rtm-31024")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("QCExtensions.Server.Models.Comic", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.Comic", b =>
                 {
                     b.Property<int>("Id")
                         .HasColumnName("id");
@@ -58,16 +58,11 @@ namespace QCExtensions.Server.Migrations
                     b.ToTable("comic");
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.Item", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.Item", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnName("id");
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasColumnName("color")
-                        .HasMaxLength(6);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -89,7 +84,7 @@ namespace QCExtensions.Server.Migrations
                     b.ToTable("items");
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.ItemImage", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.ItemImage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd();
@@ -108,7 +103,7 @@ namespace QCExtensions.Server.Migrations
                     b.ToTable("ItemImages");
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.LogEntry", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.LogEntry", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -128,9 +123,9 @@ namespace QCExtensions.Server.Migrations
                     b.ToTable("log_entry");
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.News", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.News", b =>
                 {
-                    b.Property<int>("Comic")
+                    b.Property<int>("ComicId")
                         .ValueGeneratedOnAdd()
                         .HasColumnName("comic");
 
@@ -147,12 +142,12 @@ namespace QCExtensions.Server.Migrations
                     b.Property<double>("UpdateFactor")
                         .HasColumnName("updateFactor");
 
-                    b.HasKey("Comic");
+                    b.HasKey("ComicId");
 
                     b.ToTable("news");
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.Occurrence", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.Occurrence", b =>
                 {
                     b.Property<int>("ComicId")
                         .HasColumnName("comic_id");
@@ -167,7 +162,7 @@ namespace QCExtensions.Server.Migrations
                     b.ToTable("occurences");
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.Token", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.Token", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -182,38 +177,59 @@ namespace QCExtensions.Server.Migrations
                     b.ToTable("token");
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.Comic", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.Comic", b =>
                 {
-                    b.HasOne("QCExtensions.Server.Models.News", "News")
-                        .WithMany()
-                        .HasForeignKey("Id")
+                    b.HasOne("QCExtensions.Domain.Entities.News", "News")
+                        .WithOne("Comic")
+                        .HasForeignKey("QCExtensions.Domain.Entities.Comic", "Id")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.ItemImage", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.Item", b =>
                 {
-                    b.HasOne("QCExtensions.Server.Models.Item", "Item")
+                    b.OwnsOne("QCExtensions.Domain.Infrastructure.HexRgbColor", "Color", b1 =>
+                        {
+                            b1.Property<int?>("ItemId");
+
+                            b1.Property<byte>("Blue");
+
+                            b1.Property<byte>("Green");
+
+                            b1.Property<byte>("Red");
+
+                            b1.ToTable("items");
+
+                            b1.HasOne("QCExtensions.Domain.Entities.Item")
+                                .WithOne("Color")
+                                .HasForeignKey("QCExtensions.Domain.Infrastructure.HexRgbColor", "ItemId")
+                                .OnDelete(DeleteBehavior.Cascade);
+                        });
+                });
+
+            modelBuilder.Entity("QCExtensions.Domain.Entities.ItemImage", b =>
+                {
+                    b.HasOne("QCExtensions.Domain.Entities.Item", "Item")
                         .WithMany("Images")
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.LogEntry", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.LogEntry", b =>
                 {
-                    b.HasOne("QCExtensions.Server.Models.Token", "Token")
+                    b.HasOne("QCExtensions.Domain.Entities.Token", "Token")
                         .WithMany("LogEntries")
                         .HasForeignKey("UserToken")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("QCExtensions.Server.Models.Occurrence", b =>
+            modelBuilder.Entity("QCExtensions.Domain.Entities.Occurrence", b =>
                 {
-                    b.HasOne("QCExtensions.Server.Models.Comic", "Comic")
+                    b.HasOne("QCExtensions.Domain.Entities.Comic", "Comic")
                         .WithMany("Occurrences")
                         .HasForeignKey("ComicId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("QCExtensions.Server.Models.Item", "Item")
+                    b.HasOne("QCExtensions.Domain.Entities.Item", "Item")
                         .WithMany("Occurrences")
                         .HasForeignKey("ItemId")
                         .OnDelete(DeleteBehavior.Cascade);

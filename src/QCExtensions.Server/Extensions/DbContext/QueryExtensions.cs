@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using MySql.Data.MySqlClient;
+using QCExtensions.Domain.Entities;
 using QCExtensions.Server.Models;
 
 namespace QCExtensions.Server.Extensions.DbContext

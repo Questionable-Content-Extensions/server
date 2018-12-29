@@ -1,7 +1,6 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+using QCExtensions.Domain.Entities;
 using QCExtensions.Server.Models;
 
 namespace QCExtensions.Server.Infrastructure.Services

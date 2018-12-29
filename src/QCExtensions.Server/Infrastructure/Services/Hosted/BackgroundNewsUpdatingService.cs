@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using QCExtensions.Server.Extensions.DbContext;
+using QCExtensions.Domain.Entities;
 using QCExtensions.Server.Models;
 
 namespace QCExtensions.Server.Infrastructure.Services.Hosted
@@ -53,7 +53,7 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 								continue;
 							}
 
-							var newsEntity = await context.News.SingleOrDefaultAsync(n => n.Comic == comicId);
+							var newsEntity = await context.News.SingleOrDefaultAsync(n => n.ComicId == comicId);
 							if (newsEntity != null && !newsEntity.IsOutdated)
 							{
 								_logger.LogInformation($"News for comic #{comicId} is not outdated.");
@@ -72,7 +72,7 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 								// New news
 								newsEntity = new News
 								{
-									Comic = comicId,
+									ComicId = comicId,
 									LastUpdated = DateTime.UtcNow,
 									UpdateFactor = 1,
 									NewsText = newsText

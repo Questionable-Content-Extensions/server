@@ -1,24 +1,21 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
 using Force.Crc32;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using QCExtensions.Server.Infrastructure.Services;
-using QCExtensions.Server.Models;
+using QCExtensions.Domain.Entities;
 using QCExtensions.Server.Models.ViewModels;
 using QCExtensions.Server.Models.ViewModels.Results;
 using QCExtensions.Server.Extensions.DbContext;
 using System;
+using QCExtensions.Server.Models;
+using QCExtensions.Domain.Infrastructure;
+using QCExtensions.Domain.ValueObjects;
 
 namespace QCExtensions.Server.Controllers
 {
@@ -259,7 +256,7 @@ namespace QCExtensions.Server.Controllers
 
 				case "color":
 					oldValue = item.Color;
-					item.Color = model.Value.Trim();
+					item.Color = (HexRgbColor)model.Value.Trim();
 					break;
 
 				default:

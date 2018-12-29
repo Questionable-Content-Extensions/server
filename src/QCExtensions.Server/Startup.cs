@@ -10,13 +10,13 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Net;
 using QCExtensions.Server.Extensions;
-using QCExtensions.Server.Models;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using QCExtensions.Server.Infrastructure.Services;
 using Microsoft.Extensions.Hosting;
 using QCExtensions.Server.Infrastructure.Services.Hosted;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using QCExtensions.Server.Infrastructure.EntityMaterializerSource;
+using QCExtensions.Server.Models;
 
 namespace QCExtensions.Server
 {

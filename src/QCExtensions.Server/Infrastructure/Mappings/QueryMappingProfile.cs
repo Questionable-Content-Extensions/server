@@ -1,6 +1,5 @@
-using System;
 using AutoMapper;
-using QCExtensions.Server.Models;
+using QCExtensions.Domain.Entities;
 using QCExtensions.Server.Models.ViewModels;
 
 namespace QCExtensions.Server.Infrastructure.Mappings

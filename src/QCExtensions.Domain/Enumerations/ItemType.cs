@@ -1,4 +1,4 @@
-namespace QCExtensions.Server.Models
+namespace QCExtensions.Domain.Enumerations
 {
 	public enum ItemType
 	{
