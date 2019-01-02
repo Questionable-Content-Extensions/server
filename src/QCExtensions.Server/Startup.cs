@@ -12,11 +12,11 @@ using System.Net;
 using QCExtensions.Server.Extensions;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 using QCExtensions.Server.Infrastructure.Services;
-using Microsoft.Extensions.Hosting;
 using QCExtensions.Server.Infrastructure.Services.Hosted;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using QCExtensions.Server.Infrastructure.EntityMaterializerSource;
 using QCExtensions.Server.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace QCExtensions.Server
 {
@@ -37,7 +37,7 @@ namespace QCExtensions.Server
 			services.AddScoped<IActionLogger, ActionLogger>();
 
 			services.AddSingleton<INewsUpdater, NewsUpdater>();
-			services.AddSingleton<IHostedService, BackgroundNewsUpdatingService>();
+			services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, BackgroundNewsUpdatingService>();
 
 			// Add Entity Framework services.
 			services.AddDbContextPool<ApplicationDbContext>(
@@ -53,6 +53,13 @@ namespace QCExtensions.Server
 
 			services.AddAuthorization();
 
+            services.Configure<CookiePolicyOptions>(options =>
+            {
+                // This lambda determines whether user consent for non-essential cookies is needed for a given request.
+                options.CheckConsentNeeded = context => true;
+                options.MinimumSameSitePolicy = SameSiteMode.None;
+            });
+
 			services
 				.AddAutoMapper(opts =>
 				{
@@ -60,6 +67,7 @@ namespace QCExtensions.Server
 				})
 				.AddMemoryCache()
 				.AddMvc()
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
 				.AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<ApplicationDbContext>());
 		}
 
@@ -93,6 +101,7 @@ namespace QCExtensions.Server
 			app
 				.UseDefaultFiles()
 				.UseStaticFiles()
+				.UseCookiePolicy()
 				.UseCors(builder =>
 					builder.AllowAnyOrigin()
 						.AllowAnyMethod()
