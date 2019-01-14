@@ -12,13 +12,9 @@ namespace QCExtensions.Server.Infrastructure.Mappings
 			CreateMap<Item, ItemViewModel>();
 			CreateMap<Item, ItemWithTypeViewModel>();
 			CreateMap<Item, ItemWithNavigationData>()
-				.ForMember(vm => vm.Color, m => m.ResolveUsing(i => $"#{i.Color}"));
+				.ForMember(vm => vm.Color, m => m.MapFrom((i, vm) => $"#{i.Color}"));
 
 			CreateMap<ItemImage, ItemImageViewModel>();
-
-			CreateMap<Comic, ComicViewModel>()
-				.ForMember(vm => vm.Comic, m => m.MapFrom(c => c.Id))
-				.ForMember(vm => vm.HasData, m => m.UseValue(true));
 		}
 	}
 }

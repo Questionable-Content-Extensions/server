@@ -1,14 +1,14 @@
-using System;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 using AngleSharp.Parser.Html;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using QCExtensions.Server.Extensions.DbContext;
+using QCExtensions.Application.Extensions.DbContext;
+using QCExtensions.Application.Interfaces;
 using QCExtensions.Domain.Entities;
-using QCExtensions.Server.Models;
+using System;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace QCExtensions.Server.Infrastructure.Services.Hosted
 {
@@ -38,12 +38,14 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 			while (!stoppingToken.IsCancellationRequested)
 			{
 				var updateEntries = _newsUpdater.GetPendingUpdateEntries();
+				_logger.LogDebug($"There are #{updateEntries.Count} news updates pending.");
+
 				if (updateEntries.Count > 0)
 				{
 					_logger.LogInformation($"Running background news update...");
-					using (IServiceScope scope = _provider.CreateScope())
+					using (var scope = _provider.CreateScope())
 					{
-						var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+						var context = scope.ServiceProvider.GetRequiredService<DomainDbContext>();
 						foreach (var comicId in updateEntries)
 						{
 							var comicExists = await context.Comics.ExistsAsync(comicId);
@@ -61,7 +63,17 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 							}
 
 							_logger.LogInformation($"Fetching news in the background for comic #{comicId}...");
-							var newsText = await FetchNewsForAsync(comicId);
+							string newsText = null;
+							try
+							{
+								newsText = await FetchNewsForAsync(comicId);
+							}
+							catch (Exception e)
+							{
+								_logger.LogError(e, "Fetching news failed");
+								continue;
+							}
+
 							if (newsText == null)
 							{
 								continue;
@@ -104,6 +116,7 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 					}
 				}
 
+				_logger.LogDebug($"Waiting #{TaskDelayTime} before checking again.");
 				await Task.Delay(TaskDelayTime, stoppingToken);
 			}
 		}
@@ -139,7 +152,7 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 			{
 				newsElement.RemoveChild(newsElement.FirstElementChild);
 			}
-			while (newsElement.FirstChild.NodeName == "BR" || (newsElement.FirstChild.NodeName == "#text" && string.IsNullOrEmpty(newsElement.FirstChild.NodeValue.Trim())))
+			while (newsElement.FirstChild != null && (newsElement.FirstChild.NodeName == "BR" || (newsElement.FirstChild.NodeName == "#text" && string.IsNullOrEmpty(newsElement.FirstChild.NodeValue.Trim()))))
 			{
 				newsElement.RemoveChild(newsElement.FirstChild);
 			}

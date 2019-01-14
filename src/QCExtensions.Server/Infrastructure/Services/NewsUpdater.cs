@@ -1,14 +1,8 @@
 using System.Collections.Generic;
+using QCExtensions.Application.Interfaces;
 
 namespace QCExtensions.Server.Infrastructure.Services
 {
-	public interface INewsUpdater
-	{
-		void CheckFor(int comic);
-
-		ICollection<int> GetPendingUpdateEntries();
-		void RemovePendingUpdateEntries(ICollection<int> updateEntries);
-	}
 
 	public class NewsUpdater : INewsUpdater
 	{

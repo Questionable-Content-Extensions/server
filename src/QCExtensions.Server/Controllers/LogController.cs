@@ -1,28 +1,52 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using QCExtensions.Application.Interfaces;
+using QCExtensions.Domain.Entities;
+using QCExtensions.Server.Models.ViewModels;
+using QCExtensions.Server.Models.ViewModels.Results;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QCExtensions.Server.Infrastructure.Services;
-using QCExtensions.Server.Models.ViewModels;
-using QCExtensions.Server.Models;
 
 namespace QCExtensions.Server.Controllers
 {
 	[Route("api/[controller]")]
 	[ApiExplorerSettings(IgnoreApi = false, GroupName = "Comic")]
-	public class LogController : BaseController
+	public class LogController : Controller
 	{
-		private readonly ApplicationDbContext _applicationDbContext;
+		private readonly DomainDbContext _applicationDbContext;
+		private readonly ITokenValidator _tokenHandler;
 
 		public LogController(
-			ApplicationDbContext applicationDbContext,
-			ITokenHandler tokenHandler) : base(tokenHandler)
+			DomainDbContext applicationDbContext,
+			ITokenValidator tokenHandler)
 		{
 			this._applicationDbContext = applicationDbContext;
+			this._tokenHandler = tokenHandler;
 		}
 
 		private const int PageSize = 25;
+
+		protected async Task<IActionResult> ValidateModelThen(Func<Task<IActionResult>> whenValid)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(new ModelStateErrorViewModel(ModelState));
+			}
+
+			return await whenValid();
+		}
+
+		protected async Task<IActionResult> ValidateModelAndTokenThen(Guid token, Func<Task<IActionResult>> whenValid)
+			=> await ValidateModelThen(async () =>
+			{
+				if (!await _tokenHandler.IsValidAsync(token))
+				{
+					return Unauthorized();
+				}
+
+				return await whenValid();
+			});
 
 		[HttpGet("")]
 		public async Task<IActionResult> Get(Guid token, int page = 1)

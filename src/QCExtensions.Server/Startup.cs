@@ -1,22 +1,34 @@
 using AutoMapper;
 using FluentValidation.AspNetCore;
+using MediatR;
+using MediatR.Pipeline;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Net;
-using QCExtensions.Server.Extensions;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using QCExtensions.Application.Comics.Commands.AddItemToComic;
+using QCExtensions.Application.Comics.Models;
+using QCExtensions.Application.Comics.Queries.GetComic;
+using QCExtensions.Application.Infrastructure;
+using QCExtensions.Application.Infrastructure.AutoMapper;
+using QCExtensions.Application.Interfaces;
+using QCExtensions.Application.Items.Models;
+using QCExtensions.Domain.Entities;
+using QCExtensions.Persistence;
+using QCExtensions.Server.Extensions;
+using QCExtensions.Server.Infrastructure;
+using QCExtensions.Server.Infrastructure.EntityMaterializerSource;
 using QCExtensions.Server.Infrastructure.Services;
 using QCExtensions.Server.Infrastructure.Services.Hosted;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using QCExtensions.Server.Infrastructure.EntityMaterializerSource;
-using QCExtensions.Server.Models;
-using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Net;
+using System.Reflection;
 
 namespace QCExtensions.Server
 {
@@ -33,14 +45,29 @@ namespace QCExtensions.Server
 
 		public void ConfigureServices(IServiceCollection services)
 		{
-			services.AddScoped<ITokenHandler, TokenHandler>();
+			// Add AutoMapper
+			services.AddAutoMapper(opts =>
+			{
+				opts.CreateMissingTypeMaps = true;
+			}, new Assembly[] { typeof(AutoMapperProfile).GetTypeInfo().Assembly, typeof(Startup).GetTypeInfo().Assembly });
+
+			// Add services
+			services.AddScoped<ITokenValidator, TokenValidator>();
 			services.AddScoped<IActionLogger, ActionLogger>();
 
+			// Add hosted services
 			services.AddSingleton<INewsUpdater, NewsUpdater>();
 			services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, BackgroundNewsUpdatingService>();
 
-			// Add Entity Framework services.
-			services.AddDbContextPool<ApplicationDbContext>(
+			// Add MediatR
+			services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestPreProcessorBehavior<,>));
+			services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestTokenValidationBehavior<,>));
+			services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestValidationBehavior<,>));
+			services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestPostProcessorBehavior<,>));
+			services.AddMediatR(typeof(GetComicQuery).GetTypeInfo().Assembly);
+
+			// Add Entity Framework
+			services.AddDbContextPool<QCExtensionsDbContext>(
 				options => options.UseMySql(_configuration.GetConnectionString("Default"),
 					mysqlOptions =>
 					{
@@ -50,25 +77,39 @@ namespace QCExtensions.Server
 					}
 				).ReplaceService<IEntityMaterializerSource, DateTimeKindEntityMaterializerSource>()
 			);
+			services.AddScoped<DomainDbContext, QCExtensionsDbContext>();
 
-			services.AddAuthorization();
+			services.Configure<CookiePolicyOptions>(options =>
+			{
+				// This lambda determines whether user consent for non-essential cookies is needed for a given request.
+				options.CheckConsentNeeded = context => true;
+				options.MinimumSameSitePolicy = SameSiteMode.None;
+			});
 
-            services.Configure<CookiePolicyOptions>(options =>
-            {
-                // This lambda determines whether user consent for non-essential cookies is needed for a given request.
-                options.CheckConsentNeeded = context => true;
-                options.MinimumSameSitePolicy = SameSiteMode.None;
-            });
+			// Customise default API behavour
+			services.Configure<ApiBehaviorOptions>(options =>
+			{
+				options.SuppressModelStateInvalidFilter = true;
+			});
 
 			services
-				.AddAutoMapper(opts =>
-				{
-					opts.CreateMissingTypeMaps = true;
-				})
 				.AddMemoryCache()
 				.AddMvc()
-                .SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
-				.AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<ApplicationDbContext>());
+				.AddJsonOptions(o =>
+				{
+					var fluentContractResolver = new FluentContractResolver();
+
+					fluentContractResolver.ForType<ComicDto>()
+						.IgnoreNull(c => c.EditorData)
+						.IgnoreNull(c => c.AllItems);
+
+					fluentContractResolver.ForType<ItemWithNavigationDataDto>()
+						.Ignore(i => i.Count);
+
+					o.SerializerSettings.ContractResolver = fluentContractResolver;
+				})
+				.SetCompatibilityVersion(CompatibilityVersion.Version_2_2)
+				.AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<AddItemToComicCommandValidator>());
 		}
 
 		public void Configure(IApplicationBuilder app, IHostingEnvironment env)

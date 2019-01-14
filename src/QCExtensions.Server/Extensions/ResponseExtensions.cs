@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 
 namespace QCExtensions.Server.Extensions
-{	
+{
 	public static class ResponseExtensions
 	{
 		public static void AddApplicationError(this HttpResponse response, string message)

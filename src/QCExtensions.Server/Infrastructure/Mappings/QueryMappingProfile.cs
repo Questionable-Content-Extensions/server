@@ -8,7 +8,6 @@ namespace QCExtensions.Server.Infrastructure.Mappings
 	{
 		public QueryMappingProfile()
 		{
-			CreateMap<ComicEditorData, NavigationData>();
 			CreateMap<ComicItemNavigationData, ItemWithNavigationData>();
 			CreateMap<ComicItemNavigationData, ItemWithTypeViewModel>();
 		}

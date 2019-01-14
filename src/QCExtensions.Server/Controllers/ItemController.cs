@@ -1,21 +1,19 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using AutoMapper;
 using Force.Crc32;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using QCExtensions.Server.Infrastructure.Services;
+using QCExtensions.Application.Extensions.DbContext;
+using QCExtensions.Application.Interfaces;
 using QCExtensions.Domain.Entities;
+using QCExtensions.Domain.ValueObjects;
 using QCExtensions.Server.Models.ViewModels;
 using QCExtensions.Server.Models.ViewModels.Results;
-using QCExtensions.Server.Extensions.DbContext;
 using System;
-using QCExtensions.Server.Models;
-using QCExtensions.Domain.Infrastructure;
-using QCExtensions.Domain.ValueObjects;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace QCExtensions.Server.Controllers
 {
@@ -25,15 +23,15 @@ namespace QCExtensions.Server.Controllers
 	public class ItemController : Controller
 	{
 		private readonly IMapper _mapper;
-		private readonly ApplicationDbContext _applicationDbContext;
-		private readonly ITokenHandler _tokenHandler;
+		private readonly DomainDbContext _applicationDbContext;
+		private readonly ITokenValidator _tokenHandler;
 		private readonly IActionLogger _actionLogger;
 		private readonly IMemoryCache _memoryCache;
 
 		public ItemController(
 			IMapper mapper,
-			ApplicationDbContext applicationDbContext,
-			ITokenHandler tokenHandler,
+			DomainDbContext applicationDbContext,
+			ITokenValidator tokenHandler,
 			IActionLogger actionLogger,
 			IMemoryCache memoryCache)
 		{
