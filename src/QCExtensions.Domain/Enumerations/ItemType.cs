@@ -7,4 +7,12 @@ namespace QCExtensions.Domain.Enumerations
 		Location,
 		Storyline
 	}
+	
+	public static class ItemTypeExtensions
+	{
+		public static string ToStringRepresentation(this ItemType itemType)
+		{
+			return itemType.ToString().ToLower();
+		}
+	}
 }

@@ -20,7 +20,7 @@ namespace QCExtensions.Domain.Entities
 		{
 			get
 			{
-				return TypeValue.ToString().ToLower();
+				return TypeValue.ToStringRepresentation();
 			}
 			set
 			{

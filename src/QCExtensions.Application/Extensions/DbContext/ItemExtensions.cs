@@ -1,5 +1,3 @@
-
-
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -34,9 +32,9 @@ namespace QCExtensions.Application.Extensions.DbContext
 			return await query.SingleOrDefaultAsync(item => item.Id == id);
 		}
 
-		public static async Task<bool> ExistsAsync(this DbSet<Item> items, int id)
+		public static Task<bool> ExistsAsync(this DbSet<Item> items, int id)
 		{
-			return await items.AnyAsync(o => o.Id == id);
+			return items.AnyAsync(o => o.Id == id);
 		}
 	}
 }

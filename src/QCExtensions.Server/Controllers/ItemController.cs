@@ -1,18 +1,24 @@
-using AutoMapper;
-using Force.Crc32;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using QCExtensions.Application.Extensions.DbContext;
-using QCExtensions.Application.Interfaces;
-using QCExtensions.Domain.Entities;
+using QCExtensions.Application.Items.Commands.AddImage;
+using QCExtensions.Application.Items.Commands.SetColor;
+using QCExtensions.Application.Items.Commands.SetName;
+using QCExtensions.Application.Items.Commands.SetShortName;
+using QCExtensions.Application.Items.Models;
+using QCExtensions.Application.Items.Queries.GetAllItems;
+using QCExtensions.Application.Items.Queries.GetImage;
+using QCExtensions.Application.Items.Queries.GetItem;
+using QCExtensions.Application.Items.Queries.GetItemImages;
+using QCExtensions.Application.Items.Queries.GetRelatedItems;
+using QCExtensions.Domain.Enumerations;
 using QCExtensions.Domain.ValueObjects;
 using QCExtensions.Server.Models.ViewModels;
 using QCExtensions.Server.Models.ViewModels.Results;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace QCExtensions.Server.Controllers
@@ -22,153 +28,97 @@ namespace QCExtensions.Server.Controllers
 	[ApiExplorerSettings(IgnoreApi = false, GroupName = "Item")]
 	public class ItemController : Controller
 	{
-		private readonly IMapper _mapper;
-		private readonly DomainDbContext _applicationDbContext;
-		private readonly ITokenValidator _tokenHandler;
-		private readonly IActionLogger _actionLogger;
+		private readonly IMediator _mediator;
 		private readonly IMemoryCache _memoryCache;
 
 		public ItemController(
-			IMapper mapper,
-			DomainDbContext applicationDbContext,
-			ITokenValidator tokenHandler,
-			IActionLogger actionLogger,
-			IMemoryCache memoryCache)
+			IMediator mediator,
+			IMemoryCache memoryCache
+		)
 		{
-			_mapper = mapper;
-			_applicationDbContext = applicationDbContext;
-			_tokenHandler = tokenHandler;
-			_actionLogger = actionLogger;
+			_mediator = mediator;
 			_memoryCache = memoryCache;
 		}
 
 		[HttpGet("")]
+		[ProducesResponseType(typeof(List<ItemListDto>), (int)HttpStatusCode.OK)]
 		public async Task<IActionResult> GetAll()
-		{
-			var items = await _applicationDbContext.Items.ToArrayAsync();
-			var itemVMs = _mapper.Map<ItemWithTypeViewModel[]>(items);
-
-			var comicItemNavigationData = await _applicationDbContext.QueryComicAllItemNavigationData(1).ToDictionaryAsync(n => n.Id);
-
-			foreach (var item in itemVMs)
-			{
-				_mapper.Map(comicItemNavigationData[item.Id], item);
-			}
-
-			Array.Sort(itemVMs.Select(i => i.Count).ToArray(), itemVMs);
-			Array.Reverse(itemVMs);
-
-			return Ok(itemVMs);
-		}
+			=> Ok(await _mediator.Send(new GetAllItemsQuery()));
 
 		[HttpGet("{id}")]
+		[ProducesResponseType(typeof(ItemDto), (int)HttpStatusCode.OK)]
+		[ProducesResponseType((int)HttpStatusCode.NotFound)]
 		public async Task<IActionResult> Get(int id)
 		{
-			var item = await _applicationDbContext.Items.GetByIdAsync(id, includeOccurrences: true, includeImages: true);
-			if (item == null)
+			var result = await _mediator.Send(new GetItemQuery { ItemId = id });
+			if (result == null)
 			{
-				return BadRequest();
+				return NotFound();
 			}
-
-			var itemVM = _mapper.Map<ItemViewModel>(item);
-
-			var totalComics = await _applicationDbContext.Comics.CountAsync();
-			var appearances = item.Occurrences.Count;
-
-			itemVM.TotalComics = totalComics;
-			itemVM.Appearances = appearances;
-
-			var first = item.Occurrences.Min(o => o.ComicId);
-			var last = item.Occurrences.Max(o => o.ComicId);
-
-			itemVM.First = first;
-			itemVM.Last = last;
-
-			itemVM.HasImage = item.Images.Any();
-
-			return Ok(itemVM);
-		}
-
-
-		private async Task<List<ItemWithTypeViewModel>> FindTypeWith(int id, string type, int amount = 5)
-		{
-			var typeWithQuery = (from i in _applicationDbContext.Items
-								 from o in i.Occurrences
-								 join o2 in _applicationDbContext.Occurrences on o.ComicId equals o2.ComicId
-								 let i2 = o2.Item
-								 where i.Id == id && i2.Id != i.Id && i2.Type == type
-								 group i2 by i2.Id into gi2
-								 orderby gi2.Count() descending
-								 select gi2)
-								 .Take(amount)
-								 .Select(gi2 => new
-								 {
-									 gi2.First().Id,
-									 gi2.First().ShortName,
-									 gi2.First().Name,
-									 gi2.First().Type,
-									 gi2.First().Color,
-									 Count = gi2.Count()
-								 });
-
-			return _mapper.Map<List<ItemWithTypeViewModel>>(await typeWithQuery.ToListAsync());
+			return Ok(result);
 		}
 
 		[HttpGet("friends/{id}")] // Compatibility with old server
 		[HttpGet("{id}/friends")]
+		[ProducesResponseType(typeof(List<ItemListDto>), (int)HttpStatusCode.OK)]
+		[ProducesResponseType((int)HttpStatusCode.NotFound)]
 		public async Task<IActionResult> Friends(int id)
 		{
-			if (!await _applicationDbContext.Items.ExistsAsync(id))
+			var result = await _mediator.Send(new GetRelatedItemsQuery
 			{
-				return BadRequest();
+				ItemId = id,
+				Type = ItemType.Cast
+			});
+			if (result == null)
+			{
+				return NotFound();
 			}
-
-			return Ok(await FindTypeWith(id, "cast"));
+			return Ok(result);
 		}
 
 		[HttpGet("locations/{id}")] // Compatibility with old server
 		[HttpGet("{id}/locations")]
+		[ProducesResponseType(typeof(List<ItemListDto>), (int)HttpStatusCode.OK)]
+		[ProducesResponseType((int)HttpStatusCode.NotFound)]
 		public async Task<IActionResult> Locations(int id)
 		{
-			if (!await _applicationDbContext.Items.ExistsAsync(id))
+			var result = await _mediator.Send(new GetRelatedItemsQuery
 			{
-				return BadRequest();
+				ItemId = id,
+				Type = ItemType.Location
+			});
+			if (result == null)
+			{
+				return NotFound();
 			}
-
-			return Ok(await FindTypeWith(id, "location"));
+			return Ok(result);
 		}
 
 		[HttpGet("{id}/images")]
+		[ProducesResponseType(typeof(List<ItemImageDto>), (int)HttpStatusCode.OK)]
+		[ProducesResponseType((int)HttpStatusCode.NotFound)]
 		public async Task<IActionResult> ItemImages(int id)
 		{
-			var item = await _applicationDbContext.Items.GetByIdAsync(id, includeImages: true);
-			if (item == null)
+			var result = await _mediator.Send(new GetItemImagesQuery { ItemId = id });
+			if (result == null)
 			{
-				return BadRequest();
+				return NotFound();
 			}
-
-			var viewModel = _mapper.Map<List<ItemImageViewModel>>(item.Images);
-			return Ok(viewModel);
+			return Ok(result);
 		}
 
 		[HttpGet("image/{id}")]
+		[ProducesResponseType((int)HttpStatusCode.OK)]
+		[ProducesResponseType((int)HttpStatusCode.NotFound)]
 		public async Task<IActionResult> Image(int id)
 		{
-			var itemImage = await _memoryCache.GetOrCreateAsync(id, async entry =>
-			{
-				var imageData = await _applicationDbContext.ItemImages.Where(i => i.Id == id).Select(i => i.Image).SingleOrDefaultAsync();
-				if (imageData == null)
-				{
-					return null;
-				}
-
-				return imageData;
-			});
+			var itemImage = await _memoryCache.GetOrCreateAsync(id,
+				async _ => await _mediator.Send(new GetImageQuery { ImageId = id }));
 
 			if (itemImage == null)
 			{
 				_memoryCache.Remove(id);
-				return BadRequest();
+				return NotFound();
 			}
 
 			return File(itemImage, "image/png");
@@ -177,46 +127,20 @@ namespace QCExtensions.Server.Controllers
 		[HttpPost("image/upload")]
 		public async Task<IActionResult> UploadImage([FromForm] ItemImageUploadViewModel model)
 		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(new ModelStateErrorViewModel(ModelState));
-			}
-			if (!await _tokenHandler.IsValidAsync(model.Token))
-			{
-				return Unauthorized();
-			}
-			if (model.Image.ContentType != "image/png")
-			{
-				return BadRequest("Only PNG images are supported");
-			}
-			if (!await _applicationDbContext.Items.ExistsAsync(model.ItemId))
-			{
-				return BadRequest("Given ItemId does not exist");
-			}
-
 			byte[] imageData = null;
 			using (var memoryStream = new MemoryStream())
 			{
 				await model.Image.CopyToAsync(memoryStream);
 				imageData = memoryStream.GetBuffer();
 			}
-
-			var crc32CHash = Crc32CAlgorithm.Compute(imageData);
-			if (model.CRC32CHash.HasValue && model.CRC32CHash.Value != crc32CHash)
-			{
-				return BadRequest("CRC32C value of image does not match with value provided in upload");
-			}
-
-			var itemImage = new ItemImage
+			await _mediator.Send(new AddImageCommand
 			{
 				ItemId = model.ItemId,
-				CRC32CHash = crc32CHash,
-				Image = imageData
-			};
-			_applicationDbContext.ItemImages.Add(itemImage);
-			await _applicationDbContext.SaveChangesAsync();
-
-			await _actionLogger.LogAsync(model.Token, $"Uploaded image #{itemImage.Id} for item #{model.ItemId}");
+				Token = model.Token,
+				Image = imageData,
+				ImageContentType = model.Image.ContentType,
+				CRC32CHash = model.CRC32CHash
+			});
 
 			return Ok();
 		}
@@ -224,53 +148,37 @@ namespace QCExtensions.Server.Controllers
 		[HttpPost("setproperty")]
 		public async Task<IActionResult> SetProperty([FromBody] SetItemPropertyViewModel model)
 		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(new ModelStateErrorViewModel(ModelState));
-			}
-			if (!await _tokenHandler.IsValidAsync(model.Token))
-			{
-				return Unauthorized();
-			}
-
-			var item = await _applicationDbContext.Items.GetByIdAsync(model.Item);
-			if (item == null)
-			{
-				return BadRequest();
-			}
-
-			string oldValue = null;
 			switch (model.Property)
 			{
 				case "name":
-					oldValue = item.Name;
-					item.Name = model.Value.Trim();
+					await _mediator.Send(new SetNameCommand
+					{
+						Token = model.Token,
+						ItemId = model.Item,
+						Name = model.Value.Trim()
+					});
 					break;
 
 				case "shortName":
-					oldValue = item.ShortName;
-					item.ShortName = model.Value.Trim();
+					await _mediator.Send(new SetShortNameCommand
+					{
+						Token = model.Token,
+						ItemId = model.Item,
+						ShortName = model.Value.Trim()
+					});
 					break;
 
 				case "color":
-					oldValue = item.Color;
-					item.Color = (HexRgbColor)model.Value.Trim();
+					await _mediator.Send(new SetColorCommand
+					{
+						Token = model.Token,
+						ItemId = model.Item,
+						Color = (HexRgbColor)model.Value.Trim()
+					});
 					break;
 
 				default:
 					return BadRequest(new ErrorViewModel(new ResultViewModelBase.AssociatedError("property", "No property named " + model.Property)));
-			}
-
-			_applicationDbContext.Items.Update(item);
-			await _applicationDbContext.SaveChangesAsync();
-
-			if (string.IsNullOrEmpty(oldValue))
-			{
-				await _actionLogger.LogAsync(model.Token, $"Set {model.Property} of {item.Type} #{item.Id} to \"{model.Value}\"");
-			}
-			else
-			{
-				await _actionLogger.LogAsync(model.Token, $"Changed {model.Property} of {item.Type} #{item.Id} from {oldValue} to \"{model.Value}\"");
 			}
 
 			return Ok($"Item property {model.Property} has been updated on item #{model.Item}");

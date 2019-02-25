@@ -1,6 +1,9 @@
+﻿using QCExtensions.Application.Interfaces.Mapping;
+using QCExtensions.Domain.Entities;
+
 namespace QCExtensions.Application.Items.Models
 {
-	public class ItemDto : ItemDtoBase
+	public class ItemDto : ItemDtoBase, IMapFrom<Item>
 	{
 		public int? First { get; set; }
 		public int? Last { get; set; }
