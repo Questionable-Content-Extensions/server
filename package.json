@@ -21,11 +21,13 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build"
+    "build": "react-scripts build",
+    "heroku-postbuild": "echo Skip build on Heroku"
   },
   "proxy": {
     "/api": {
       "target": "http://localhost:5000"
     }
-  }
+  },
+  "heroku-run-build-script": true
 }
