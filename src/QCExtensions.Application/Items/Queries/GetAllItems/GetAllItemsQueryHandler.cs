@@ -27,12 +27,15 @@ namespace QCExtensions.Application.Items.Queries.GetAllItems
 
 		public async Task<List<ItemListDto>> Handle(GetAllItemsQuery request, CancellationToken cancellationToken)
 		{
-			var comicItemNavigationData = await
-				_context.QueryComicItemNavigationData(1)
-				.Union(_context.QueryComicAllItemNavigationData(1))
-					.ToArrayAsync();
+			var items = await _context.Items.ToArrayAsync();
+			var itemDtos = _mapper.Map<ItemListDto[]>(items);
 
-			var itemDtos = _mapper.Map<ItemListDto[]>(comicItemNavigationData);
+			var comicItemNavigationData = await _context.QueryComicAllItemNavigationData(1).ToDictionaryAsync(n => n.Id);
+
+			foreach (var item in itemDtos)
+			{
+				_mapper.Map(comicItemNavigationData[item.Id], item);
+			}
 
 			Array.Sort(itemDtos.Select(i => i.Count).ToArray(), itemDtos);
 			Array.Reverse(itemDtos);
