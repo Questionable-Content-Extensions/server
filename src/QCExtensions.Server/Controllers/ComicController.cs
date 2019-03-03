@@ -9,6 +9,7 @@ using QCExtensions.Application.Comics.Commands.SetTitle;
 using QCExtensions.Application.Comics.Models;
 using QCExtensions.Application.Comics.Queries.GetAllComics;
 using QCExtensions.Application.Comics.Queries.GetComic;
+using QCExtensions.Application.Comics.Queries.GetExcludedComics;
 using QCExtensions.Server.Extensions;
 using System;
 using System.Collections.Generic;
@@ -63,6 +64,30 @@ namespace QCExtensions.Server.Controllers
 			return Ok(await _mediator.Send(new GetAllComicsQuery
 			{
 				Exclude = exclusion
+			}));
+		}
+
+		[HttpGet("excluded")]
+		[ProducesResponseType(typeof(List<ComicListDto>), (int)HttpStatusCode.OK)]
+		public async Task<IActionResult> GetExcluded()
+		{
+			var exclude = Request.Query["exclusion"].SingleOrDefault();
+
+			var exclusion = Exclusion.None;
+			switch (exclude)
+			{
+				case "guest":
+					exclusion = Exclusion.Guest;
+					break;
+
+				case "non-canon":
+					exclusion = Exclusion.NonCanon;
+					break;
+			}
+
+			return Ok(await _mediator.Send(new GetExcludedComicsQuery
+			{
+				ExclusionType = exclusion
 			}));
 		}
 
