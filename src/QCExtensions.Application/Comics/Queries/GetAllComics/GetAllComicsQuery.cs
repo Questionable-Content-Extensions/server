@@ -6,5 +6,6 @@ namespace QCExtensions.Application.Comics.Queries.GetAllComics
 {
 	public class GetAllComicsQuery : IRequest<List<ComicListDto>>
 	{
+		public Exclusion Exclude { get; set; } = Exclusion.None;
 	}
 }

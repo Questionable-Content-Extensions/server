@@ -12,9 +12,8 @@ using QCExtensions.Application.Extensions.DbContext;
 using QCExtensions.Application.Interfaces;
 using QCExtensions.Application.Items.Models;
 using QCExtensions.Domain.Entities;
-using static QCExtensions.Application.Comics.Queries.GetComic.GetComicQuery;
 
-namespace QCExtensions.Application.Comics.Queries.GetAllComics.GetComic
+namespace QCExtensions.Application.Comics.Queries.GetAllComics
 {
 	public class GetAllComicsQueryHandler : IRequestHandler<GetAllComicsQuery, List<ComicListDto>>
 	{
@@ -27,8 +26,24 @@ namespace QCExtensions.Application.Comics.Queries.GetAllComics.GetComic
 
 		public async Task<List<ComicListDto>> Handle(GetAllComicsQuery request, CancellationToken cancellationToken)
 		{
-			var comicList = await _context.Comics.Select(c => new ComicListDto { Comic = c.Id, Title = c.Title }).ToListAsync();
-			return comicList;
+			IQueryable<Comic> comicListQuery =  _context.Comics;
+			
+			if (request.Exclude == Exclusion.Guest)
+			{
+				comicListQuery = comicListQuery.Where(c => !c.IsGuestComic);
+			}	
+			else if (request.Exclude == Exclusion.NonCanon)
+			{
+				comicListQuery = comicListQuery.Where(c => !c.IsNonCanon);
+			}
+			
+			return await comicListQuery.Select(c => new ComicListDto
+			{
+				Comic = c.Id,
+				Title = c.Title,
+				IsGuestComic = c.IsGuestComic,
+				IsNonCanon = c.IsNonCanon
+			}).ToListAsync();
 		}
 	}
 }

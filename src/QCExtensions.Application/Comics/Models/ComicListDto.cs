@@ -8,5 +8,7 @@ namespace QCExtensions.Application.Comics.Models
 	{
 		public int Comic { get; set; }
 		public string Title { get; set; }
+		public bool IsNonCanon { get; set; }
+		public bool IsGuestComic { get; set; }
 	}
 }

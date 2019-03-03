@@ -45,7 +45,26 @@ namespace QCExtensions.Server.Controllers
 		[HttpGet("")]
 		[ProducesResponseType(typeof(List<ComicListDto>), (int)HttpStatusCode.OK)]
 		public async Task<IActionResult> GetAll()
-			=> Ok(await _mediator.Send(new GetAllComicsQuery()));
+		{
+			var exclude = Request.Query["exclude"].SingleOrDefault();
+
+			var exclusion = Exclusion.None;
+			switch (exclude)
+			{
+				case "guest":
+					exclusion = Exclusion.Guest;
+					break;
+
+				case "non-canon":
+					exclusion = Exclusion.NonCanon;
+					break;
+			}
+
+			return Ok(await _mediator.Send(new GetAllComicsQuery
+			{
+				Exclude = exclusion
+			}));
+		}
 
 		[HttpGet("{comicId}")]
 		[ProducesResponseType(typeof(ComicDto), (int)HttpStatusCode.OK)]
@@ -64,19 +83,19 @@ namespace QCExtensions.Server.Controllers
 				}
 			}
 
-			var exclusion = GetComicQuery.Exclusion.None;
+			var exclusion = Exclusion.None;
 			switch (exclude)
 			{
 				case "guest":
-					exclusion = GetComicQuery.Exclusion.Guest;
+					exclusion = Exclusion.Guest;
 					break;
 
 				case "non-canon":
-					exclusion = GetComicQuery.Exclusion.NonCanon;
+					exclusion = Exclusion.NonCanon;
 					break;
 			}
 
-			var inclusion = include == "all" ? GetComicQuery.Inclusion.All : GetComicQuery.Inclusion.None;
+			var inclusion = include == "all" ? Inclusion.All : Inclusion.None;
 
 			return Ok(await _mediator.Send(new GetComicQuery
 			{
