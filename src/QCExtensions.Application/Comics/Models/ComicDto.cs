@@ -9,6 +9,7 @@ namespace QCExtensions.Application.Comics.Models
 	public class ComicDto : IHaveCustomMapping
 	{
 		public int Comic { get; set; }
+		public string ImageType { get; set; }
 		public bool HasData { get; set; }
 		public DateTime? PublishDate { get; set; }
 		public bool IsAccuratePublishDate { get; set; }
@@ -33,6 +34,7 @@ namespace QCExtensions.Application.Comics.Models
 		{
 			configuration.CreateMap<Comic, ComicDto>()
 				.ForMember(dto => dto.Comic, m => m.MapFrom(c => c.Id))
+				.ForMember(dto => dto.ImageType, m => m.MapFrom(c => c.ImageType.ToString().ToLowerInvariant()))
 				.ForMember(dto => dto.HasData, m => m.MapFrom((s, d) => true));
 		}
 	}

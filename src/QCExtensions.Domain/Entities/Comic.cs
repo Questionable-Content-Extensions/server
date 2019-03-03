@@ -10,6 +10,7 @@ namespace QCExtensions.Domain.Entities
 			Occurrences = new HashSet<Occurrence>();
 		}
 		public int Id { get; set; }
+		public ImageType ImageType { get; set; }
 		public bool IsGuestComic { get; set; }
 		public bool IsNonCanon { get; set; }
 		public bool HasNoCast { get; set; }

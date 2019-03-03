@@ -12,6 +12,9 @@ namespace QCExtensions.Persistence.Configurations
 			comicBuilder.HasKey(c => c.Id);
 			comicBuilder.Property(c => c.Id)
 				.HasColumnName("id");
+			comicBuilder.Property(c => c.ImageType)
+				.HasDefaultValue(ImageType.Unknown)
+				.IsRequired();
 			comicBuilder.Property(c => c.IsGuestComic)
 				.HasColumnName("isGuestComic")
 				.IsRequired();
