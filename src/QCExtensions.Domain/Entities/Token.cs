@@ -12,5 +12,12 @@ namespace QCExtensions.Domain.Entities
 		public Guid Id { get; set; }
 		public string Identifier { get; set; }
 		public ICollection<LogEntry> LogEntries { get; private set; }
+
+		public bool CanAddItemToComic { get; set; }
+		public bool CanRemoveItemFromComic { get; set; }
+		public bool CanChangeComicData { get; set; }
+		public bool CanAddImageToItem { get; set; }
+		public bool CanRemoveImageFromItem { get; set; }
+		public bool CanChangeItemData { get; set; }
 	}
 }

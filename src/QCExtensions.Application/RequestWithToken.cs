@@ -10,6 +10,8 @@ namespace QCExtensions.Application
 		public bool IsValidToken { get; set; }
 
 		public virtual bool AllowInvalidToken => false;
+
+		public virtual Permission RequiredPermissions => Permission.None;
 	}
 
 	public abstract class RequestWithToken : RequestWithToken<Unit>, IRequest

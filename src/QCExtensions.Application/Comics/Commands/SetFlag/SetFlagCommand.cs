@@ -1,4 +1,5 @@
 using System;
+using QCExtensions.Application.Interfaces;
 
 namespace QCExtensions.Application.Comics.Commands.SetFlag
 {
@@ -16,6 +17,8 @@ namespace QCExtensions.Application.Comics.Commands.SetFlag
 			HasNoTagline
 		}
 
+		public override Permission RequiredPermissions => Permission.CanChangeComicData;
+		
 		public int ComicId { get; set; }
 		public FlagType Flag { get; set; }
 		public bool FlagValue { get; set; }

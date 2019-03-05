@@ -31,6 +31,11 @@ namespace QCExtensions.Application.Infrastructure
 				else
 				{
 					requestWithToken.IsValidToken = true;
+
+					if (!await _tokenValidator.HasPermissionsAsync(requestWithToken.Token.Value, requestWithToken.RequiredPermissions))
+					{
+						throw new Exceptions.MissingPermissionsException(requestWithToken.Token.Value, requestWithToken.RequiredPermissions);
+					}
 				}
 			}
 

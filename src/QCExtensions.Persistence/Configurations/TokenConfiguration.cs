@@ -15,6 +15,19 @@ namespace QCExtensions.Persistence.Configurations
 			tokenBuilder.Property(t => t.Identifier)
 				.HasMaxLength(50)
 				.IsRequired();
+
+			tokenBuilder.Property(t => t.CanAddImageToItem)
+				.IsRequired();
+			tokenBuilder.Property(t => t.CanAddItemToComic)
+				.IsRequired();
+			tokenBuilder.Property(t => t.CanChangeComicData)
+				.IsRequired();
+			tokenBuilder.Property(t => t.CanChangeItemData)
+				.IsRequired();
+			tokenBuilder.Property(t => t.CanRemoveImageFromItem)
+				.IsRequired();
+			tokenBuilder.Property(t => t.CanRemoveItemFromComic)
+				.IsRequired();
 		}
 	}
 }
