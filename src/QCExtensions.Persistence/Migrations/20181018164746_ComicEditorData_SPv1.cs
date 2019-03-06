@@ -6,6 +6,11 @@ namespace QCExtensions.Persistence.Migrations
 	{
 		protected override void Up(MigrationBuilder migrationBuilder)
 		{
+			CreateComicEditorData(migrationBuilder);
+		}
+
+		public static void CreateComicEditorData(MigrationBuilder migrationBuilder)
+		{
 			var sp = @"CREATE PROCEDURE `ComicEditorData`(IN `comicId` SMALLINT)
 	READS SQL DATA
 BEGIN

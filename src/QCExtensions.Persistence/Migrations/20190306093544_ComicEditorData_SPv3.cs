@@ -2,50 +2,21 @@
 
 namespace QCExtensions.Persistence.Migrations
 {
-	public partial class MissingFeatureFlags : Migration
-	{
-		protected override void Up(MigrationBuilder migrationBuilder)
+    public partial class ComicEditorData_SPv3 : Migration
+    {
+        protected override void Up(MigrationBuilder migrationBuilder)
 		{
-			migrationBuilder.AddColumn<bool>(
-				name: "HasNoCast",
-				table: "comic",
-				nullable: false,
-				defaultValue: false);
-
-			migrationBuilder.AddColumn<bool>(
-				name: "HasNoLocation",
-				table: "comic",
-				nullable: false,
-				defaultValue: false);
-
-			migrationBuilder.AddColumn<bool>(
-				name: "HasNoStoryline",
-				table: "comic",
-				nullable: false,
-				defaultValue: false);
-
-			migrationBuilder.AddColumn<bool>(
-				name: "HasNoTagline",
-				table: "comic",
-				nullable: false,
-				defaultValue: false);
-
-			migrationBuilder.AddColumn<bool>(
-				name: "HasNoTitle",
-				table: "comic",
-				nullable: false,
-				defaultValue: false);
-
 			migrationBuilder.Sql("DROP PROCEDURE `ComicEditorData`");
 			CreateComicEditorData(migrationBuilder);
 		}
 
-		public static void CreateComicEditorData(MigrationBuilder migrationBuilder)
+		private static void CreateComicEditorData(MigrationBuilder migrationBuilder)
 		{
 			var sp = @"
 CREATE PROCEDURE `ComicEditorData`(IN `comicId` SMALLINT)
 	READS SQL DATA
 BEGIN
+    DROP TEMPORARY TABLE IF EXISTS TypeData;
 	CREATE TEMPORARY TABLE TypeData
 		(Type VARCHAR(255), First INT, Previous INT, Next INT, Last INT, Count INT);
 
@@ -79,7 +50,12 @@ BEGIN
 	INSERT INTO TypeData
 		(Type, First, Previous, Next, Last)
 	VALUES
-		('tagline', @first, @previous, @next, @last);
+		('tagline', @first, @previous, @next, @last);    
+    
+    SET @first = NULL;
+    SET @previous = NULL;
+    SET @next = NULL;
+    SET @last = NULL;
 
 	SELECT
 		MIN(c.id),
@@ -110,7 +86,12 @@ BEGIN
 	INSERT INTO TypeData
 		(Type, First, Previous, Next, Last)
 	VALUES
-		('title', @first, @previous, @next, @last);
+		('title', @first, @previous, @next, @last);   
+    
+    SET @first = NULL;
+    SET @previous = NULL;
+    SET @next = NULL;
+    SET @last = NULL;
 
 	SELECT c.id INTO @first
 	FROM comic c
@@ -173,7 +154,12 @@ BEGIN
 	INSERT INTO TypeData
 		(Type, First, Previous, Next, Last)
 	VALUES
-		('cast', @first, @previous, @next, @last);
+		('cast', @first, @previous, @next, @last);   
+    
+    SET @first = NULL;
+    SET @previous = NULL;
+    SET @next = NULL;
+    SET @last = NULL;
 
 	SELECT c.id INTO @first
 	FROM comic c
@@ -236,7 +222,12 @@ BEGIN
 	INSERT INTO TypeData
 		(Type, First, Previous, Next, Last)
 	VALUES
-		('location', @first, @previous, @next, @last);
+		('location', @first, @previous, @next, @last);   
+    
+    SET @first = NULL;
+    SET @previous = NULL;
+    SET @next = NULL;
+    SET @last = NULL;
 
 	SELECT c.id INTO @first
 	FROM comic c
@@ -299,7 +290,12 @@ BEGIN
 	INSERT INTO TypeData
 		(Type, First, Previous, Next, Last)
 	VALUES
-		('storyline', @first, @previous, @next, @last);
+		('storyline', @first, @previous, @next, @last);   
+    
+    SET @first = NULL;
+    SET @previous = NULL;
+    SET @next = NULL;
+    SET @last = NULL;
 
 	SELECT * FROM TypeData;
 END";
@@ -307,29 +303,9 @@ END";
 		}
 
 		protected override void Down(MigrationBuilder migrationBuilder)
-		{
-			migrationBuilder.DropColumn(
-				name: "HasNoCast",
-				table: "comic");
-
-			migrationBuilder.DropColumn(
-				name: "HasNoLocation",
-				table: "comic");
-
-			migrationBuilder.DropColumn(
-				name: "HasNoStoryline",
-				table: "comic");
-
-			migrationBuilder.DropColumn(
-				name: "HasNoTagline",
-				table: "comic");
-
-			migrationBuilder.DropColumn(
-				name: "HasNoTitle",
-				table: "comic");
-
+        {
 			migrationBuilder.Sql("DROP PROCEDURE `ComicEditorData`");
-			ComicEditorData_SPv1.CreateComicEditorData(migrationBuilder);
-		}
-	}
+			MissingFeatureFlags.CreateComicEditorData(migrationBuilder);
+        }
+    }
 }
