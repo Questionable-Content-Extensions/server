@@ -42,7 +42,7 @@ namespace QCExtensions.Persistence.Migrations
                 nullable: false,
                 defaultValue: false);
 
-			migrationBuilder.Sql(@"UPDATE `token` SET `CanAddImageToItem` = 1");
+			migrationBuilder.Sql(@"UPDATE `token` SET `CanAddImageToItem` = 0");
 			migrationBuilder.Sql(@"UPDATE `token` SET `CanAddItemToComic` = 1");
 			migrationBuilder.Sql(@"UPDATE `token` SET `CanChangeComicData` = 1");
 			migrationBuilder.Sql(@"UPDATE `token` SET `CanChangeItemData` = 1");
