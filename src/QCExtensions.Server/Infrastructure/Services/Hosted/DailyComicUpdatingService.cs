@@ -183,7 +183,7 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 						.Replace("<br>", "\n")
 						.Trim();
 
-					var newsEntity = comic.News;
+					var newsEntity = await context.News.SingleOrDefaultAsync(n => n.ComicId == comicId);
 					if (newsEntity == null)
 					{
 						// New news
