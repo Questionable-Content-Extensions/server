@@ -47,6 +47,7 @@ namespace QCExtensions.Server.Infrastructure.EntityMaterializerSource
 			return base.CreateReadValueExpression(valueBuffer, type, index, property);
 		}
 
+		[Obsolete]
 		public override Expression CreateReadValueCallExpression(Expression valueBuffer, int index)
 		{
 			var readValueCallExpression = base.CreateReadValueCallExpression(valueBuffer, index);
