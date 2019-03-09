@@ -24,6 +24,7 @@ using QCExtensions.Persistence;
 using QCExtensions.Server.Extensions;
 using QCExtensions.Server.Infrastructure;
 using QCExtensions.Server.Infrastructure.EntityMaterializerSource;
+using QCExtensions.Server.Infrastructure.Filters;
 using QCExtensions.Server.Infrastructure.Services;
 using QCExtensions.Server.Infrastructure.Services.Hosted;
 using System;
@@ -94,7 +95,10 @@ namespace QCExtensions.Server
 
 			services
 				.AddMemoryCache()
-				.AddMvc()
+				.AddMvc(o =>
+				{
+					o.Filters.Add(typeof(VersionLoggingFilter));
+				})
 				.AddJsonOptions(o =>
 				{
 					var fluentContractResolver = new FluentContractResolver();
