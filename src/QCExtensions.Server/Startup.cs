@@ -55,10 +55,12 @@ namespace QCExtensions.Server
 			// Add services
 			services.AddScoped<ITokenValidator, TokenValidator>();
 			services.AddScoped<IActionLogger, ActionLogger>();
+			services.AddSingleton<IDateTime, DateTimeService>();
 
 			// Add hosted services
 			services.AddSingleton<INewsUpdater, NewsUpdater>();
 			services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, BackgroundNewsUpdatingService>();
+			services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, DailyComicUpdatingService>();
 
 			// Add MediatR
 			services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestPreProcessorBehavior<,>));

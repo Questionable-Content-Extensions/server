@@ -59,5 +59,4 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 			_stoppingCts.Cancel();
 		}
 	}
-
 }

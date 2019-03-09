@@ -1,4 +1,4 @@
-using AngleSharp.Parser.Html;
+using AngleSharp.Html.Parser;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace QCExtensions.Server.Infrastructure.Services.Hosted
 {
-	public class BackgroundNewsUpdatingService : BackgroundService
+	public class BackgroundNewsUpdatingService : RepeatingBackgroundService
 	{
 		private static HttpClient m_httpClient = new HttpClient();
 
@@ -33,92 +33,90 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 			_logger = logger;
 		}
 
-		protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+		protected override async Task<bool> ExecuteRepeatedlyAsync(CancellationToken stoppingToken)
 		{
-			while (!stoppingToken.IsCancellationRequested)
+			var updateEntries = _newsUpdater.GetPendingUpdateEntries();
+			_logger.LogDebug($"There are #{updateEntries.Count} news updates pending.");
+
+			if (updateEntries.Count > 0)
 			{
-				var updateEntries = _newsUpdater.GetPendingUpdateEntries();
-				_logger.LogDebug($"There are #{updateEntries.Count} news updates pending.");
-
-				if (updateEntries.Count > 0)
+				_logger.LogInformation($"Running background news update...");
+				using (var scope = _provider.CreateScope())
 				{
-					_logger.LogInformation($"Running background news update...");
-					using (var scope = _provider.CreateScope())
+					var context = scope.ServiceProvider.GetRequiredService<DomainDbContext>();
+					foreach (var comicId in updateEntries)
 					{
-						var context = scope.ServiceProvider.GetRequiredService<DomainDbContext>();
-						foreach (var comicId in updateEntries)
+						var comicExists = await context.Comics.ExistsAsync(comicId);
+						if (!comicExists)
 						{
-							var comicExists = await context.Comics.ExistsAsync(comicId);
-							if (!comicExists)
-							{
-								_logger.LogInformation($"Cannot update news for comic #{comicId}; comic data does not yet exist.");
-								continue;
-							}
+							_logger.LogInformation($"Cannot update news for comic #{comicId}; comic data does not yet exist.");
+							continue;
+						}
 
-							var newsEntity = await context.News.SingleOrDefaultAsync(n => n.ComicId == comicId);
-							if (newsEntity != null && !newsEntity.IsOutdated)
-							{
-								_logger.LogInformation($"News for comic #{comicId} is not outdated.");
-								continue;
-							}
+						var newsEntity = await context.News.SingleOrDefaultAsync(n => n.ComicId == comicId);
+						if (newsEntity != null && !newsEntity.IsOutdated)
+						{
+							_logger.LogInformation($"News for comic #{comicId} is not outdated.");
+							continue;
+						}
 
-							_logger.LogInformation($"Fetching news in the background for comic #{comicId}...");
-							string newsText = null;
-							try
-							{
-								newsText = await FetchNewsForAsync(comicId);
-							}
-							catch (Exception e)
-							{
-								_logger.LogError(e, "Fetching news failed");
-								continue;
-							}
+						_logger.LogInformation($"Fetching news in the background for comic #{comicId}...");
+						string newsText = null;
+						try
+						{
+							newsText = await FetchNewsForAsync(comicId);
+						}
+						catch (Exception e)
+						{
+							_logger.LogError(e, "Fetching news failed");
+							continue;
+						}
 
-							if (newsText == null)
-							{
-								continue;
-							}
+						if (newsText == null)
+						{
+							continue;
+						}
 
-							if (newsEntity == null)
+						if (newsEntity == null)
+						{
+							// New news
+							newsEntity = new News
 							{
-								// New news
-								newsEntity = new News
-								{
-									ComicId = comicId,
-									LastUpdated = DateTime.UtcNow,
-									UpdateFactor = 1,
-									NewsText = newsText
-								};
-								context.News.Add(newsEntity);
+								ComicId = comicId,
+								LastUpdated = DateTime.UtcNow,
+								UpdateFactor = 1,
+								NewsText = newsText
+							};
+							context.News.Add(newsEntity);
+						}
+						else
+						{
+							// Old news. Compare news text with old.
+							if (newsEntity.NewsText == newsText)
+							{
+								_logger.LogInformation($"News text for comic #{comicId} is the same. Increasing update factor.");
+								newsEntity.UpdateFactor += 0.5;
 							}
 							else
 							{
-								// Old news. Compare news text with old.
-								if (newsEntity.NewsText == newsText)
-								{
-									_logger.LogInformation($"News text for comic #{comicId} is the same. Increasing update factor.");
-									newsEntity.UpdateFactor += 0.5;
-								}
-								else
-								{
-									_logger.LogInformation($"News text for comic #{comicId} has changed. Resetting update factor and updating text.");
-									newsEntity.UpdateFactor = 1;
-									newsEntity.NewsText = newsText;
-								}
-								newsEntity.LastUpdated = DateTime.UtcNow;
-								context.News.Update(newsEntity);
+								_logger.LogInformation($"News text for comic #{comicId} has changed. Resetting update factor and updating text.");
+								newsEntity.UpdateFactor = 1;
+								newsEntity.NewsText = newsText;
 							}
+							newsEntity.LastUpdated = DateTime.UtcNow;
+							context.News.Update(newsEntity);
 						}
-						_logger.LogInformation($"Saving any changes to the news to the database.");
-						await context.SaveChangesAsync();
-
-						_newsUpdater.RemovePendingUpdateEntries(updateEntries);
 					}
-				}
+					_logger.LogInformation($"Saving any changes to the news to the database.");
+					await context.SaveChangesAsync();
 
-				_logger.LogDebug($"Waiting #{TaskDelayTime} before checking again.");
-				await Task.Delay(TaskDelayTime, stoppingToken);
+					_newsUpdater.RemovePendingUpdateEntries(updateEntries);
+				}
 			}
+
+			_logger.LogDebug($"Waiting #{TaskDelayTime} before checking again.");
+			await Task.Delay(TaskDelayTime, stoppingToken);
+			return true;
 		}
 
 		private async Task<string> FetchNewsForAsync(int comic)
@@ -138,7 +136,7 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 			}
 
 			var parser = new HtmlParser();
-			var document = parser.Parse(qcPage);
+			var document = parser.ParseDocument(qcPage);
 
 			var newsElement = document.GetElementById("news");
 			if (newsElement == null)
