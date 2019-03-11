@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -17,21 +18,25 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 	{
 		private static HttpClient m_httpClient = new HttpClient();
 
-		private const string QCUrl = "https://questionablecontent.net/";
+		private const string QCFrontPageUrl = "https://questionablecontent.net/";
+		private const string QCArchiveUrl = QCFrontPageUrl + "archive.php";
 		private readonly TimeZoneInfo QCTimeZone = TimeZoneInfo.FindSystemTimeZoneById(Environment.GetEnvironmentVariable("QC_TIMEZONE"));
 
 		private readonly IDateTime _dateTime;
 		private IServiceProvider _provider;
 		private ILogger<DailyComicUpdatingService> _logger;
+		private readonly IHostingEnvironment _env;
 
 		public DailyComicUpdatingService(
 			IDateTime dateTime,
 			IServiceProvider serviceProvider,
-			ILogger<DailyComicUpdatingService> logger)
+			ILogger<DailyComicUpdatingService> logger,
+			IHostingEnvironment env)
 		{
 			_dateTime = dateTime;
 			_provider = serviceProvider;
 			_logger = logger;
+			_env = env;
 		}
 
 		protected override async Task<bool> ExecuteRepeatedlyAsync(CancellationToken stoppingToken)
@@ -40,18 +45,22 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 			using (var scope = _provider.CreateScope())
 			{
 				var context = scope.ServiceProvider.GetRequiredService<DomainDbContext>();
-				var alreadyHasToday = await context.Comics.AnyAsync(c => c.PublishDate.HasValue && c.PublishDate.Value.Date == now.Date);
-				if (!alreadyHasToday)
+				_logger.LogInformation($"We do not yet have the data for the comic on {now.Date:dddd, dd MMMM yyyy}. Fetching QC front page.");
+				try
 				{
-					_logger.LogInformation($"We do not yet have the data for the comic on {now.Date:dddd, dd MMMM yyyy}. Fetching QC front page.");
-					try
+					await Task.Delay(TimeSpan.FromSeconds(15));
+					if (_env.IsProduction())
 					{
 						await FetchLatestComicDataAsync(context);
 					}
-					catch (Exception e)
+					else
 					{
-						_logger.LogError(e, $"Could not fetch latest comic data, exception occurred");
+						_logger.LogInformation($"Would do {nameof(FetchLatestComicDataAsync)} now if running in production environment");
 					}
+				}
+				catch (Exception e)
+				{
+					_logger.LogError(e, "Could not fetch latest comic data, exception occurred");
 				}
 			}
 
@@ -120,36 +129,50 @@ namespace QCExtensions.Server.Infrastructure.Services.Hosted
 			return delay;
 		}
 
-		private async Task FetchLatestComicDataAsync(DomainDbContext context)
+		private async Task<IHtmlDocument> GetHtmlDocumentAsync(string url, string what)
 		{
-			var response = await m_httpClient.GetAsync($"{QCUrl}");
+			var response = await m_httpClient.GetAsync(url);
 			if (!response.IsSuccessStatusCode)
 			{
-				_logger.LogWarning($"Could not fetch latest comic data, got HTTP status {response.StatusCode}");
-				return;
+				_logger.LogWarning($"Could not fetch {what}, got HTTP status {response.StatusCode}");
+				return null;
 			}
-			var qcFrontPage = await response.Content.ReadAsStringAsync();
-
-			if (string.IsNullOrEmpty(qcFrontPage))
+			var content = await response.Content.ReadAsStringAsync();
+			if (string.IsNullOrEmpty(content))
 			{
-				_logger.LogWarning($"Could not fetch latest comic data, got empty response");
-				return;
+				_logger.LogWarning($"Could not fetch {what}, got empty response");
+				return null;
 			}
 
 			var parser = new HtmlParser();
-			var document = parser.ParseDocument(qcFrontPage);
+			return parser.ParseDocument(content);
+		}
 
-			var comicImageElement = document.QuerySelector("img[src*=\"/comics/\"]") as IHtmlImageElement;
+		private async Task FetchLatestComicDataAsync(DomainDbContext context)
+		{
+			var qcFrontPageDocument = await GetHtmlDocumentAsync(QCFrontPageUrl, "latest comic data");
+			if (qcFrontPageDocument == null) return;
+
+			var comicImageElement = qcFrontPageDocument.QuerySelector("img[src*=\"/comics/\"]") as IHtmlImageElement;
 			var comicImageUrl = comicImageElement.Source;
 			var comicId = int.Parse(comicImageUrl.Substring(comicImageUrl.LastIndexOf('/') + 1, comicImageUrl.LastIndexOf('.') - comicImageUrl.LastIndexOf('/') - 1));
-
 
 			using (var transaction = context.Database.BeginTransaction())
 			{
 				var (comic, wasCreated) = await context.Comics.GetOrCreateAsync(comicId);
-				if (wasCreated) await context.SaveChangesAsync();
+				if (string.IsNullOrEmpty(comic.Title))
+				{
+					var qcArchiveDocument = await GetHtmlDocumentAsync(QCArchiveUrl, "archive data");
+					if (qcArchiveDocument != null)
+					{
+						var comicTitleElement = qcArchiveDocument.QuerySelector($"a[href*=\"comic={comicId}\"]");
+						var comicTitle = comicTitleElement.InnerHtml.Split(':', 2)[1].Trim();
+						comic.Title = comicTitle;
+					}
+				}
+				if (wasCreated) { await context.SaveChangesAsync(); }
 
-				var newsElement = document.GetElementById("newspost");
+				var newsElement = qcFrontPageDocument.GetElementById("newspost");
 				var dateElement = newsElement?.PreviousElementSibling?.QuerySelector("b");
 				if (dateElement == null)
 				{
