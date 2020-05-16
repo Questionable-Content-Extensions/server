@@ -43,7 +43,7 @@ namespace QCExtensions.Server.Infrastructure.Configuration
 			{
 				{
 					$"ConnectionStrings:{connectionName}",
-					$"User={username};Password={password};Server={host};Port={port};Database={database};SslMode=Required" //Integrated Security=true;Pooling=true;"
+					$"User={username};Password={password};Server={host};Port={port};Database={database};" //Integrated Security=true;Pooling=true;"
 				}
 			};
 		}
