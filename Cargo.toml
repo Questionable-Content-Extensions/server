@@ -10,15 +10,18 @@ edition = "2018"
 actix-web = "4.0.0-beta.8"
 futures = "0.3"
 anyhow = "1.0"
+log = "0.4"
 pretty_env_logger = "0.4"
 dotenv = "0.15"
 once_cell = "1.4"
 sqlx = { version="0.5", features=[
-	"runtime-tokio-rustls",
-	"mysql",
-	"macros",
-	"migrate",
-	"uuid",
-	"chrono",
+    "runtime-tokio-rustls",
+    "mysql",
+    "macros",
+    "migrate",
+    "uuid",
+    "chrono",
 ] }
 serde = "1"
+uuid = { version="0.8", features=["serde"] }
+chrono = { version="0.4", features=["serde"] }

@@ -57,7 +57,7 @@ dependencies = [
  "serde",
  "sha-1",
  "smallvec",
- "time",
+ "time 0.2.27",
  "tokio",
  "zstd",
 ]
@@ -188,7 +188,7 @@ dependencies = [
  "serde_urlencoded",
  "smallvec",
  "socket2",
- "time",
+ "time 0.2.27",
  "url",
 ]
 
@@ -389,6 +389,8 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits",
+ "serde",
+ "time 0.1.44",
  "winapi",
 ]
 
@@ -411,7 +413,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffdf8865bac3d9a3bde5bde9088ca431b11f5d37c7a578b8086af77248b76627"
 dependencies = [
  "percent-encoding",
- "time",
+ "time 0.2.27",
  "version_check",
 ]
 
@@ -1193,12 +1195,15 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "anyhow",
+ "chrono",
  "dotenv",
  "futures",
+ "log",
  "once_cell",
  "pretty_env_logger",
  "serde",
  "sqlx",
+ "uuid",
 ]
 
 [[package]]
@@ -1751,6 +1756,17 @@ dependencies = [
 
 [[package]]
 name = "time"
+version = "0.1.44"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
+dependencies = [
+ "libc",
+ "wasi",
+ "winapi",
+]
+
+[[package]]
+name = "time"
 version = "0.2.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4752a97f8eebd6854ff91f1c1824cd6160626ac4bd44287f7f4ea2035a02a242"
@@ -1942,6 +1958,9 @@ name = "uuid"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "version_check"

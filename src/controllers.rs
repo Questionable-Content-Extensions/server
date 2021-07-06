@@ -1,4 +1,4 @@
-pub(crate) mod api;
+pub mod api;
 
 // use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 

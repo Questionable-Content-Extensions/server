@@ -59,13 +59,16 @@
 #![warn(clippy::too_many_lines)]
 // </editor-fold>
 
+use crate::database::DbPool;
+use crate::util::NewsUpdater;
 use actix_web::{web, App, HttpServer};
 use anyhow::{Context as _, Result};
+use log::info;
 use util::Environment;
 
 mod controllers;
 mod database;
-pub(crate) mod models;
+mod models;
 
 mod util;
 
@@ -80,22 +83,20 @@ async fn main() -> Result<()> {
     pretty_env_logger::init();
 
     let bind = format!("localhost:{}", Environment::port());
-    println!("Starting server at: {}", &bind);
+    info!("Starting server at: {}", &bind);
 
-    let db_pool = database::create_db_pool().await;
+    let db_pool = DbPool::create().await;
+
+    let news_updater: web::Data<NewsUpdater> = web::Data::new(NewsUpdater::new());
 
     // Start HTTP server
     HttpServer::new(move || {
         App::new()
-            // set up DB pool to be used with web::Data<Pool> extractor
             .app_data(web::Data::new(db_pool.clone()))
+            .app_data(news_updater.clone())
             .wrap(actix_web::middleware::Compress::default())
             .wrap(actix_web::middleware::Logger::default())
             .service(web::scope("/api").configure(controllers::api::configure))
-        //.wrap(crate::middleware::authentication::Authentication)
-        //.service(web::scope("/auth").configure(controllers::auth::configure))
-        //.service(web::scope("/location").configure(controllers::location::configure))
-        //.service(web::scope("/graphql").configure(controllers::graphql::configure))
     })
     .bind(&bind)?
     .run()
