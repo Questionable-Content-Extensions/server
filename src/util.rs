@@ -1,11 +1,10 @@
-use std::collections::HashSet;
-
-use futures::lock::Mutex;
-use log::info;
+use crate::database::DbPool;
 use once_cell::sync::Lazy;
 use uuid::Uuid;
 
-use crate::database::DbPool;
+pub use news_updater::*;
+
+mod news_updater;
 
 macro_rules! lazy_environment {
     ($static_name:ident, $name:ident) => {
@@ -35,25 +34,6 @@ lazy_environment!(DATABASE_URL, database_url);
 impl Environment {
     pub fn init() {
         dotenv::from_filename(".env").ok();
-    }
-}
-
-pub struct NewsUpdater {
-    update_set: Mutex<HashSet<i16>>,
-}
-
-impl NewsUpdater {
-    pub fn new() -> Self {
-        Self {
-            update_set: Mutex::new(HashSet::new()),
-        }
-    }
-
-    pub async fn check_for(&self, comic: i16) {
-        info!("Scheduling a news update check for comic {}", comic);
-
-        let mut update_set = self.update_set.lock().await;
-        update_set.insert(comic);
     }
 }
 

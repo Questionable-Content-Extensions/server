@@ -63,7 +63,9 @@ use crate::database::DbPool;
 use crate::util::NewsUpdater;
 use actix_web::{web, App, HttpServer};
 use anyhow::{Context as _, Result};
-use log::info;
+use log::{error, info};
+use std::sync::Arc;
+use tokio::time::{sleep, Duration};
 use util::Environment;
 
 mod controllers;
@@ -86,11 +88,26 @@ async fn main() -> Result<()> {
     info!("Starting server at: {}", &bind);
 
     let db_pool = DbPool::create().await;
+    let db_pool2 = db_pool.clone();
 
     let news_updater: web::Data<NewsUpdater> = web::Data::new(NewsUpdater::new());
+    let news_updater2 = Arc::clone(&news_updater);
+
+    let background_news_updating = tokio::task::spawn(async move {
+        loop {
+            match news_updater2.background_news_updater(&db_pool2).await {
+                Err(e) => {
+                    error!("The background news updater returned an error: {}", e);
+                    info!("Waiting one minute before starting up again.");
+                    sleep(Duration::from_secs(60)).await;
+                }
+                _ => unreachable!(),
+            }
+        }
+    });
 
     // Start HTTP server
-    HttpServer::new(move || {
+    let http_server = HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db_pool.clone()))
             .app_data(news_updater.clone())
@@ -99,9 +116,12 @@ async fn main() -> Result<()> {
             .service(web::scope("/api").configure(controllers::api::configure))
     })
     .bind(&bind)?
-    .run()
-    .await
-    .context("actix_web::HttpServer crashed")?;
+    .run();
+
+    let (http_server_result, background_news_updating_result) =
+        futures::join!(http_server, background_news_updating);
+    http_server_result.context("actix_web::HttpServer crashed")?;
+    background_news_updating_result.context("Background news updater crashed")?;
 
     Ok(())
 }

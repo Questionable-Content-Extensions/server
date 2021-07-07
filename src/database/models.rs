@@ -1,6 +1,7 @@
 #![allow(nonstandard_style)]
 
 use chrono::{NaiveDate, NaiveDateTime};
+use log::debug;
 
 pub struct Comic {
     pub id: i16,
@@ -34,4 +35,25 @@ pub struct News {
     pub news: String,
     pub updateFactor: f64,
     pub isLocked: i8,
+}
+
+impl News {
+    pub fn is_outdated(&self) -> bool {
+        let days_since_update = (chrono::Utc::today().naive_utc() - self.lastUpdated).num_days();
+        let update_factor_days = (31.0 * self.updateFactor) as i64;
+        let locked = self.isLocked != 0;
+
+        debug!(
+            "News outdated info: id:{} updated:{} factor:{} locked:{} | ({} > {} = {})",
+            self.comic,
+            self.lastUpdated,
+            self.updateFactor,
+            locked,
+            days_since_update,
+            update_factor_days,
+            days_since_update > update_factor_days
+        );
+
+        !locked && self.updateFactor < 12.0 && days_since_update > update_factor_days
+    }
 }
