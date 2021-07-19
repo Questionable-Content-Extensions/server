@@ -40,7 +40,7 @@ struct ByIdQuery {
     token: Option<uuid::Uuid>,
 }
 
-async fn all(conn: web::Data<DbPool>, query: web::Query<AllQuery>) -> Result<HttpResponse> {
+async fn all(pool: web::Data<DbPool>, query: web::Query<AllQuery>) -> Result<HttpResponse> {
     let (is_guest_comic, is_non_canon) = match query.exclude {
         None => (None, None),
         Some(Exclusion::Guest) => (Some(false), None),
@@ -53,10 +53,10 @@ async fn all(conn: web::Data<DbPool>, query: web::Query<AllQuery>) -> Result<Htt
         is_non_canon.map_or(false, |v| !v)
     );
 
-    Ok(HttpResponse::Ok().json(fetch_comic_list(&conn, is_guest_comic, is_non_canon).await?))
+    Ok(HttpResponse::Ok().json(fetch_comic_list(&pool, is_guest_comic, is_non_canon).await?))
 }
 
-async fn excluded(conn: web::Data<DbPool>, query: web::Query<AllQuery>) -> Result<HttpResponse> {
+async fn excluded(pool: web::Data<DbPool>, query: web::Query<AllQuery>) -> Result<HttpResponse> {
     let (is_guest_comic, is_non_canon) = match query.exclude {
         None => {
             return Err(error::ErrorBadRequest(
@@ -76,12 +76,12 @@ async fn excluded(conn: web::Data<DbPool>, query: web::Query<AllQuery>) -> Resul
         }
     );
 
-    Ok(HttpResponse::Ok().json(fetch_comic_list(&conn, is_guest_comic, is_non_canon).await?))
+    Ok(HttpResponse::Ok().json(fetch_comic_list(&pool, is_guest_comic, is_non_canon).await?))
 }
 
 #[allow(clippy::too_many_lines)]
 async fn by_id(
-    conn: web::Data<DbPool>,
+    pool: web::Data<DbPool>,
     news_updater: web::Data<NewsUpdater>,
     query: web::Query<ByIdQuery>,
     comic_id: web::Path<i16>,
@@ -89,6 +89,11 @@ async fn by_id(
     struct ComicId {
         id: i16,
     }
+
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
 
     let (is_guest_comic, is_non_canon) = match query.exclude {
         None => (None, None),
@@ -104,7 +109,7 @@ async fn by_id(
 	"#,
         *comic_id
     )
-    .fetch_optional(&***conn)
+    .fetch_optional(&mut conn)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
@@ -124,7 +129,7 @@ async fn by_id(
         is_non_canon,
         is_non_canon,
     )
-    .fetch_optional(&***conn)
+    .fetch_optional(&mut conn)
     .map_ok(|c| c.map(|i| i.id))
     .await
     .map_err(error::ErrorInternalServerError)?;
@@ -145,7 +150,7 @@ async fn by_id(
         is_non_canon,
         is_non_canon,
     )
-    .fetch_optional(&***conn)
+    .fetch_optional(&mut conn)
     .map_ok(|c| c.map(|i| i.id))
     .await
     .map_err(error::ErrorInternalServerError)?;
@@ -161,7 +166,7 @@ async fn by_id(
 			"#,
             *comic_id
         )
-        .fetch_optional(&***conn)
+        .fetch_optional(&mut conn)
         .await
         .map_err(error::ErrorInternalServerError)?
     } else {
@@ -169,11 +174,11 @@ async fn by_id(
     };
 
     let editor_data = if let Some(token) = query.token {
-        if is_token_valid(&conn, token)
+        if is_token_valid(&mut conn, token)
             .await
             .map_err(error::ErrorInternalServerError)?
         {
-            Some(fetch_editor_data_for_comic(&conn, *comic_id).await?)
+            Some(fetch_editor_data_for_comic(&mut conn, *comic_id).await?)
         } else {
             None
         }
@@ -191,7 +196,7 @@ async fn by_id(
         "#,
         *comic_id,
     )
-    .fetch(&***conn)
+    .fetch(&mut conn)
     .map_ok(|i| (i.id, i))
     .try_collect()
     .await
@@ -209,14 +214,15 @@ async fn by_id(
 				FROM items
 			"#,
         )
-        .fetch(&***conn)
+        .fetch(&mut conn)
         .map_ok(|i| (i.id, i))
         .try_collect()
         .await
         .map_err(error::ErrorInternalServerError)?;
 
         let mut all_navigation_items =
-            fetch_all_item_navigation_data(&conn, *comic_id, is_guest_comic, is_non_canon).await?;
+            fetch_all_item_navigation_data(&mut conn, *comic_id, is_guest_comic, is_non_canon)
+                .await?;
         let mut navigation_items_in_comic = vec![];
         let mut i = 0;
         while i < all_navigation_items.len() {
@@ -235,7 +241,7 @@ async fn by_id(
         (navigation_items_in_comic, all_navigation_items)
     } else {
         let mut navigation_items_in_comic =
-            fetch_comic_item_navigation_data(&conn, *comic_id, is_guest_comic, is_non_canon)
+            fetch_comic_item_navigation_data(&mut conn, *comic_id, is_guest_comic, is_non_canon)
                 .await?;
 
         transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut items);
@@ -297,7 +303,7 @@ fn transfer_item_data_to_navigation_item(
 }
 
 async fn fetch_comic_list(
-    conn: &DbPool,
+    pool: &DbPool,
     is_guest_comic: Option<bool>,
     is_non_canon: Option<bool>,
 ) -> Result<Vec<ComicList>> {
@@ -314,7 +320,7 @@ async fn fetch_comic_list(
         is_non_canon,
         is_non_canon
     )
-    .fetch(&**conn)
+    .fetch(&**pool)
     .map_ok(From::from)
     .try_collect()
     .await

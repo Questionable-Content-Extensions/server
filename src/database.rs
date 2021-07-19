@@ -8,6 +8,8 @@ pub mod models;
 #[derive(Clone)]
 pub struct DbPool(sqlx::Pool<sqlx::MySql>);
 
+pub type DbPoolConnection = sqlx::pool::PoolConnection<sqlx::MySql>;
+
 impl DbPool {
     // Set up database connection pool
     pub async fn create() -> Self {

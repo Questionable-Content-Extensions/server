@@ -1,4 +1,4 @@
-use crate::database::DbPool;
+use crate::database::DbPoolConnection;
 use once_cell::sync::Lazy;
 use uuid::Uuid;
 
@@ -40,7 +40,7 @@ impl Environment {
     }
 }
 
-pub async fn is_token_valid(conn: &DbPool, token: Uuid) -> Result<bool, sqlx::Error> {
+pub async fn is_token_valid(conn: &mut DbPoolConnection, token: Uuid) -> Result<bool, sqlx::Error> {
     if token.is_nil() {
         return Ok(false);
     }
@@ -52,7 +52,7 @@ pub async fn is_token_valid(conn: &DbPool, token: Uuid) -> Result<bool, sqlx::Er
 	"#,
         token.to_string()
     )
-    .fetch_optional(&**conn)
+    .fetch_optional(conn)
     .await?;
 
     Ok(result.is_some())

@@ -1,13 +1,13 @@
 use std::collections::BTreeMap;
 
-use crate::database::DbPool;
+use crate::database::DbPoolConnection;
 use crate::models::{ItemNavigationData, NavigationData};
 use actix_web::{error, Result};
 use futures::TryStreamExt;
 
 #[allow(clippy::too_many_lines)]
 pub async fn fetch_all_item_navigation_data(
-    conn: &DbPool,
+    conn: &mut DbPoolConnection,
     comic_id: i16,
     is_guest_comic: Option<bool>,
     is_non_canon: Option<bool>,
@@ -33,7 +33,7 @@ pub async fn fetch_all_item_navigation_data(
         is_non_canon,
         is_non_canon,
     )
-    .fetch_all(&**conn)
+    .fetch_all(&mut *conn)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
@@ -55,7 +55,7 @@ pub async fn fetch_all_item_navigation_data(
         is_non_canon,
         is_non_canon,
     )
-    .fetch(&**conn)
+    .fetch(&mut *conn)
     .try_filter_map(|pn| async move {
         if let Some(comic) = pn.comic {
             Ok(Some((pn.id, comic)))
@@ -85,7 +85,7 @@ pub async fn fetch_all_item_navigation_data(
         is_non_canon,
         is_non_canon,
     )
-    .fetch(&**conn)
+    .fetch(&mut *conn)
     .try_filter_map(|pn| async move {
         if let Some(comic) = pn.comic {
             Ok(Some((pn.id, comic)))
@@ -118,7 +118,7 @@ pub async fn fetch_all_item_navigation_data(
 
 #[allow(clippy::too_many_lines)]
 pub async fn fetch_comic_item_navigation_data(
-    conn: &DbPool,
+    conn: &mut DbPoolConnection,
     comic_id: i16,
     is_guest_comic: Option<bool>,
     is_non_canon: Option<bool>,
@@ -148,7 +148,7 @@ pub async fn fetch_comic_item_navigation_data(
         is_non_canon,
         comic_id
     )
-    .fetch_all(&**conn)
+    .fetch_all(&mut *conn)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
@@ -174,7 +174,7 @@ pub async fn fetch_comic_item_navigation_data(
         is_non_canon,
         is_non_canon,
     )
-    .fetch(&**conn)
+    .fetch(&mut *conn)
     .try_filter_map(|pn| async move {
         if let Some(comic) = pn.comic {
             Ok(Some((pn.id, comic)))
@@ -208,7 +208,7 @@ pub async fn fetch_comic_item_navigation_data(
         is_non_canon,
         is_non_canon,
     )
-    .fetch(&**conn)
+    .fetch(&mut *conn)
     .try_filter_map(|pn| async move {
         if let Some(comic) = pn.comic {
             Ok(Some((pn.id, comic)))
