@@ -37,8 +37,6 @@ pub async fn fetch_all_item_navigation_data(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    dbg!(&first_last_counts[0]);
-
     let previous: BTreeMap<i16, i16> = sqlx::query_as!(
         PrevNext,
         r#"
@@ -69,8 +67,6 @@ pub async fn fetch_all_item_navigation_data(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    dbg!(&previous[&4]);
-
     let next: BTreeMap<i16, i16> = sqlx::query_as!(
         PrevNext,
         r#"
@@ -100,8 +96,6 @@ pub async fn fetch_all_item_navigation_data(
     .try_collect()
     .await
     .map_err(error::ErrorInternalServerError)?;
-
-    dbg!(&next[&4]);
 
     Ok(first_last_counts
         .into_iter()

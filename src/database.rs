@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use crate::util::Environment;
-use sqlx::mysql::MySqlPoolOptions;
+use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions, MySqlSslMode};
 
 pub mod models;
 
@@ -11,11 +11,14 @@ pub struct DbPool(sqlx::Pool<sqlx::MySql>);
 impl DbPool {
     // Set up database connection pool
     pub async fn create() -> Self {
-        let database_url = Environment::database_url();
+        let database_options = Environment::database_url()
+            .parse::<MySqlConnectOptions>()
+            .expect("failed to parse database URL")
+            .ssl_mode(MySqlSslMode::Required);
 
         Self(
             MySqlPoolOptions::new()
-                .connect(database_url)
+                .connect_with(database_options)
                 .await
                 .expect("failed to create database pool"),
         )

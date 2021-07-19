@@ -2,8 +2,10 @@ use crate::database::DbPool;
 use once_cell::sync::Lazy;
 use uuid::Uuid;
 
+pub use comic_updater::*;
 pub use news_updater::*;
 
+mod comic_updater;
 mod news_updater;
 
 macro_rules! lazy_environment {
@@ -30,6 +32,7 @@ pub struct Environment;
 
 lazy_environment!(PORT, port);
 lazy_environment!(DATABASE_URL, database_url);
+lazy_environment!(QC_TIMEZONE, qc_timezone);
 
 impl Environment {
     pub fn init() {
