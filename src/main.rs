@@ -88,73 +88,87 @@ async fn main() -> Result<()> {
     info!("Starting server at: {}", &bind);
 
     let http_db_pool = DbPool::create().await;
-    let background_news_updater_db_pool = http_db_pool.clone();
-    let background_comic_updater_db_pool = http_db_pool.clone();
+    let db_pool = http_db_pool.clone();
 
     let http_news_updater: web::Data<NewsUpdater> = web::Data::new(NewsUpdater::new());
-    let background_news_updater = Arc::clone(&http_news_updater);
-    let background_comic_news_updater = Arc::clone(&http_news_updater);
-
-    let background_news_updater = tokio::task::spawn(async move {
-        info!("Background news updater starting...");
-
-        loop {
-            match background_news_updater
-                .background_news_updater(&background_news_updater_db_pool)
-                .await
-            {
-                Err(e) => {
-                    error!("The background news updater returned an error: {}", e);
-                    info!("Waiting one minute before starting up again.");
-                    sleep(Duration::from_secs(60)).await;
-                }
-                _ => unreachable!(),
-            }
-        }
-    });
-
-    let background_comic_updater = tokio::task::spawn(async move {
-        info!("Background comic updater starting...");
-
-        let comic_updater = ComicUpdater::new();
-        loop {
-            match comic_updater
-                .background_comic_updater(
-                    &background_comic_updater_db_pool,
-                    &background_comic_news_updater,
-                )
-                .await
-            {
-                Err(e) => {
-                    error!("The background comic updater returned an error: {}", e);
-                    info!("Waiting one minute before starting up again.");
-                    sleep(Duration::from_secs(60)).await;
-                }
-                _ => unreachable!(),
-            }
-        }
-    });
+    let news_updater = Arc::clone(&http_news_updater);
 
     // Start HTTP server
-    let http_server = HttpServer::new(move || {
-        App::new()
-            .app_data(web::Data::new(http_db_pool.clone()))
-            .app_data(http_news_updater.clone())
-            .wrap(actix_web::middleware::Compress::default())
-            .wrap(actix_web::middleware::Logger::default())
-            .service(web::scope("/api").configure(controllers::api::configure))
-    })
-    .bind(&bind)?
-    .run();
+    let start_http_server = move || -> Result<_> {
+        Ok(HttpServer::new(move || {
+            App::new()
+                .app_data(web::Data::new(http_db_pool.clone()))
+                .app_data(http_news_updater.clone())
+                .wrap(actix_web::middleware::Compress::default())
+                .wrap(actix_web::middleware::Logger::default())
+                .service(web::scope("/api").configure(controllers::api::configure))
+        })
+        .bind(&bind)?
+        .run())
+    };
 
-    let (http_server_result, background_news_updating_result, background_comic_updating_result) = futures::join!(
-        http_server,
-        background_news_updater,
-        background_comic_updater
-    );
-    http_server_result.context("actix_web::HttpServer crashed")?;
-    background_news_updating_result.context("Background news updater crashed")?;
-    background_comic_updating_result.context("Background comic updater crashed")?;
+    if Environment::background_services_enabled() {
+        let background_news_updater_db_pool = db_pool.clone();
+        let background_comic_updater_db_pool = db_pool;
+
+        let background_news_updater = Arc::clone(&news_updater);
+        let background_comic_news_updater = news_updater;
+
+        let background_news_updater = tokio::task::spawn(async move {
+            info!("Background news updater starting...");
+
+            loop {
+                match background_news_updater
+                    .background_news_updater(&background_news_updater_db_pool)
+                    .await
+                {
+                    Err(e) => {
+                        error!("The background news updater returned an error: {}", e);
+                        info!("Waiting one minute before starting up again.");
+                        sleep(Duration::from_secs(60)).await;
+                    }
+                    _ => unreachable!(),
+                }
+            }
+        });
+
+        let background_comic_updater = tokio::task::spawn(async move {
+            info!("Background comic updater starting...");
+
+            let comic_updater = ComicUpdater::new();
+            loop {
+                match comic_updater
+                    .background_comic_updater(
+                        &background_comic_updater_db_pool,
+                        &background_comic_news_updater,
+                    )
+                    .await
+                {
+                    Err(e) => {
+                        error!("The background comic updater returned an error: {}", e);
+                        info!("Waiting one minute before starting up again.");
+                        sleep(Duration::from_secs(60)).await;
+                    }
+                    _ => unreachable!(),
+                }
+            }
+        });
+
+        let http_server = start_http_server()?;
+
+        let (http_server_result, background_news_updating_result, background_comic_updating_result) = futures::join!(
+            http_server,
+            background_news_updater,
+            background_comic_updater
+        );
+        http_server_result.context("actix_web::HttpServer crashed")?;
+        background_news_updating_result.context("Background news updater crashed")?;
+        background_comic_updating_result.context("Background comic updater crashed")?;
+    } else {
+        start_http_server()?
+            .await
+            .context("actix_web::HttpServer crashed")?;
+    }
 
     Ok(())
 }
