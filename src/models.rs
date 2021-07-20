@@ -29,11 +29,11 @@ impl From<DatabaseComic> for ComicList {
 #[serde(rename_all = "camelCase")]
 pub struct Comic {
     pub comic: i16,
-    pub image_type: ImageType,
+    pub image_type: Option<ImageType>,
     pub has_data: bool,
     pub publish_date: Option<DateTime<Utc>>,
     pub is_accurate_publish_date: bool,
-    pub title: String,
+    pub title: Option<String>,
     pub tagline: Option<String>,
     pub is_guest_comic: bool,
     pub is_non_canon: bool,
@@ -42,11 +42,13 @@ pub struct Comic {
     pub has_no_storyline: bool,
     pub has_no_title: bool,
     pub has_no_tagline: bool,
-    pub news: String,
+    pub news: Option<String>,
     pub previous: Option<i16>,
     pub next: Option<i16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub editor_data: Option<EditorData>,
     pub items: Vec<ItemNavigationData>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub all_items: Vec<ItemNavigationData>,
 }
 

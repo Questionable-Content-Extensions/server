@@ -253,10 +253,10 @@ async fn by_id(
         Comic {
             comic: *comic_id,
             has_data: true,
-            image_type: comic.ImageType.into(),
+            image_type: Some(comic.ImageType.into()),
             publish_date: comic.publishDate.map(|nd| DateTime::from_utc(nd, Utc)),
             is_accurate_publish_date: comic.isAccuratePublishDate != 0,
-            title: comic.title,
+            title: Some(comic.title),
             tagline: comic.tagline,
             is_guest_comic: comic.isGuestComic != 0,
             is_non_canon: comic.isNonCanon != 0,
@@ -265,7 +265,7 @@ async fn by_id(
             has_no_storyline: comic.HasNoStoryline != 0,
             has_no_title: comic.HasNoTitle != 0,
             has_no_tagline: comic.HasNoTagline != 0,
-            news: news.map_or(String::new(), |n| n.news),
+            news: news.map(|n| n.news),
             previous,
             next,
             editor_data,
@@ -273,7 +273,28 @@ async fn by_id(
             all_items: all_navigation_items,
         }
     } else {
-        todo!()
+        Comic {
+            comic: *comic_id,
+            has_data: false,
+            image_type: None,
+            publish_date: None,
+            is_accurate_publish_date: false,
+            title: None,
+            tagline: None,
+            is_guest_comic: false,
+            is_non_canon: false,
+            has_no_cast: false,
+            has_no_location: false,
+            has_no_storyline: false,
+            has_no_title: false,
+            has_no_tagline: false,
+            news: None,
+            previous,
+            next,
+            editor_data,
+            items: comic_navigation_items,
+            all_items: all_navigation_items,
+        }
     };
 
     Ok(HttpResponse::Ok().json(comic))
