@@ -53,7 +53,7 @@
 //
 // Warn (try not to do this)
 #![warn(clippy::must_use_candidate)]
-#![warn(clippy::pub_enum_variant_names)]
+#![warn(clippy::enum_variant_names)]
 #![warn(clippy::shadow_unrelated)]
 #![warn(clippy::similar_names)]
 #![warn(clippy::too_many_lines)]
@@ -80,7 +80,7 @@ async fn main() -> Result<()> {
 
     // Initialize logging
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "actix_web=info,qcext_server=info,sqlx=info");
+        std::env::set_var("RUST_LOG", "actix_web=info,qcext_server=info,sqlx=debug");
     }
     pretty_env_logger::init();
 

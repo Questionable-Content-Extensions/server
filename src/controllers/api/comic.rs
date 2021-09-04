@@ -1,21 +1,21 @@
-use std::collections::BTreeMap;
-
 use crate::controllers::api::comic::editor_data::fetch_editor_data_for_comic;
 use crate::controllers::api::comic::navigation_data::{
     fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
 };
 use crate::database::models::{Comic as DatabaseComic, Item, News as DatabaseNews};
 use crate::database::DbPool;
-use crate::models::{Comic, ComicList, Exclusion, Inclusion};
+use crate::models::{Comic, ComicList, Exclusion, Inclusion, ItemColor, ItemType};
 use crate::util::{is_token_valid, NewsUpdater};
 use actix_web::{error, web, HttpResponse, Result};
 use chrono::{DateTime, Utc};
 use futures::{TryFutureExt, TryStreamExt};
 use log::info;
 use serde::Deserialize;
+use std::collections::BTreeMap;
+use std::convert::TryFrom;
 
 mod editor_data;
-mod navigation_data;
+pub(crate) mod navigation_data;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").route(web::get().to(all)))
@@ -38,6 +38,18 @@ struct ByIdQuery {
     exclude: Option<Exclusion>,
     include: Option<Inclusion>,
     token: Option<uuid::Uuid>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AddItemToComicBody {
+    token: uuid::Uuid,
+    comic_id: i16,
+    item_id: i16,
+    #[serde(default)]
+    new_item_name: Option<String>,
+    #[serde(default)]
+    new_item_type: Option<String>,
 }
 
 async fn all(pool: web::Data<DbPool>, query: web::Query<AllQuery>) -> Result<HttpResponse> {
@@ -235,8 +247,10 @@ async fn by_id(
             }
         }
 
-        transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut all_items);
-        transfer_item_data_to_navigation_item(&mut all_navigation_items, &mut all_items);
+        transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut all_items)
+            .map_err(error::ErrorInternalServerError)?;
+        transfer_item_data_to_navigation_item(&mut all_navigation_items, &mut all_items)
+            .map_err(error::ErrorInternalServerError)?;
 
         (navigation_items_in_comic, all_navigation_items)
     } else {
@@ -244,7 +258,8 @@ async fn by_id(
             fetch_comic_item_navigation_data(&mut conn, *comic_id, is_guest_comic, is_non_canon)
                 .await?;
 
-        transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut items);
+        transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut items)
+            .map_err(error::ErrorInternalServerError)?;
 
         (navigation_items_in_comic, vec![])
     };
@@ -303,7 +318,7 @@ async fn by_id(
 fn transfer_item_data_to_navigation_item(
     navigation_items: &mut Vec<crate::models::ItemNavigationData>,
     items: &mut BTreeMap<i16, Item>,
-) {
+) -> anyhow::Result<()> {
     for navigation_item in navigation_items {
         let Item {
             id: _,
@@ -316,11 +331,12 @@ fn transfer_item_data_to_navigation_item(
         } = items.remove(&navigation_item.id).unwrap();
         navigation_item.short_name = Some(short_name);
         navigation_item.name = Some(name);
-        navigation_item.r#type = Some(r#type);
+        navigation_item.r#type = Some(ItemType::try_from(&*r#type)?);
 
-        let color = format!("#{:02x}{:02x}{:02x}", color_red, color_green, color_blue);
-        navigation_item.color = Some(color);
+        navigation_item.color = Some(ItemColor::new(color_red, color_green, color_blue));
     }
+
+    Ok(())
 }
 
 async fn fetch_comic_list(

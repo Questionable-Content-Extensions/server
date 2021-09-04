@@ -1,9 +1,10 @@
 #![allow(clippy::use_self)]
 
 use crate::database::models::Comic as DatabaseComic;
+use anyhow::bail;
 use chrono::{DateTime, Utc};
-// {"comic":1,"title":"Employment Sucks","isNonCanon":false,"isGuestComic":false}
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
+use std::convert::TryFrom;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -53,6 +54,70 @@ pub struct Comic {
 }
 
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemList {
+    pub id: i16,
+    pub short_name: String,
+    pub name: String,
+    pub r#type: ItemType,
+    pub color: ItemColor,
+    pub count: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Item {
+    pub id: i16,
+    pub short_name: String,
+    pub name: String,
+    pub r#type: ItemType,
+    pub color: ItemColor,
+    pub first: i16,
+    pub last: i16,
+    pub appearances: i64,
+    pub total_comics: i64,
+    pub presence: f64,
+    pub has_image: bool,
+}
+
+#[derive(Debug)]
+pub struct ItemColor(u8, u8, u8);
+impl ItemColor {
+    #[inline]
+    pub fn new(red: u8, green: u8, blue: u8) -> Self {
+        Self(red, green, blue)
+    }
+}
+impl Serialize for ItemColor {
+    #[inline]
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let color = format!("#{:02x}{:02x}{:02x}", self.0, self.1, self.2);
+        serializer.serialize_str(&color)
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RelatedItem {
+    pub id: i16,
+    pub short_name: String,
+    pub name: String,
+    pub r#type: ItemType,
+    pub color: ItemColor,
+    pub count: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ItemImageList {
+    pub id: i32,
+    pub crc32c_hash: u32,
+}
+
+#[derive(Debug, Serialize)]
 pub struct EditorData {
     pub missing: MissingNavigationData,
 }
@@ -80,8 +145,8 @@ pub struct ItemNavigationData {
     pub id: i16,
     pub short_name: Option<String>,
     pub name: Option<String>,
-    pub r#type: Option<String>,
-    pub color: Option<String>,
+    pub r#type: Option<ItemType>,
+    pub color: Option<ItemColor>,
     #[serde(flatten)]
     pub navigation_data: NavigationData,
     pub count: i64,
@@ -111,6 +176,7 @@ pub enum ImageType {
 }
 
 impl From<i32> for ImageType {
+    #[inline]
     fn from(image_type: i32) -> Self {
         match image_type {
             0 => Self::Unknown,
@@ -119,5 +185,38 @@ impl From<i32> for ImageType {
             3 => Self::Jpeg,
             _ => unreachable!("Invalid image type value: {}", image_type),
         }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, sqlx::Type)]
+#[serde(rename_all = "camelCase")]
+pub enum ItemType {
+    Cast,
+    Location,
+    Storyline,
+}
+
+impl ItemType {
+    #[inline]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Cast => "cast",
+            Self::Location => "location",
+            Self::Storyline => "storyline",
+        }
+    }
+}
+
+impl TryFrom<&'_ str> for ItemType {
+    type Error = anyhow::Error;
+
+    #[inline]
+    fn try_from(item_type: &'_ str) -> Result<Self, Self::Error> {
+        Ok(match item_type {
+            "cast" => Self::Cast,
+            "location" => Self::Location,
+            "storyline" => Self::Storyline,
+            _ => bail!("Invalid item type value: {}", item_type),
+        })
     }
 }

@@ -1,5 +1,5 @@
 use crate::database::DbPoolConnection;
-use crate::models::{EditorData, MissingNavigationData, NavigationData};
+use crate::models::{EditorData, ItemType, MissingNavigationData, NavigationData};
 use actix_web::{error, Result};
 
 pub async fn fetch_editor_data_for_comic(
@@ -313,21 +313,4 @@ async fn fetch_last_for_item(conn: &mut DbPoolConnection, item: ItemType) -> Res
 struct FirstLast {
     first: Option<i16>,
     last: Option<i16>,
-}
-
-#[derive(Copy, Clone, Debug)]
-enum ItemType {
-    Cast,
-    Location,
-    Storyline,
-}
-
-impl ItemType {
-    fn as_str(&self) -> &'static str {
-        match self {
-            ItemType::Cast => "cast",
-            ItemType::Location => "location",
-            ItemType::Storyline => "storyline",
-        }
-    }
 }

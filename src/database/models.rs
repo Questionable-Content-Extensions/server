@@ -3,6 +3,7 @@
 use chrono::{NaiveDate, NaiveDateTime};
 use log::debug;
 
+#[derive(Debug)]
 pub struct Comic {
     pub id: i16,
     pub ImageType: i32,
@@ -19,6 +20,7 @@ pub struct Comic {
     pub isAccuratePublishDate: i8,
 }
 
+#[derive(Debug)]
 pub struct Item {
     pub id: i16,
     pub shortName: String,
@@ -29,6 +31,7 @@ pub struct Item {
     pub Color_Red: u8,
 }
 
+#[derive(Debug)]
 pub struct News {
     pub comic: i16,
     pub lastUpdated: NaiveDate,
