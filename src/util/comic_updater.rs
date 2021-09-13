@@ -182,9 +182,9 @@ impl ComicUpdater {
         let (needs_title, needs_image_type) = if let Some(needs) = sqlx::query_as!(
             NeedsQuery,
             r#"
-                    SELECT title, ImageType FROM `comic`
-                    WHERE `id` = ?
-                "#,
+                SELECT title, ImageType FROM `comic`
+                WHERE `id` = ?
+            "#,
             comic_id
         )
         .fetch_optional(&mut *transaction)

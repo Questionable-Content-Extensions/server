@@ -60,3 +60,15 @@ impl News {
         !locked && self.updateFactor < 12.0 && days_since_update > update_factor_days
     }
 }
+
+#[derive(Debug)]
+pub struct Token {
+    pub id: String,
+    pub identifier: String,
+    pub CanAddImageToItem: u8,
+    pub CanAddItemToComic: u8,
+    pub CanChangeComicData: u8,
+    pub CanChangeItemData: u8,
+    pub CanRemoveImageFromItem: u8,
+    pub CanRemoveItemFromComic: u8,
+}

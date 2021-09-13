@@ -1,4 +1,4 @@
-use crate::database::DbPoolConnection;
+use chrono::Utc;
 use ilyvion_util::string_extensions::StrExtensions;
 use once_cell::sync::Lazy;
 use uuid::Uuid;
@@ -41,7 +41,7 @@ lazy_environment!(, BACKGROUND_SERVICES, background_services);
 
 impl Environment {
     pub fn init() {
-        dotenv::from_filename(".env").ok();
+        dotenv::dotenv().ok();
     }
 
     pub fn background_services_enabled() -> bool {
@@ -54,20 +54,27 @@ impl Environment {
     }
 }
 
-pub async fn is_token_valid(conn: &mut DbPoolConnection, token: Uuid) -> Result<bool, sqlx::Error> {
-    if token.is_nil() {
-        return Ok(false);
-    }
-
-    let result = sqlx::query_scalar!(
+pub async fn log_action<'e, 'c: 'e, E>(
+    executor: E,
+    token: Uuid,
+    action: impl AsRef<str>,
+) -> sqlx::Result<()>
+where
+    E: 'e + sqlx::Executor<'c, Database = sqlx::MySql>,
+{
+    sqlx::query!(
         r#"
-		SELECT id FROM `token`
-		WHERE `id` = ?
-	"#,
-        token.to_string()
+            INSERT INTO `log_entry`
+                (UserToken, DateTime, Action)
+            VALUES
+                (?, ?, ?)
+        "#,
+        token.to_string(),
+        Utc::now().naive_utc(),
+        action.as_ref(),
     )
-    .fetch_optional(conn)
+    .execute(executor)
     .await?;
 
-    Ok(result.is_some())
+    Ok(())
 }

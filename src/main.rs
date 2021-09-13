@@ -59,11 +59,16 @@
 #![warn(clippy::too_many_lines)]
 // </editor-fold>
 
+use crate::database::models::Token;
 use crate::database::DbPool;
+use crate::models::token_permissions;
 use crate::util::{ComicUpdater, NewsUpdater};
-use actix_web::{web, App, HttpServer};
-use anyhow::{Context as _, Result};
+use actix_web::dev::ServiceRequest;
+use actix_web::{error, web, App, Error, FromRequest, HttpServer};
+use actix_web_grants::GrantsMiddleware;
+use anyhow::{anyhow, Context as _, Result};
 use log::{error, info};
+use serde::Deserialize;
 use std::sync::Arc;
 use tokio::time::{sleep, Duration};
 use util::Environment;
@@ -80,12 +85,12 @@ async fn main() -> Result<()> {
 
     // Initialize logging
     if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "actix_web=info,qcext_server=info,sqlx=debug");
+        std::env::set_var("RUST_LOG", "actix_web=info,qcext_server=info");
     }
     pretty_env_logger::init();
 
-    let bind = format!("localhost:{}", Environment::port());
-    info!("Starting server at: {}", &bind);
+    let bind_address = format!("localhost:{}", Environment::port());
+    info!("Starting server at: {}", &bind_address);
 
     let http_db_pool = DbPool::create().await;
     let db_pool = http_db_pool.clone();
@@ -96,14 +101,16 @@ async fn main() -> Result<()> {
     // Start HTTP server
     let start_http_server = move || -> Result<_> {
         Ok(HttpServer::new(move || {
+            let auth = GrantsMiddleware::with_extractor(extract_permissions);
             App::new()
                 .app_data(web::Data::new(http_db_pool.clone()))
                 .app_data(http_news_updater.clone())
+                .wrap(auth)
                 .wrap(actix_web::middleware::Compress::default())
                 .wrap(actix_web::middleware::Logger::default())
                 .service(web::scope("/api").configure(controllers::api::configure))
         })
-        .bind(&bind)?
+        .bind(&bind_address)?
         .run())
     };
 
@@ -171,4 +178,94 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[allow(unsafe_code)]
+#[warn(clippy::cast_ref_to_mut)]
+async fn extract_permissions(request: &ServiceRequest) -> Result<Vec<String>, Error> {
+    #[derive(Debug, Deserialize)]
+    struct TokenQuery {
+        token: Option<uuid::Uuid>,
+    }
+
+    let token = {
+        // SAFETY: Yeah, no, this is completely bonkers, but I need the inner HttpRequest, so...
+        let mut_request: &mut ServiceRequest = unsafe { &mut *(request as *const _ as *mut _) };
+
+        let (request, payload) = mut_request.parts_mut();
+
+        let token_query = web::Query::<TokenQuery>::from_request(&*request, &mut *payload).await?;
+        if let Some(token) = token_query.token {
+            token
+        } else {
+            let bytes = web::Bytes::from_request(&*request, &mut *payload).await?;
+            let token_query: Result<TokenQuery, _> = serde_json::from_slice(&bytes[..]);
+            if let Ok(token_query) = token_query {
+                // Now that we've grabbed the token from the JSON payload, restore the payload.
+                let mut payload = actix_http::h1::Payload::empty();
+                payload.unread_data(bytes);
+                mut_request.set_payload(payload.into());
+
+                if let Some(token) = token_query.token {
+                    token
+                } else {
+                    // If there is no token provided, there are no permissions
+                    return Ok(vec![]);
+                }
+            } else {
+                // If there is no token provided, there are no permissions
+                return Ok(vec![]);
+            }
+        }
+    };
+
+    let pool = request
+        .app_data::<web::Data<DbPool>>()
+        .ok_or_else(|| anyhow!("Could not get DbPool from request"))
+        .map_err(error::ErrorInternalServerError)?;
+    let mut conn = pool
+        .acquire()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result = sqlx::query_as!(
+        Token,
+        r#"
+            SELECT * FROM `token`
+            WHERE `id` = ?
+        "#,
+        token.to_string()
+    )
+    .fetch_optional(&mut conn)
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    let token = if let Some(token) = result {
+        token
+    } else {
+        // Invalid token provided, there are no permissions
+        return Ok(vec![]);
+    };
+
+    let mut permissions = Vec::with_capacity(7);
+    permissions.push(token_permissions::HAS_VALID_TOKEN.to_string());
+    if token.CanAddItemToComic != 0 {
+        permissions.push(token_permissions::CAN_ADD_ITEM_TO_COMIC.to_string());
+    }
+    if token.CanRemoveItemFromComic != 0 {
+        permissions.push(token_permissions::CAN_REMOVE_ITEM_FROM_COMIC.to_string());
+    }
+    if token.CanChangeComicData != 0 {
+        permissions.push(token_permissions::CAN_CHANGE_COMIC_DATA.to_string());
+    }
+    if token.CanAddImageToItem != 0 {
+        permissions.push(token_permissions::CAN_ADD_IMAGE_TO_ITEM.to_string());
+    }
+    if token.CanRemoveImageFromItem != 0 {
+        permissions.push(token_permissions::CAN_REMOVE_IMAGE_FROM_ITEM.to_string());
+    }
+    if token.CanChangeItemData != 0 {
+        permissions.push(token_permissions::CAN_CHANGE_ITEM_DATA.to_string());
+    }
+    Ok(permissions)
 }
