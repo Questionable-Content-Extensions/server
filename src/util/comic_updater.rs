@@ -67,8 +67,6 @@ impl ComicUpdater {
             ImageType: i32,
         }
 
-        let mut transaction = db_pool.begin().await?;
-
         info!("Fetching QC front page");
         let response = self.client.get(FRONT_PAGE_URL).send().await;
         let qc_front_page = match response {
@@ -178,6 +176,8 @@ impl ComicUpdater {
             ImageType::from(image_type),
             comic_date
         );
+
+        let mut transaction = db_pool.begin().await?;
 
         let (needs_title, needs_image_type) = if let Some(needs) = sqlx::query_as!(
             NeedsQuery,

@@ -26,6 +26,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(web::resource("/excluded").route(web::get().to(excluded)))
         .service(web::resource("/additem").route(web::post().to(add_item)))
         .service(web::resource("/removeitem").route(web::post().to(remove_item)))
+        .service(web::resource("/settitle").route(web::post().to(set_title)))
         .service(web::resource("/{comicId}").route(web::get().to(by_id)));
 }
 
@@ -301,18 +302,9 @@ async fn add_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    sqlx::query!(
-        r#"
-            INSERT IGNORE INTO `comic`
-                (id)
-            VALUES
-                (?)
-        "#,
-        request.comic_id,
-    )
-    .execute(&mut *transaction)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    ensure_comic_exists(&mut *transaction, request.comic_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
 
     let item = if request.item_id == CREATE_NEW_ITEM_ID {
         let new_item_name = request.new_item_name.as_ref().ok_or_else(|| {
@@ -431,7 +423,7 @@ async fn add_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok().body("Item added to comic"))
 }
 
 async fn remove_item(
@@ -466,8 +458,8 @@ async fn remove_item(
     let item = sqlx::query_as!(
         DatabaseItem,
         r#"
-                SELECT * FROM `items` WHERE id = ?
-            "#,
+            SELECT * FROM `items` WHERE id = ?
+        "#,
         request.item_id
     )
     .fetch_optional(&mut *transaction)
@@ -506,7 +498,79 @@ async fn remove_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok().body("Item removed from comic"))
+}
+
+async fn set_title(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetTitleBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)?;
+
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    ensure_comic_exists(&mut *transaction, request.comic_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let old_title = sqlx::query_scalar!(
+        r#"
+            SELECT title FROM `comic` WHERE id = ?
+        "#,
+        request.comic_id
+    )
+    .fetch_one(&mut *transaction)
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    sqlx::query!(
+        r#"
+            UPDATE `comic`
+            SET title = ?
+            WHERE
+                id = ?
+        "#,
+        request.title,
+        request.comic_id,
+    )
+    .execute(&mut *transaction)
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    if old_title.is_empty() {
+        log_action(
+            &mut *transaction,
+            request.token,
+            format!(
+                "Set title on comic #{} to \"{}\"",
+                request.comic_id, request.title
+            ),
+        )
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    } else {
+        log_action(
+            &mut *transaction,
+            request.token,
+            format!(
+                "Changed title on comic #{} from \"{}\" to \"{}\"",
+                request.comic_id, old_title, request.title
+            ),
+        )
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    }
+
+    transaction
+        .commit()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().body("Title set or updated for comic"))
 }
 
 fn transfer_item_data_to_navigation_item(
@@ -571,6 +635,26 @@ fn ensure_is_authorized(auth: &AuthDetails, permission: &str) -> Result<()> {
     Ok(())
 }
 
+#[inline]
+async fn ensure_comic_exists<'e, 'c: 'e, E>(executor: E, comic_id: i16) -> sqlx::Result<()>
+where
+    E: 'e + sqlx::Executor<'c, Database = sqlx::MySql>,
+{
+    sqlx::query!(
+        r#"
+            INSERT IGNORE INTO `comic`
+                (id)
+            VALUES
+                (?)
+        "#,
+        comic_id,
+    )
+    .execute(executor)
+    .await?;
+
+    Ok(())
+}
+
 #[derive(Debug, Deserialize)]
 struct AllQuery {
     exclude: Option<Exclusion>,
@@ -605,4 +689,12 @@ struct RemoveItemFromComicBody {
     token: uuid::Uuid,
     comic_id: i16,
     item_id: i16,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetTitleBody {
+    token: uuid::Uuid,
+    comic_id: i16,
+    title: String,
 }
