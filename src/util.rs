@@ -1,5 +1,6 @@
 use chrono::Utc;
 use ilyvion_util::string_extensions::StrExtensions;
+use log::info;
 use once_cell::sync::Lazy;
 use uuid::Uuid;
 
@@ -62,6 +63,7 @@ pub async fn log_action<'e, 'c: 'e, E>(
 where
     E: 'e + sqlx::Executor<'c, Database = sqlx::MySql>,
 {
+    let action = action.as_ref();
     sqlx::query!(
         r#"
             INSERT INTO `log_entry`
@@ -71,10 +73,12 @@ where
         "#,
         token.to_string(),
         Utc::now().naive_utc(),
-        action.as_ref(),
+        action,
     )
     .execute(executor)
     .await?;
+
+    info!("{}", action);
 
     Ok(())
 }
