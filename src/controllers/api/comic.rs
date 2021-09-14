@@ -27,6 +27,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(web::resource("/additem").route(web::post().to(add_item)))
         .service(web::resource("/removeitem").route(web::post().to(remove_item)))
         .service(web::resource("/settitle").route(web::post().to(set_title)))
+        .service(web::resource("/settagline").route(web::post().to(set_tagline)))
         .service(web::resource("/{comicId}").route(web::get().to(by_id)));
 }
 
@@ -573,6 +574,81 @@ async fn set_title(
     Ok(HttpResponse::Ok().body("Title set or updated for comic"))
 }
 
+async fn set_tagline(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetTaglineBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)?;
+
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    ensure_comic_exists(&mut *transaction, request.comic_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let old_tagline = sqlx::query_scalar!(
+        r#"
+            SELECT tagline FROM `comic` WHERE id = ?
+        "#,
+        request.comic_id
+    )
+    .fetch_one(&mut *transaction)
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    sqlx::query!(
+        r#"
+            UPDATE `comic`
+            SET tagline = ?
+            WHERE
+                id = ?
+        "#,
+        request.tagline,
+        request.comic_id,
+    )
+    .execute(&mut *transaction)
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    match old_tagline {
+        Some(old_tagline) if !old_tagline.is_empty() => {
+            log_action(
+                &mut *transaction,
+                request.token,
+                format!(
+                    "Changed tagline on comic #{} from \"{}\" to \"{}\"",
+                    request.comic_id, old_tagline, request.tagline
+                ),
+            )
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+        }
+        _ => {
+            log_action(
+                &mut *transaction,
+                request.token,
+                format!(
+                    "Set tagline on comic #{} to \"{}\"",
+                    request.comic_id, request.tagline
+                ),
+            )
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+        }
+    }
+
+    transaction
+        .commit()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().body("Tagline set or updated for comic"))
+}
+
 fn transfer_item_data_to_navigation_item(
     navigation_items: &mut Vec<crate::models::ItemNavigationData>,
     items: &mut BTreeMap<i16, DatabaseItem>,
@@ -697,4 +773,12 @@ struct SetTitleBody {
     token: uuid::Uuid,
     comic_id: i16,
     title: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetTaglineBody {
+    token: uuid::Uuid,
+    comic_id: i16,
+    tagline: String,
 }
