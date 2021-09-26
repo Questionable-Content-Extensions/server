@@ -11,7 +11,7 @@ use crate::util::{log_action, NewsUpdater};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
 use anyhow::anyhow;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, TimeZone, Utc};
 use futures::{TryFutureExt, TryStreamExt};
 use log::info;
 use serde::Deserialize;
@@ -28,6 +28,14 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(web::resource("/removeitem").route(web::post().to(remove_item)))
         .service(web::resource("/settitle").route(web::post().to(set_title)))
         .service(web::resource("/settagline").route(web::post().to(set_tagline)))
+        .service(web::resource("/setpublishdate").route(web::post().to(set_publish_date)))
+        .service(web::resource("/setguest").route(web::post().to(set_guest)))
+        .service(web::resource("/setnoncanon").route(web::post().to(set_non_canon)))
+        .service(web::resource("/setnocast").route(web::post().to(set_no_cast)))
+        .service(web::resource("/setnolocation").route(web::post().to(set_no_location)))
+        .service(web::resource("/setnostoryline").route(web::post().to(set_no_storyline)))
+        .service(web::resource("/setnotitle").route(web::post().to(set_no_title)))
+        .service(web::resource("/setnotagline").route(web::post().to(set_no_tagline)))
         .service(web::resource("/{comicId}").route(web::get().to(by_id)));
 }
 
@@ -649,6 +657,313 @@ async fn set_tagline(
     Ok(HttpResponse::Ok().body("Tagline set or updated for comic"))
 }
 
+async fn set_publish_date(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetPublishDateBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)?;
+
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    ensure_comic_exists(&mut *transaction, request.comic_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let old_publish_date = sqlx::query_scalar!(
+        r#"
+            SELECT publishDate FROM `comic` WHERE id = ?
+        "#,
+        request.comic_id
+    )
+    .fetch_one(&mut *transaction)
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    sqlx::query!(
+        r#"
+            UPDATE `comic`
+            SET
+                publishDate = ?,
+                isAccuratePublishDate = ?
+            WHERE
+                id = ?
+        "#,
+        request.publish_date.naive_utc(),
+        request.is_accurate_publish_date,
+        request.comic_id,
+    )
+    .execute(&mut *transaction)
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    if let Some(old_publish_date) = old_publish_date {
+        log_action(
+            &mut *transaction,
+            request.token,
+            format!(
+                "Changed publish date on comic #{} from \"{}\" to \"{}\"",
+                request.comic_id,
+                Utc.from_utc_datetime(&old_publish_date)
+                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                request
+                    .publish_date
+                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+            ),
+        )
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    } else {
+        log_action(
+            &mut *transaction,
+            request.token,
+            format!(
+                "Set publish date on comic #{} to \"{}\"",
+                request.comic_id,
+                request
+                    .publish_date
+                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+            ),
+        )
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    }
+
+    Ok(HttpResponse::Ok().finish())
+}
+
+async fn set_guest(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetFlagBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    set_flag(pool, request, auth, FlagType::IsGuestComic).await?;
+
+    Ok(HttpResponse::Ok().body("Guest comic set or updated for comic"))
+}
+
+async fn set_non_canon(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetFlagBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    set_flag(pool, request, auth, FlagType::IsNonCanon).await?;
+
+    Ok(HttpResponse::Ok().body("Non-canon set or updated for comic"))
+}
+
+async fn set_no_cast(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetFlagBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    set_flag(pool, request, auth, FlagType::HasNoCast).await?;
+
+    Ok(HttpResponse::Ok().body("No cast set or updated for comic"))
+}
+
+async fn set_no_location(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetFlagBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    set_flag(pool, request, auth, FlagType::HasNoLocation).await?;
+
+    Ok(HttpResponse::Ok().body("No location set or updated for comic"))
+}
+
+async fn set_no_storyline(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetFlagBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    set_flag(pool, request, auth, FlagType::HasNoStoryline).await?;
+
+    Ok(HttpResponse::Ok().body("No storyline set or updated for comic"))
+}
+
+async fn set_no_title(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetFlagBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    set_flag(pool, request, auth, FlagType::HasNoTitle).await?;
+
+    Ok(HttpResponse::Ok().body("No title set or updated for comic"))
+}
+
+async fn set_no_tagline(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetFlagBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    set_flag(pool, request, auth, FlagType::HasNoTagline).await?;
+
+    Ok(HttpResponse::Ok().body("No tagline set or updated for comic"))
+}
+
+#[allow(clippy::too_many_lines)]
+async fn set_flag(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetFlagBody>,
+    auth: AuthDetails,
+    flag: FlagType,
+) -> Result<()> {
+    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)?;
+
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    ensure_comic_exists(&mut *transaction, request.comic_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let (true_value_log_text, false_value_log_text, sql_future) = match flag {
+        FlagType::IsGuestComic => (
+            "to be a guest comic",
+            "to be a Jeph comic",
+            sqlx::query!(
+                r#"
+                    UPDATE `comic`
+                    SET
+                        isGuestComic = ?
+                    WHERE
+                        id = ?
+                "#,
+                request.flag_value,
+                request.comic_id,
+            )
+            .execute(&mut *transaction),
+        ),
+        FlagType::IsNonCanon => (
+            "to be non-canon",
+            "to be canon",
+            sqlx::query!(
+                r#"
+                    UPDATE `comic`
+                    SET
+                        isNonCanon = ?
+                    WHERE
+                        id = ?
+                "#,
+                request.flag_value,
+                request.comic_id,
+            )
+            .execute(&mut *transaction),
+        ),
+        FlagType::HasNoCast => (
+            "to have no cast",
+            "to have cast",
+            sqlx::query!(
+                r#"
+                    UPDATE `comic`
+                    SET
+                        HasNoCast = ?
+                    WHERE
+                        id = ?
+                "#,
+                request.flag_value,
+                request.comic_id,
+            )
+            .execute(&mut *transaction),
+        ),
+        FlagType::HasNoLocation => (
+            "to have no locations",
+            "to have locations",
+            sqlx::query!(
+                r#"
+                    UPDATE `comic`
+                    SET
+                        HasNoLocation = ?
+                    WHERE
+                        id = ?
+                "#,
+                request.flag_value,
+                request.comic_id,
+            )
+            .execute(&mut *transaction),
+        ),
+        FlagType::HasNoStoryline => (
+            "to have no storylines",
+            "to have storylines",
+            sqlx::query!(
+                r#"
+                    UPDATE `comic`
+                    SET
+                        HasNoStoryline = ?
+                    WHERE
+                        id = ?
+                "#,
+                request.flag_value,
+                request.comic_id,
+            )
+            .execute(&mut *transaction),
+        ),
+        FlagType::HasNoTitle => (
+            "to have no title",
+            "to have a title",
+            sqlx::query!(
+                r#"
+                    UPDATE `comic`
+                    SET
+                        HasNoTitle = ?
+                    WHERE
+                        id = ?
+                "#,
+                request.flag_value,
+                request.comic_id,
+            )
+            .execute(&mut *transaction),
+        ),
+        FlagType::HasNoTagline => (
+            "to have no tagline",
+            "to have a tagline",
+            sqlx::query!(
+                r#"
+                    UPDATE `comic`
+                    SET
+                        HasNoTagline = ?
+                    WHERE
+                        id = ?
+                "#,
+                request.flag_value,
+                request.comic_id,
+            )
+            .execute(&mut *transaction),
+        ),
+    };
+
+    sql_future.await.map_err(error::ErrorInternalServerError)?;
+
+    log_action(
+        &mut *transaction,
+        request.token,
+        format!(
+            "Set comic #{} {}",
+            request.comic_id,
+            if request.flag_value {
+                true_value_log_text
+            } else {
+                false_value_log_text
+            }
+        ),
+    )
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    transaction
+        .commit()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(())
+}
+
 fn transfer_item_data_to_navigation_item(
     navigation_items: &mut Vec<crate::models::ItemNavigationData>,
     items: &mut BTreeMap<i16, DatabaseItem>,
@@ -781,4 +1096,31 @@ struct SetTaglineBody {
     token: uuid::Uuid,
     comic_id: i16,
     tagline: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetPublishDateBody {
+    token: uuid::Uuid,
+    comic_id: i16,
+    publish_date: DateTime<Utc>,
+    is_accurate_publish_date: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetFlagBody {
+    token: uuid::Uuid,
+    comic_id: i16,
+    flag_value: bool,
+}
+
+pub enum FlagType {
+    IsGuestComic,
+    IsNonCanon,
+    HasNoCast,
+    HasNoLocation,
+    HasNoStoryline,
+    HasNoTitle,
+    HasNoTagline,
 }
