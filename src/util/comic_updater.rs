@@ -17,7 +17,8 @@ const FRONT_PAGE_URL: &str = "https://questionablecontent.net/";
 const ARCHIVE_URL: &str = concatcp!(FRONT_PAGE_URL, "archive.php");
 const STARTUP_DELAY_DURATION: StdDuration = StdDuration::from_secs(15);
 
-static TIME_ZONE: Lazy<Tz> = Lazy::new(|| Environment::qc_timezone().parse().unwrap());
+static TIME_ZONE: Lazy<Tz> =
+    Lazy::new(|| Environment::qc_timezone().parse().expect("valid timezone"));
 
 pub struct ComicUpdater {
     client: Client,
@@ -55,7 +56,7 @@ impl ComicUpdater {
             let hours = delay.num_hours();
             let minutes = delay.num_minutes() - (hours * 60);
             info!("Waiting for {}:{} until next update.", hours, minutes);
-            sleep(delay.to_std().unwrap()).await;
+            sleep(delay.to_std().expect("valid delay")).await;
         }
     }
 
@@ -73,7 +74,8 @@ impl ComicUpdater {
             Err(e) => {
                 anyhow::bail!(
                     "Could not fetch front page, got HTTP status {}",
-                    e.status().unwrap()
+                    e.status()
+                        .map_or_else(|| String::from("(Unknown)"), |s| s.to_string())
                 );
             }
             Ok(r) => r.text().await?,
@@ -86,7 +88,8 @@ impl ComicUpdater {
         let (comic_id, image_type, comic_date) = {
             let document = Html::parse_document(&qc_front_page);
 
-            let comic_image_selector = Selector::parse("img[src*=\"/comics/\"]").unwrap();
+            let comic_image_selector =
+                Selector::parse("img[src*=\"/comics/\"]").expect("valid selector");
             let comic_image = document
                 .select(&comic_image_selector)
                 .next()
@@ -127,7 +130,7 @@ impl ComicUpdater {
                 (comic_image, comic_image_type)
             };
 
-            let news_selector = Selector::parse("#newspost").unwrap();
+            let news_selector = Selector::parse("#newspost").expect("valid selector");
             let news_element = document.select(&news_selector).next().ok_or_else(|| {
                 anyhow::anyhow!("Could not fetch front page, couldn't find news element")
             })?;
@@ -151,9 +154,9 @@ impl ComicUpdater {
                     )
                 })?,
             )
-            .unwrap();
+            .expect("previous news sibling");
 
-            let date_selector = Selector::parse("b").unwrap();
+            let date_selector = Selector::parse("b").expect("valid selector");
             let date = news_previous_sibling
                 .select(&date_selector)
                 .next()
@@ -207,7 +210,8 @@ impl ComicUpdater {
                 Err(e) => {
                     anyhow::bail!(
                         "Could not fetch archive page, got HTTP status {}",
-                        e.status().unwrap()
+                        e.status()
+                            .map_or_else(|| String::from("(Unknown)"), |s| s.to_string())
                     );
                 }
                 Ok(r) => r.text().await?,
@@ -215,7 +219,8 @@ impl ComicUpdater {
 
             let document = Html::parse_document(&qc_archive_page);
             let comic_title_selector = format!("a[href*=\"comic={}\"]", comic_id);
-            let comic_title_selector = Selector::parse(&comic_title_selector).unwrap();
+            let comic_title_selector =
+                Selector::parse(&comic_title_selector).expect("valid comic title selector");
             let comic_title = document
                 .select(&comic_title_selector)
                 .next()

@@ -14,8 +14,9 @@ use tokio::time::{sleep, Duration};
 const QC_COMIC_URL_BASE: &str = "https://questionablecontent.net/view.php?comic=";
 const TASK_DELAY_TIME: Duration = Duration::from_secs(5);
 
-static REMOVE_NEWLINES: Lazy<Regex> = Lazy::new(|| Regex::new(r"\r|\n").unwrap());
-static REPLACE_HTML_NEWLINES: Lazy<Regex> = Lazy::new(|| Regex::new(r"<br\s*/?>").unwrap());
+static REMOVE_NEWLINES: Lazy<Regex> = Lazy::new(|| Regex::new(r"\r|\n").expect("valid regex"));
+static REPLACE_HTML_NEWLINES: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"<br\s*/?>").expect("valid regex"));
 
 pub struct NewsUpdater {
     client: Client,
@@ -163,7 +164,8 @@ impl NewsUpdater {
                 anyhow::bail!(
                     "Could not fetch news for #{}, got HTTP status {}",
                     comic_id,
-                    e.status().unwrap()
+                    e.status()
+                        .map_or_else(|| String::from("(Unknown)"), |s| s.to_string())
                 );
             }
             Ok(r) => r.text().await?,
@@ -174,7 +176,7 @@ impl NewsUpdater {
         }
 
         let document = Html::parse_document(&qc_page);
-        let news_selector = Selector::parse("#news").unwrap();
+        let news_selector = Selector::parse("#news").expect("valid selector");
         let news = document.select(&news_selector).next().ok_or_else(|| {
             anyhow::anyhow!(
                 "Could not fetch news for #{}, couldn't find #news element",

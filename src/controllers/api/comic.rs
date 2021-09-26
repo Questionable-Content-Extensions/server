@@ -977,7 +977,9 @@ fn transfer_item_data_to_navigation_item(
             Color_Red: color_red,
             Color_Green: color_green,
             Color_Blue: color_blue,
-        } = items.remove(&navigation_item.id).unwrap();
+        } = items
+            .remove(&navigation_item.id)
+            .expect("item data for navigation item");
         navigation_item.short_name = Some(short_name);
         navigation_item.name = Some(name);
         navigation_item.r#type = Some(ItemType::try_from(&*r#type)?);
