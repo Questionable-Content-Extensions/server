@@ -87,7 +87,7 @@ async fn main() -> Result<()> {
     }
     pretty_env_logger::init();
 
-    let bind_address = format!("localhost:{}", Environment::port());
+    let bind_address = format!("0.0.0.0:{}", Environment::port());
     info!("Starting server at: {}", &bind_address);
 
     let http_db_pool = DbPool::create().await;
