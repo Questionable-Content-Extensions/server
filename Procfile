@@ -1,1 +1,2 @@
-database-update: bash database-update.sh
+release: ./target/release/sqlx mig run
+web: ./target/release/qcext-server

@@ -1,0 +1,2656 @@
+{
+  "db": "MySQL",
+  "0450657588f02d5d426fe1c0b1e5c03fe613cdf0092d7f470d569925a652749b": {
+    "query": "\n            SELECT publishDate FROM `comic` WHERE id = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "publishDate",
+          "type_info": {
+            "type": "Datetime",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        true
+      ]
+    }
+  },
+  "099d8be5bd7bf0c46dcfcd59bfe17c8be90a0ac8e96fe105f9d51c129796b16e": {
+    "query": "\n\t\t\tSELECT id\n\t\t\tFROM `comic`\n\t\t\tWHERE id < ?\n\t\t\t\tAND (? is NULL OR `isGuestComic` = ?)\n\t\t\t\tAND (? is NULL OR `isNonCanon` = ?)\n\t\t\tORDER BY id DESC\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "0ecca89d72908c1f135bbaa50234d27a5185c625525ed1b307d5f71c2c37d4ac": {
+    "query": "\n                SELECT COUNT(1) FROM `occurences`\n                WHERE\n                    items_id = ?\n                AND\n                    comic_id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "COUNT(1)",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "0f156d3303f113d2d25b43cd92189eb7a0d7244e667e8b012eed0da1554116db": {
+    "query": "\n            SELECT Image FROM `ItemImages`\n            WHERE Id = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "Image",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4241
+            },
+            "char_set": 63,
+            "max_size": 4294967295
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "10cc1569b8f7f56d0977f34f26ce0cc97c0ea435a26b53bd69bb82e4a6632860": {
+    "query": "\n                    UPDATE `items`\n                    SET shortName = ?\n                    WHERE\n                        id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "1814764166a188d56021e20ebd446bb863ad747072bb42b420b12bddb33f2eab": {
+    "query": "UPDATE `news` SET updateFactor = ?, lastUpdated = ? WHERE comic = ?",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
+  "2a748260f18d5d68acca4bd3a3efd08a2c2defdcf4761fd33bd2d2fafd7a6dcf": {
+    "query": "\n\t\t\tSELECT\n\t\t\t\ti.id,\n\t\t\t\tMIN(c.id) as first,\n\t\t\t\tMAX(c.id) as last,\n\t\t\t\tCOUNT(c.id) as count\n\t\t\tFROM items i\n\t\t\tJOIN occurences o ON o.items_id = i.id\n\t\t\tJOIN comic c ON c.id = o.comic_id\n\t\t\t\tAND (? is NULL OR c.isGuestComic = ?)\n\t\t\t\tAND (? is NULL OR c.isNonCanon = ?)\n\t\t\tGROUP by i.id\n\t\t\tORDER BY count DESC\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "first",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "last",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "count",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 4
+      },
+      "nullable": [
+        false,
+        true,
+        true,
+        false
+      ]
+    }
+  },
+  "2c5942c7c593ffd8f575a82ce44b3ba84af45b42c44fe4d429baecc4f004e13b": {
+    "query": "\n\t\t\t\tSELECT * FROM `news`\n\t\t\t\tWHERE `comic` = ?\n\t\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "comic",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4103
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "lastUpdated",
+          "type_info": {
+            "type": "Date",
+            "flags": {
+              "bits": 4225
+            },
+            "char_set": 63,
+            "max_size": 10
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "news",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 262140
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "updateFactor",
+          "type_info": {
+            "type": "Double",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 22
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "isLocked",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "2e13bcdeb002196f8d8fa9020070291696c6595230651a6087177f3bbdb11e6b": {
+    "query": "\n\t\t\tSELECT id\n\t\t\tFROM `comic`\n\t\t\tWHERE id > ?\n\t\t\t\tAND (? is NULL OR `isGuestComic` = ?)\n\t\t\t\tAND (? is NULL OR `isNonCanon` = ?)\n\t\t\tORDER BY id ASC\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "2e81ec546b451349afa7844c923200ad5e73ebff125e745ef0e39e88822f7da0": {
+    "query": "\n            SELECT\n                MIN(comic_id) AS min,\n                MAX(comic_id) AS max,\n                COUNT(comic_id) AS count\n            FROM `occurences`\n            WHERE `items_id` = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "min",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "max",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "count",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        true,
+        true,
+        false
+      ]
+    }
+  },
+  "33ce43c579db5bbeaaea7bb38784a576db95409c4afeffb46b806198cf94b65f": {
+    "query": "\n\t\t\tSELECT c.id\n\t\t\tFROM comic c\n\t\t\tWHERE (c.tagline IS NULL OR NULLIF(c.tagline, '') IS NULL)\n\t\t\t\tAND NOT c.HasNoTagline\n\t\t\t\tAND c.id < ?\n\t\t\t\tAND c.id > 3132\n\t\t\tORDER BY c.id DESC\n\t\t\tLIMIT 1\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "38780619fca4cb1e771eb8a04f84ca05b273625e6cc5693a88bb250907f66931": {
+    "query": "\n\t\t\tSELECT * FROM `comic`\n\t\t\tWHERE (? is NULL OR `isGuestComic` = ?)\n\t\t\t\tAND (? is NULL OR `isNonCanon` = ?)\n\t\t\tORDER BY id ASC\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "isGuestComic",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "isNonCanon",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "tagline",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 8
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "publishDate",
+          "type_info": {
+            "type": "Datetime",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "isAccuratePublishDate",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "HasNoCast",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 8,
+          "name": "HasNoLocation",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 9,
+          "name": "HasNoStoryline",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 10,
+          "name": "HasNoTagline",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 11,
+          "name": "HasNoTitle",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 12,
+          "name": "ImageType",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 4
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "391f0c29f42a74f749981bae393c4fb6f38b6c3547ecfdab05a587b05025caf9": {
+    "query": "\n            SELECT COUNT(1) FROM `comic`\n            WHERE\n                id = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "COUNT(1)",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "392452d47bbdc017deb2605bf239ed544eccf8c1ca01d590f0f4385d9fe714e9": {
+    "query": "\n            INSERT INTO `ItemImages`\n                (ItemId, Image, CRC32CHash)\n            VALUES\n                (?, ?, ?)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
+  "3938da813961eb3a10a1efb6ba6ec842af4dc031f88c3a1e2408d6a9653f4c5f": {
+    "query": "\n                    UPDATE `comic`\n                    SET\n                        HasNoCast = ?\n                    WHERE\n                        id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "396842042800df254ef6d89d3f418fd9fb28f61075ffba269aa4ee5001f69b8a": {
+    "query": "\n                    UPDATE `items`\n                    SET name = ?\n                    WHERE\n                        id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "39c5a91c0c42a03aba88b8c2372c371ecdf3c579644631301014abeb8e7ecdcc": {
+    "query": "\n\t\t\tSELECT c.id\n\t\t\tFROM comic c\n\t\t\tWHERE c.id NOT IN\n\t\t\t\t(\n\t\t\t\t\tSELECT o.comic_id\n\t\t\t\t\tFROM occurences o\n\t\t\t\t\tLEFT JOIN items i ON o.items_id = i.id\n\t\t\t\t\tWHERE i.type = ?\n\t\t\t\t\tAND o.comic_id = c.id\n\t\t\t\t\tGROUP BY o.comic_id\n\t\t\t\t)\n\t\t\t\tAND (? <> 'cast' OR NOT c.HasNoCast)\n\t\t\t\tAND (? <> 'location' OR NOT c.HasNoLocation)\n\t\t\t\tAND (? <> 'storyline' OR NOT c.HasNoStoryline)\n\t\t\tORDER BY c.id ASC\n\t\t\tLIMIT 1\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 4
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "3a43cecab910f4252af9c60e839dd330170bf5076bd72ed0f6d4f669f9e59af7": {
+    "query": "\n            INSERT IGNORE INTO `comic`\n                (id)\n            VALUES\n                (?)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": []
+    }
+  },
+  "3f6bbd2e56fa085bc1d820ffc3ca46aa7fa1d5f51d6181cc842e01f447c2ba27": {
+    "query": "\n            UPDATE `comic`\n            SET\n                publishDate = ?,\n                isAccuratePublishDate = ?\n            WHERE\n                id = ?\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
+  "4027ec7983a1d8c0c7842be3324e8b6339f9a48afa46b4eb184f1a018a417dc7": {
+    "query": "\n\t\t\tSELECT c.id\n\t\t\tFROM comic c\n\t\t\tWHERE c.id NOT IN\n\t\t\t\t(\n\t\t\t\t\tSELECT o.comic_id\n\t\t\t\t\tFROM occurences o\n\t\t\t\t\tLEFT JOIN items i ON o.items_id = i.id\n\t\t\t\t\tWHERE i.type = ?\n\t\t\t\t\tAND o.comic_id = c.id\n\t\t\t\t\tGROUP BY o.comic_id\n\t\t\t\t)\n\t\t\t\tAND (? <> 'cast' OR NOT c.HasNoCast)\n\t\t\t\tAND (? <> 'location' OR NOT c.HasNoLocation)\n\t\t\t\tAND (? <> 'storyline' OR NOT c.HasNoStoryline)\n\t\t\tORDER BY c.id DESC\n\t\t\tLIMIT 1\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 4
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "440f013297ab46e297b36decfd21a04d59c8c0d395368f5c9c3b206feec9647e": {
+    "query": "\n                SELECT * FROM `items` WHERE id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "shortName",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 200
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "Color_Blue",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "Color_Green",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "Color_Red",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "465db772800dc53b00774ffd510be286fd407c109a581894b3c3fa7a6fc67a93": {
+    "query": "\n\t\t\tSELECT c.id\n\t\t\tFROM comic c\n\t\t\tWHERE (c.tagline IS NULL OR NULLIF(c.tagline, '') IS NULL)\n\t\t\t\tAND NOT c.HasNoTagline\n\t\t\t\tAND c.id > ?\n\t\t\t\tAND c.id > 3132\n\t\t\tORDER BY c.id ASC\n\t\t\tLIMIT 1\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "49008e22b865e8c438c88663c1ec9855f49f6b3e92400e9669508e1ca5292ee3": {
+    "query": "\n            SELECT title FROM `comic` WHERE id = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "52e8e929673c0e14ecf02b41e36e663de81c2dd4c1044e5d6eab5f8dafae5916": {
+    "query": "\n                    UPDATE `comic`\n                    SET\n                        isGuestComic = ?\n                    WHERE\n                        id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "56a3a1eb0cccbd8e99b91be97cdb1e43281dc3b8a577a18279e9fd8f5d6a10cd": {
+    "query": "\n            SELECT * FROM `items` WHERE id = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "shortName",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 200
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "Color_Blue",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "Color_Green",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "Color_Red",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "5ebc29436394cd7a500750118ea9b48b3f0fce64b6fc4292b37dd9411634be7e": {
+    "query": "\n                    UPDATE `comic`\n                    SET\n                        HasNoStoryline = ?\n                    WHERE\n                        id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "694ee928b29e3b70424bcb0fa17978428c95dcefb9b2d3ed1ea544d1dcf06647": {
+    "query": "\n\t\t\tSELECT c.id\n\t\t\tFROM comic c\n\t\t\tWHERE (c.title IS NULL OR NULLIF(c.title, '') IS NULL)\n\t\t\t\tAND NOT c.HasNoTitle\n\t\t\t\tAND c.id < ?\n\t\t\tORDER BY c.id DESC\n\t\t\tLIMIT 1\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "6a88e772c73c6b33d29de3a8e6ff022cc303055993bdbf9e99da1af6a88aab90": {
+    "query": "UPDATE `news` SET news = ?, updateFactor = ?, lastUpdated = ? WHERE comic = ?",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 4
+      },
+      "nullable": []
+    }
+  },
+  "6e5f4c138530b36fb2d0656b5e6e0f9d33271f792942c612cf04f2703f734093": {
+    "query": "\n            DELETE FROM `occurences`\n            WHERE\n                items_id = ?\n            AND\n                comic_id = ?\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "7039881ca69f3b38e5706d6a0482be276485d344fac5ffe8141786eb613f6c56": {
+    "query": "\n            SELECT i.*\n            FROM items i\n            JOIN occurences o ON o.items_id = i.id\n            WHERE o.comic_id = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "shortName",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 200
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "Color_Blue",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "Color_Green",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "Color_Red",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "70cbe55689a58251bc76d7830b9ea7073984530639d20d21833235af9e9d09b0": {
+    "query": "\n\t\t\tSELECT i.id as id, MIN(c.id) as comic\n\t\t\tFROM items i\n\t\t\tJOIN occurences o ON o.items_id = i.id\n\t\t\tJOIN comic c ON c.id = o.comic_id\n\t\t\tWHERE c.id > ?\n\t\t\tAND i.id IN (\n\t\t\t\tSELECT items_id FROM `occurences` WHERE comic_id = ?\n\t\t\t)\n\t\t\t\tAND (? is NULL OR c.isGuestComic = ?)\n\t\t\t\tAND (? is NULL OR c.isNonCanon = ?)\n\t\t\tGROUP BY i.id\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "comic",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 6
+      },
+      "nullable": [
+        false,
+        true
+      ]
+    }
+  },
+  "752b1fda542000588c16372c370723afe2f5a35c35b44ce169fd511d9cb3e602": {
+    "query": "\n                INSERT INTO `items`\n                    (name, shortName, type)\n                VALUES\n                    (?, ?, ?)\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
+  "770de8b7383cd2edff70f70bb574a277f80e34edd3754e0589ef213b8b6d7132": {
+    "query": "\n\t\t\tSELECT\n\t\t\t\ti.id,\n\t\t\t\tMIN(c.id) as first,\n\t\t\t\tMAX(c.id) as last,\n\t\t\t\tCOUNT(c.id) as count\n\t\t\tFROM items i\n\t\t\tJOIN occurences o ON o.items_id = i.id\n\t\t\tJOIN comic c ON c.id = o.comic_id\n\t\t\t\tAND (? is NULL OR c.isGuestComic = ?)\n\t\t\t\tAND (? is NULL OR c.isNonCanon = ?)\n\t\t\tWHERE i.id IN (\n\t\t\t\tSELECT items_id FROM `occurences` WHERE comic_id = ?\n\t\t\t)\n\t\t\tGROUP by i.id\n\t\t\tORDER BY count DESC\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "first",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "last",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "count",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": [
+        false,
+        true,
+        true,
+        false
+      ]
+    }
+  },
+  "7a0e3605403ea2f48a94f3a6dae17433ad029c3f8997e97f36b37b01dd31bf82": {
+    "query": "\n\t\t\tSELECT c.id\n\t\t\tFROM comic c\n\t\t\tWHERE (c.title IS NULL OR NULLIF(c.title, '') IS NULL)\n\t\t\t\tAND NOT c.HasNoTitle\n\t\t\t\tAND c.id > ?\n\t\t\tORDER BY c.id ASC\n\t\t\tLIMIT 1\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "7eeca4ca8bcd65d0e4e457a49ac839b5244f0e1f15c9333f313707432ce51319": {
+    "query": "\n            UPDATE `comic`\n            SET title = ?\n            WHERE\n                id = ?\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "844545af2fdb5b697c88a6c184fa0fcaa9224197a7cc80236a38bd96d8ea8afe": {
+    "query": "\n\t\t\tSELECT i.id as id, MAX(c.id) as comic\n\t\t\tFROM items i\n\t\t\tJOIN occurences o ON o.items_id = i.id\n\t\t\tJOIN comic c ON c.id = o.comic_id\n\t\t\tWHERE c.id < ?\n\t\t\t\tAND (? is NULL OR c.isGuestComic = ?)\n\t\t\t\tAND (? is NULL OR c.isNonCanon = ?)\n\t\t\tGROUP BY i.id\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "comic",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": [
+        false,
+        true
+      ]
+    }
+  },
+  "8b6338c79ae6b17929555e9fcf61e026a9708b56f0595f1cef0a7dee80019831": {
+    "query": "\n\t\t\tSELECT c.id\n\t\t\tFROM comic c\n\t\t\tWHERE c.id NOT IN\n\t\t\t\t(\n\t\t\t\t\tSELECT o.comic_id\n\t\t\t\t\tFROM occurences o\n\t\t\t\t\tLEFT JOIN items i ON o.items_id = i.id\n\t\t\t\t\tWHERE i.type = ?\n\t\t\t\t\tAND o.comic_id = c.id\n\t\t\t\t\tGROUP BY o.comic_id\n\t\t\t\t)\n\t\t\t\tAND c.id > ?\n\t\t\t\tAND (? <> 'cast' OR NOT c.HasNoCast)\n\t\t\t\tAND (? <> 'location' OR NOT c.HasNoLocation)\n\t\t\t\tAND (? <> 'storyline' OR NOT c.HasNoStoryline)\n\t\t\tORDER BY c.id ASC\n\t\t\tLIMIT 1\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "8daff012a35d7b1a179ddaeea23447af5f4b9bf0d2fcfed1a2da9075b447727d": {
+    "query": "\n\t\t\t\tSELECT *\n\t\t\t\tFROM items\n\t\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "shortName",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 200
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "Color_Blue",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "Color_Green",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "Color_Red",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "8f84d7fd7b5db4a189c0fd24d6538098141feaf7007825f76214d4df61beef52": {
+    "query": "\n            UPDATE `comic`\n            SET tagline = ?\n            WHERE\n                id = ?\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "9005cc0d478628570c9dbc5be888d7784d56b967b7b9ff09bc688c2bf7da39d6": {
+    "query": "\n            SELECT COUNT(*) FROM `ItemImages`\n            WHERE ItemId = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "COUNT(*)",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "9d2ce38c5b7cd11c78a100f8b7da63c16e98283f32e3b8499448f8e91363f1f0": {
+    "query": "\n            SELECT * FROM `items`\n            WHERE `id` = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "shortName",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 200
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "Color_Blue",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "Color_Green",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "Color_Red",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "a09eb2c642882b0c0bfd647079bd2a1587569e25b517606d5a96fbb6a2b07e3b": {
+    "query": "\n                    UPDATE `comic`\n                    SET\n                        ImageType = ?\n                    WHERE id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "a8089cb7bd111263c364171c422bf9a04043c1f4bd371cfc6d6ec3d756a9f2bf": {
+    "query": "\n                    UPDATE `items`\n                    SET\n                        Color_Red = ?,\n                        Color_Green = ?,\n                        Color_Blue = ?\n                    WHERE\n                        id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 4
+      },
+      "nullable": []
+    }
+  },
+  "b15e7e9138ea0e20f5b054dd1baaedf174297da91911781d09ab0acdfc905976": {
+    "query": "\n    \t\tSELECT\n    \t\t\tMIN(c.id) as first,\n    \t\t\tMAX(c.id) as last\n    \t\tFROM comic c\n    \t\tWHERE (c.tagline IS NULL or NULLIF(c.tagline, '') IS NULL)\n    \t\t\tAND NOT c.HasNoTagline\n    \t\t\tAND c.id > 3132\n    \t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "first",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "last",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        true,
+        true
+      ]
+    }
+  },
+  "b21dde653ea3c0848a16b7bb157bb842ff7e193d4318f97bbbe32dbc63f83844": {
+    "query": "\n\t\t\tSELECT c.id\n\t\t\tFROM comic c\n\t\t\tWHERE c.id NOT IN\n\t\t\t\t(\n\t\t\t\t\tSELECT o.comic_id\n\t\t\t\t\tFROM occurences o\n\t\t\t\t\tLEFT JOIN items i ON o.items_id = i.id\n\t\t\t\t\tWHERE i.type = ?\n\t\t\t\t\tAND o.comic_id = c.id\n\t\t\t\t\tGROUP BY o.comic_id\n\t\t\t\t)\n\t\t\t\tAND c.id < ?\n\t\t\t\tAND (? <> 'cast' OR NOT c.HasNoCast)\n\t\t\t\tAND (? <> 'location' OR NOT c.HasNoLocation)\n\t\t\t\tAND (? <> 'storyline' OR NOT c.HasNoStoryline)\n\t\t\tORDER BY c.id DESC\n\t\t\tLIMIT 1\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "b26ca314170bfb42afd8f8de57f9f08ee2f975b9a669808c1aef8893f2af08ed": {
+    "query": "\n            SELECT COUNT(*) FROM `log_entry`\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "COUNT(*)",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "b4b105ae516a63407df4fa8d691984187f3071d9e6a54695de96f94166635385": {
+    "query": "\n                            SELECT id FROM `comic`\n                            WHERE `id` = ?\n                        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "b4f1b699bdd6c2dde1f334e21f96ed095f475c7fcc4fdbb9c9df5f85a61c633b": {
+    "query": "\n                    UPDATE `comic`\n                    SET\n                        HasNoTitle = ?\n                    WHERE\n                        id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "b956e63b03f0bd3d788c2152391bd89b3bac0830f5214406d3515c6d9467e266": {
+    "query": "\n                    UPDATE `comic`\n                    SET\n                        HasNoLocation = ?\n                    WHERE\n                        id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "ba3d8285266f3ed61a4ee85bff56674cee75c8f87f10e088553c746f358ed93d": {
+    "query": "\n\t\t\tSELECT\n\t\t\t\tMIN(c.id) as first,\n\t\t\t\tMAX(c.id) as last\n\t\t\tFROM comic c\n\t\t\tWHERE (c.title IS NULL or NULLIF(c.title, '') IS NULL)\n\t\t\t\tAND NOT c.HasNoTitle\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "first",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "last",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        true,
+        true
+      ]
+    }
+  },
+  "bd1c915d1ac83b6c9e2392f38a1b57dd9092170c7bcd4e815965b6b671a62253": {
+    "query": "\n            SELECT * FROM `log_entry`\n            ORDER BY `DateTime` DESC\n            LIMIT ?, 10\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "UserToken",
+          "type_info": {
+            "type": "String",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 144
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "DateTime",
+          "type_info": {
+            "type": "Datetime",
+            "flags": {
+              "bits": 4225
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "Action",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 4294967295
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "c003a6905cd6fea5b43edb79683d2e5112666a52add36045804661e3bbeb151a": {
+    "query": "\n            SELECT * FROM `token`\n            WHERE `id` = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "String",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 224,
+            "max_size": 144
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "identifier",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 200
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "CanAddImageToItem",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "CanAddItemToComic",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "CanChangeComicData",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "CanChangeItemData",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "CanRemoveImageFromItem",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "CanRemoveItemFromComic",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "c103253d1d91c14547e81dd8ed47ec5301e73933eead56e6b72a43dfaffb6615": {
+    "query": "\n                    INSERT INTO `comic`\n                        (id, title, imagetype)\n                    VALUES\n                        (?, ?, ?)\n                    ON DUPLICATE KEY UPDATE\n                        title = ?,\n                        imagetype = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": []
+    }
+  },
+  "c484bf44f07f876938e3bf23c6719b9f3295cfedd3c91727eb230ac0f368a9a6": {
+    "query": "\n            SELECT\n                Id AS id,\n                CRC32CHash AS crc32c_hash\n            FROM `ItemImages`\n            WHERE ItemId = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "crc32c_hash",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 4129
+            },
+            "char_set": 63,
+            "max_size": 10
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "c9343894d61895272a4b3d6cac61ca195154eed87df9ad80b33560725c91e125": {
+    "query": "\n                    UPDATE `comic`\n                    SET\n                        HasNoTagline = ?\n                    WHERE\n                        id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "cbb89003ef936da5c0ab3c7cb5deec84cea6e01d81567989822c038884f09969": {
+    "query": "\n            INSERT INTO `log_entry`\n                (UserToken, DateTime, Action)\n            VALUES\n                (?, ?, ?)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
+  "cc02b11b9b6e9fa8bac7521c3d501a7fb2a7f3ac129e6c9c862b30ce2ae1cc63": {
+    "query": "\n                SELECT title, ImageType FROM `comic`\n                WHERE `id` = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "ImageType",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
+  },
+  "d449aeb9af2047c5d132dc9a87e922d71fd281fc30bfd67b9dbb6e54a5e86753": {
+    "query": "\n            SELECT\n                i2.id,\n                i2.shortName as short_name,\n                i2.name,\n                i2.type,\n                i2.Color_Red as color_red,\n                i2.Color_Green as color_green,\n                i2.Color_Blue as color_blue,\n                COUNT(i2.id) as count\n            FROM items i\n            JOIN occurences o ON i.id = o.items_id\n            JOIN occurences o2 ON o.comic_id = o2.comic_id\n            JOIN items i2 ON o2.items_id = i2.id\n            WHERE i.id = ?\n                AND i2.id <> i.id\n                AND i2.type = ?\n            GROUP BY i2.id\n            ORDER BY count DESC\n            LIMIT ?\n\t\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "short_name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 200
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "color_red",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "color_green",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "color_blue",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "count",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "d7d02971417a6b4d8887f1a03ef8b0d2dbe300ceb9077300aac15aedfa1697be": {
+    "query": "\n                            SELECT * FROM `news`\n                            WHERE comic = ?\n                        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "comic",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4103
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "lastUpdated",
+          "type_info": {
+            "type": "Date",
+            "flags": {
+              "bits": 4225
+            },
+            "char_set": 63,
+            "max_size": 10
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "news",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 262140
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "updateFactor",
+          "type_info": {
+            "type": "Double",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 22
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "isLocked",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "da4359156507eab8fccedc0ca85db40fea61f6f78b65b9ee44de0494415925d4": {
+    "query": "\n\t\t\tSELECT i.id as id, MIN(c.id) as comic\n\t\t\tFROM items i\n\t\t\tJOIN occurences o ON o.items_id = i.id\n\t\t\tJOIN comic c ON c.id = o.comic_id\n\t\t\tWHERE c.id > ?\n\t\t\t\tAND (? is NULL OR c.isGuestComic = ?)\n\t\t\t\tAND (? is NULL OR c.isNonCanon = ?)\n\t\t\tGROUP BY i.id\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "comic",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 5
+      },
+      "nullable": [
+        false,
+        true
+      ]
+    }
+  },
+  "dce4380d9fd50223bae899fce266628efece8a052c15b54bbbb9ce8d6d6d92fe": {
+    "query": "INSERT INTO `news` (news, updateFactor, lastUpdated, comic) VALUES (?, ?, ?, ?)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 4
+      },
+      "nullable": []
+    }
+  },
+  "e7bf77b8feb6cdfe1f2c7eb3b1cfb7d23ae59f95a33ffa3b18e21c00207cb132": {
+    "query": "\n            INSERT INTO `occurences`\n                (comic_id, items_id)\n            VALUES\n                (?, ?)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "ec8d5778dd96e6bca6360b186469184df6bce62702ab00565a2317a8e86901e3": {
+    "query": "\n            SELECT COUNT(*) FROM `comic`\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "COUNT(*)",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 0
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
+  "ef75fe6cee05b6159092733a1aa0a01f3d0bb8fe56996d1311bd0ac809a8bf2b": {
+    "query": "\n                    UPDATE `comic`\n                    SET\n                        isNonCanon = ?\n                    WHERE\n                        id = ?\n                ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": []
+    }
+  },
+  "f3e156cdc688cfd0e1921981ad608777251729d3ad9b0ef673bd8e2a4db4754f": {
+    "query": "\n            SELECT tagline FROM `comic` WHERE id = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "tagline",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 8
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        true
+      ]
+    }
+  },
+  "f770e98f264f59a4d7223b96014b47323d79398cd721e7cb7192f141e810558e": {
+    "query": "\n            SELECT *\n            FROM items\n            WHERE id = ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "shortName",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 200
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "type",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "Color_Blue",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "Color_Green",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "Color_Red",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 3
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "fd0b0214bad894af9b687d2db33845840837828025e81042f0a24431ca703851": {
+    "query": "\n\t\t\tSELECT i.id as id, MAX(c.id) as comic\n\t\t\tFROM items i\n\t\t\tJOIN occurences o ON o.items_id = i.id\n\t\t\tJOIN comic c ON c.id = o.comic_id\n\t\t\tWHERE c.id < ?\n\t\t\t\tAND i.id IN (\n\t\t\t\t\tSELECT items_id FROM `occurences` WHERE comic_id = ?\n\t\t\t\t)\n\t\t\t\tAND (? is NULL OR c.isGuestComic = ?)\n\t\t\t\tAND (? is NULL OR c.isNonCanon = ?)\n\t\t\tGROUP BY i.id\n\t\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 515
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "comic",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 6
+      },
+      "nullable": [
+        false,
+        true
+      ]
+    }
+  },
+  "fea5f691d41b4efdfc51e1e37fd8dd60d9e7a5d5701be2005a220463f1bd9626": {
+    "query": "\n\t\tSELECT * FROM `comic`\n\t\tWHERE `id` = ?\n\t",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4099
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "isGuestComic",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "isNonCanon",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 4,
+          "name": "tagline",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 8
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 5,
+          "name": "publishDate",
+          "type_info": {
+            "type": "Datetime",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 6,
+          "name": "isAccuratePublishDate",
+          "type_info": {
+            "type": "Tiny",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 7,
+          "name": "HasNoCast",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 8,
+          "name": "HasNoLocation",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 9,
+          "name": "HasNoStoryline",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 10,
+          "name": "HasNoTagline",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 11,
+          "name": "HasNoTitle",
+          "type_info": {
+            "type": "Bit",
+            "flags": {
+              "bits": 33
+            },
+            "char_set": 63,
+            "max_size": 1
+          }
+        },
+        {
+          "ordinal": 12,
+          "name": "ImageType",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  }
+}

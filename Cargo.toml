@@ -23,6 +23,7 @@ sqlx = { version = "0.5", features = [
     "migrate",
     "uuid",
     "chrono",
+    "offline",
 ] }
 serde = "1"
 uuid = { version = "0.8", features = ["serde"] }
