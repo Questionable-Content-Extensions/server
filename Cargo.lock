@@ -1060,7 +1060,9 @@ dependencies = [
 
 [[package]]
 name = "ilyvion-util"
-version = "0.4.0"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5e37a39179f9cf031109999289bd7fbde0c4ad1174b874dcfb32f21c99bfd2a1"
 dependencies = [
  "shrinkwraprs",
 ]
@@ -2070,9 +2072,9 @@ dependencies = [
 
 [[package]]
 name = "shrinkwraprs"
-version = "0.2.3"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83695fde96cbe9e08f0e4eb96b1b56fdbd44f2098ee27462dda964c7745fddc7"
+checksum = "e63e6744142336dfb606fe2b068afa2e1cca1ee6a5d8377277a92945d81fa331"
 dependencies = [
  "bitflags",
  "itertools",
