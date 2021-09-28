@@ -16,7 +16,7 @@ impl DbPool {
         let database_options = Environment::database_url()
             .parse::<MySqlConnectOptions>()
             .expect("failed to parse database URL")
-            .ssl_mode(MySqlSslMode::Required);
+            .ssl_mode(MySqlSslMode::Disabled);
 
         Self(
             MySqlPoolOptions::new()
