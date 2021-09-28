@@ -7,7 +7,7 @@ use crate::database::DbPool;
 use crate::models::{
     token_permissions, Comic, ComicList, Exclusion, Inclusion, ItemColor, ItemType,
 };
-use crate::util::{log_action, NewsUpdater};
+use crate::util::{ensure_is_authorized, log_action, NewsUpdater};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
 use anyhow::anyhow;
@@ -304,7 +304,8 @@ async fn add_item(
 ) -> Result<HttpResponse> {
     const CREATE_NEW_ITEM_ID: i16 = -1;
 
-    ensure_is_authorized(&auth, token_permissions::CAN_ADD_ITEM_TO_COMIC)?;
+    ensure_is_authorized(&auth, token_permissions::CAN_ADD_ITEM_TO_COMIC)
+        .map_err(error::ErrorForbidden)?;
 
     let mut transaction = pool
         .begin()
@@ -440,7 +441,8 @@ async fn remove_item(
     request: web::Json<RemoveItemFromComicBody>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    ensure_is_authorized(&auth, token_permissions::CAN_REMOVE_ITEM_FROM_COMIC)?;
+    ensure_is_authorized(&auth, token_permissions::CAN_REMOVE_ITEM_FROM_COMIC)
+        .map_err(error::ErrorForbidden)?;
 
     let mut transaction = pool
         .begin()
@@ -515,7 +517,8 @@ async fn set_title(
     request: web::Json<SetTitleBody>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)?;
+    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
+        .map_err(error::ErrorForbidden)?;
 
     let mut transaction = pool
         .begin()
@@ -587,7 +590,8 @@ async fn set_tagline(
     request: web::Json<SetTaglineBody>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)?;
+    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
+        .map_err(error::ErrorForbidden)?;
 
     let mut transaction = pool
         .begin()
@@ -662,7 +666,8 @@ async fn set_publish_date(
     request: web::Json<SetPublishDateBody>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)?;
+    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
+        .map_err(error::ErrorForbidden)?;
 
     let mut transaction = pool
         .begin()
@@ -812,7 +817,8 @@ async fn set_flag(
     auth: AuthDetails,
     flag: FlagType,
 ) -> Result<()> {
-    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)?;
+    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
+        .map_err(error::ErrorForbidden)?;
 
     let mut transaction = pool
         .begin()
@@ -984,7 +990,7 @@ fn transfer_item_data_to_navigation_item(
         navigation_item.name = Some(name);
         navigation_item.r#type = Some(ItemType::try_from(&*r#type)?);
 
-        navigation_item.color = Some(ItemColor::new(color_red, color_green, color_blue));
+        navigation_item.color = Some(ItemColor(color_red, color_green, color_blue));
     }
 
     Ok(())
@@ -1015,17 +1021,6 @@ async fn fetch_comic_list(
     .map_err(error::ErrorInternalServerError)?;
 
     Ok(comics)
-}
-
-#[inline]
-fn ensure_is_authorized(auth: &AuthDetails, permission: &str) -> Result<()> {
-    if !auth.has_permission(permission) {
-        return Err(error::ErrorForbidden(anyhow!(
-            "Invalid token or insufficient permissions"
-        )));
-    }
-
-    Ok(())
 }
 
 #[inline]

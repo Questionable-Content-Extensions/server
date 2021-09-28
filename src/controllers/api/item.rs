@@ -5,12 +5,14 @@ use crate::models::{
     token_permissions, Item, ItemColor, ItemImageList, ItemList, ItemNavigationData, ItemType,
     RelatedItem,
 };
-use crate::util::{get_permissions_for_token, log_action};
+use crate::util::{ensure_is_authorized, get_permissions_for_token, log_action};
 use actix_multipart::Multipart;
 use actix_web::{error, web, HttpResponse, Result};
+use actix_web_grants::permissions::AuthDetails;
 use anyhow::anyhow;
 use crc32c::crc32c;
 use futures::StreamExt;
+use serde::Deserialize;
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
@@ -19,14 +21,15 @@ use uuid::Uuid;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").route(web::get().to(all)))
-        .service(web::resource("/{itemId}").route(web::get().to(by_id)))
-        .service(web::resource("/friends/{itemId}").route(web::get().to(friends)))
-        .service(web::resource("{itemId}/friends").route(web::get().to(friends)))
-        .service(web::resource("/locations/{itemId}").route(web::get().to(locations)))
-        .service(web::resource("{itemId}/locations").route(web::get().to(locations)))
-        .service(web::resource("{itemId}/images").route(web::get().to(images)))
+        .service(web::resource("setproperty").route(web::post().to(set_property)))
         .service(web::resource("image/upload").route(web::post().to(image_upload)))
-        .service(web::resource("image/{imageId}").route(web::get().to(image)));
+        .service(web::resource("image/{imageId}").route(web::get().to(image)))
+        .service(web::resource("friends/{itemId}").route(web::get().to(friends)))
+        .service(web::resource("locations/{itemId}").route(web::get().to(locations)))
+        .service(web::resource("{itemId}").route(web::get().to(by_id)))
+        .service(web::resource("{itemId}/friends").route(web::get().to(friends)))
+        .service(web::resource("{itemId}/locations").route(web::get().to(locations)))
+        .service(web::resource("{itemId}/images").route(web::get().to(images)));
 }
 
 async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
@@ -74,7 +77,7 @@ async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             short_name,
             name,
             r#type: ItemType::try_from(&*r#type).map_err(error::ErrorInternalServerError)?,
-            color: ItemColor::new(color_red, color_green, color_blue),
+            color: ItemColor(color_red, color_green, color_blue),
             count,
         })
     }
@@ -149,7 +152,7 @@ async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<i16>) -> Result<HttpR
         short_name: item.shortName,
         name: item.name,
         r#type: ItemType::try_from(&*item.r#type).map_err(error::ErrorInternalServerError)?,
-        color: ItemColor::new(item.Color_Red, item.Color_Green, item.Color_Blue),
+        color: ItemColor(item.Color_Red, item.Color_Green, item.Color_Blue),
         first: item_occurrence.min.unwrap_or_default(),
         last: item_occurrence.max.unwrap_or_default(),
         appearances: item_occurrence.count,
@@ -338,6 +341,169 @@ async fn image_upload(
     Ok(HttpResponse::Ok().finish())
 }
 
+#[allow(clippy::too_many_lines)]
+async fn set_property(
+    pool: web::Data<DbPool>,
+    request: web::Json<SetItemPropertyBody>,
+    auth: AuthDetails,
+) -> Result<HttpResponse> {
+    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_ITEM_DATA)
+        .map_err(error::ErrorForbidden)?;
+
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let old_item = sqlx::query_as!(
+        DatabaseItem,
+        r#"
+            SELECT *
+            FROM items
+            WHERE id = ?
+        "#,
+        request.item_id
+    )
+    .fetch_one(&mut *transaction)
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    match &*request.property {
+        "name" => {
+            sqlx::query!(
+                r#"
+                    UPDATE `items`
+                    SET name = ?
+                    WHERE
+                        id = ?
+                "#,
+                request.value,
+                request.item_id,
+            )
+            .execute(&mut *transaction)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+
+            if old_item.name.is_empty() {
+                log_action(
+                    &mut *transaction,
+                    request.token,
+                    format!(
+                        "Set name of {} #{} to \"{}\"",
+                        old_item.r#type, request.item_id, request.value
+                    ),
+                )
+                .await
+                .map_err(error::ErrorInternalServerError)?;
+            } else {
+                log_action(
+                    &mut *transaction,
+                    request.token,
+                    format!(
+                        "Changed name of {} #{} from \"{}\" to \"{}\"",
+                        old_item.r#type, request.item_id, old_item.name, request.value
+                    ),
+                )
+                .await
+                .map_err(error::ErrorInternalServerError)?;
+            }
+        }
+        "shortName" => {
+            sqlx::query!(
+                r#"
+                    UPDATE `items`
+                    SET shortName = ?
+                    WHERE
+                        id = ?
+                "#,
+                request.value,
+                request.item_id,
+            )
+            .execute(&mut *transaction)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+
+            if old_item.shortName.is_empty() {
+                log_action(
+                    &mut *transaction,
+                    request.token,
+                    format!(
+                        "Set shortName of {} #{} to \"{}\"",
+                        old_item.r#type, request.item_id, request.value
+                    ),
+                )
+                .await
+                .map_err(error::ErrorInternalServerError)?;
+            } else {
+                log_action(
+                    &mut *transaction,
+                    request.token,
+                    format!(
+                        "Changed shortName of {} #{} from \"{}\" to \"{}\"",
+                        old_item.r#type, request.item_id, old_item.shortName, request.value
+                    ),
+                )
+                .await
+                .map_err(error::ErrorInternalServerError)?;
+            }
+        }
+        "color" => {
+            let old_color = ItemColor(
+                old_item.Color_Red,
+                old_item.Color_Green,
+                old_item.Color_Blue,
+            );
+            let new_color: ItemColor = request.value.parse().map_err(error::ErrorBadRequest)?;
+
+            sqlx::query!(
+                r#"
+                    UPDATE `items`
+                    SET
+                        Color_Red = ?,
+                        Color_Green = ?,
+                        Color_Blue = ?
+                    WHERE
+                        id = ?
+                "#,
+                new_color.0,
+                new_color.1,
+                new_color.2,
+                request.item_id
+            )
+            .execute(&mut *transaction)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+
+            log_action(
+                &mut *transaction,
+                request.token,
+                format!(
+                    "Changed color of {} #{} from \"{}\" to \"{}\"",
+                    old_item.r#type, request.item_id, old_color, new_color
+                ),
+            )
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+        }
+        property => {
+            return Err(error::ErrorBadRequest(anyhow!(
+                "No property named \"{}\"",
+                property
+            )))
+        }
+    }
+
+    transaction
+        .commit()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().body(format!(
+        "Item property {} has been updated on item #{}",
+        request.property, request.item_id
+    )))
+}
+
 async fn related_items(
     pool: web::Data<DbPool>,
     item_id: i16,
@@ -404,11 +570,21 @@ async fn related_items(
             short_name,
             name,
             r#type: ItemType::try_from(&*r#type).map_err(error::ErrorInternalServerError)?,
-            color: ItemColor::new(color_red, color_green, color_blue),
+            color: ItemColor(color_red, color_green, color_blue),
             count,
         };
         items.push(item);
     }
 
     Ok(items)
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetItemPropertyBody {
+    token: uuid::Uuid,
+    #[serde(rename = "item")]
+    item_id: i16,
+    property: String,
+    value: String,
 }

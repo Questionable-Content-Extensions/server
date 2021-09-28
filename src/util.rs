@@ -1,5 +1,7 @@
 use crate::database::models::Token;
 use crate::models::token_permissions;
+use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
+use anyhow::anyhow;
 use chrono::Utc;
 use ilyvion_util::string_extensions::StrExtensions;
 use log::info;
@@ -131,4 +133,13 @@ where
         permissions.push(token_permissions::CAN_CHANGE_ITEM_DATA.to_string());
     }
     Ok(permissions)
+}
+
+#[inline]
+pub fn ensure_is_authorized(auth: &AuthDetails, permission: &str) -> anyhow::Result<()> {
+    if !auth.has_permission(permission) {
+        return Err(anyhow!("Invalid token or insufficient permissions"));
+    }
+
+    Ok(())
 }

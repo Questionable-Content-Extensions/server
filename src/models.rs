@@ -1,7 +1,7 @@
 #![allow(clippy::use_self)]
 
 use crate::database::models::Comic as DatabaseComic;
-use anyhow::bail;
+use anyhow::{anyhow, bail, Context};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize, Serializer};
 use std::convert::TryFrom;
@@ -81,11 +81,14 @@ pub struct Item {
 }
 
 #[derive(Debug)]
-pub struct ItemColor(u8, u8, u8);
-impl ItemColor {
-    #[inline]
-    pub fn new(red: u8, green: u8, blue: u8) -> Self {
-        Self(red, green, blue)
+pub struct ItemColor(pub u8, pub u8, pub u8);
+impl std::fmt::Display for ItemColor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if f.alternate() {
+            Ok(write!(f, "#{:02x}{:02x}{:02x}", self.0, self.1, self.2)?)
+        } else {
+            Ok(write!(f, "{:02x}{:02x}{:02x}", self.0, self.1, self.2)?)
+        }
     }
 }
 impl Serialize for ItemColor {
@@ -94,8 +97,40 @@ impl Serialize for ItemColor {
     where
         S: Serializer,
     {
-        let color = format!("#{:02x}{:02x}{:02x}", self.0, self.1, self.2);
-        serializer.serialize_str(&color)
+        serializer.serialize_str(&self.to_string())
+    }
+}
+impl std::str::FromStr for ItemColor {
+    type Err = anyhow::Error;
+
+    fn from_str(mut s: &str) -> Result<Self, Self::Err> {
+        if let Some(sp) = s.strip_prefix('#') {
+            s = sp;
+        }
+
+        let red = s
+            .get(0..2)
+            .ok_or_else(|| anyhow!("Color is missing red component value"))
+            .and_then(|s| {
+                u8::from_str_radix(s, 16)
+                    .context("Red component of color is not a valid hexadecimal value")
+            })?;
+        let green = s
+            .get(2..4)
+            .ok_or_else(|| anyhow!("Color is missing green component value"))
+            .and_then(|s| {
+                u8::from_str_radix(s, 16)
+                    .context("Green component of color is not a valid hexadecimal value")
+            })?;
+        let blue = s
+            .get(4..6)
+            .ok_or_else(|| anyhow!("Color is missing blue component value"))
+            .and_then(|s| {
+                u8::from_str_radix(s, 16)
+                    .context("Blue component of color is not a valid hexadecimal value")
+            })?;
+
+        Ok(Self(red, green, blue))
     }
 }
 
