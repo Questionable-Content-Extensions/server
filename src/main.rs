@@ -59,10 +59,8 @@
 #![warn(clippy::too_many_lines)]
 // </editor-fold>
 
-use crate::database::models::Token;
 use crate::database::DbPool;
-use crate::models::token_permissions;
-use crate::util::{ComicUpdater, NewsUpdater};
+use crate::util::{get_permissions_for_token, ComicUpdater, NewsUpdater};
 use actix_web::dev::ServiceRequest;
 use actix_web::{error, web, App, Error, FromRequest, HttpServer};
 use actix_web_grants::GrantsMiddleware;
@@ -198,14 +196,17 @@ async fn extract_permissions(request: &ServiceRequest) -> Result<Vec<String>, Er
         if let Some(token) = token_query.token {
             token
         } else {
+            // Grab the payload and try parsing it as JSON
             let bytes = web::Bytes::from_request(&*request, &mut *payload).await?;
             let token_query: Result<TokenQuery, _> = serde_json::from_slice(&bytes[..]);
-            if let Ok(token_query) = token_query {
-                // Now that we've grabbed the token from the JSON payload, restore the payload.
-                let mut payload = actix_http::h1::Payload::empty();
-                payload.unread_data(bytes);
-                mut_request.set_payload(payload.into());
 
+            // Now that we've grabbed the payload, we need to restore the payload
+            // for the rest of the Actix machinery to do its thing.
+            let mut payload = actix_http::h1::Payload::empty();
+            payload.unread_data(bytes);
+            mut_request.set_payload(payload.into());
+
+            if let Ok(token_query) = token_query {
                 if let Some(token) = token_query.token {
                     token
                 } else {
@@ -228,44 +229,7 @@ async fn extract_permissions(request: &ServiceRequest) -> Result<Vec<String>, Er
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let result = sqlx::query_as!(
-        Token,
-        r#"
-            SELECT * FROM `token`
-            WHERE `id` = ?
-        "#,
-        token.to_string()
-    )
-    .fetch_optional(&mut conn)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
-
-    let token = if let Some(token) = result {
-        token
-    } else {
-        // Invalid token provided, there are no permissions
-        return Ok(vec![]);
-    };
-
-    let mut permissions = Vec::with_capacity(7);
-    permissions.push(token_permissions::HAS_VALID_TOKEN.to_string());
-    if token.CanAddItemToComic != 0 {
-        permissions.push(token_permissions::CAN_ADD_ITEM_TO_COMIC.to_string());
-    }
-    if token.CanRemoveItemFromComic != 0 {
-        permissions.push(token_permissions::CAN_REMOVE_ITEM_FROM_COMIC.to_string());
-    }
-    if token.CanChangeComicData != 0 {
-        permissions.push(token_permissions::CAN_CHANGE_COMIC_DATA.to_string());
-    }
-    if token.CanAddImageToItem != 0 {
-        permissions.push(token_permissions::CAN_ADD_IMAGE_TO_ITEM.to_string());
-    }
-    if token.CanRemoveImageFromItem != 0 {
-        permissions.push(token_permissions::CAN_REMOVE_IMAGE_FROM_ITEM.to_string());
-    }
-    if token.CanChangeItemData != 0 {
-        permissions.push(token_permissions::CAN_CHANGE_ITEM_DATA.to_string());
-    }
-    Ok(permissions)
+    Ok(get_permissions_for_token(&mut conn, token)
+        .await
+        .map_err(error::ErrorInternalServerError)?)
 }

@@ -2,13 +2,20 @@ use crate::controllers::api::comic::navigation_data::fetch_all_item_navigation_d
 use crate::database::models::Item as DatabaseItem;
 use crate::database::DbPool;
 use crate::models::{
-    Item, ItemColor, ItemImageList, ItemList, ItemNavigationData, ItemType, RelatedItem,
+    token_permissions, Item, ItemColor, ItemImageList, ItemList, ItemNavigationData, ItemType,
+    RelatedItem,
 };
+use crate::util::{get_permissions_for_token, log_action};
+use actix_multipart::Multipart;
 use actix_web::{error, web, HttpResponse, Result};
 use anyhow::anyhow;
+use crc32c::crc32c;
+use futures::StreamExt;
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
+use std::str::FromStr;
+use uuid::Uuid;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").route(web::get().to(all)))
@@ -18,6 +25,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(web::resource("/locations/{itemId}").route(web::get().to(locations)))
         .service(web::resource("{itemId}/locations").route(web::get().to(locations)))
         .service(web::resource("{itemId}/images").route(web::get().to(images)))
+        .service(web::resource("image/upload").route(web::post().to(image_upload)))
         .service(web::resource("image/{imageId}").route(web::get().to(image)));
 }
 
@@ -202,6 +210,132 @@ async fn image(pool: web::Data<DbPool>, image_id: web::Path<i32>) -> Result<Http
     .ok_or_else(|| error::ErrorNotFound(anyhow!("No item image with id {} exists", *image_id)))?;
 
     Ok(HttpResponse::Ok().content_type("image/png").body(image))
+}
+
+#[allow(clippy::too_many_lines)]
+async fn image_upload(
+    pool: web::Data<DbPool>,
+    mut image_upload_form: Multipart,
+) -> Result<HttpResponse> {
+    let mut token: Option<Uuid> = None;
+    let mut item_id: Option<i16> = None;
+    let mut image: Option<(Vec<u8>, u32)> = None;
+
+    while let Some(item) = image_upload_form.next().await {
+        let mut field = item.map_err(error::ErrorInternalServerError)?;
+
+        let content_disposition = field.content_disposition().ok_or_else(|| {
+            error::ErrorBadRequest(anyhow!("Content-Disposition header was missing"))
+        })?;
+        let name = content_disposition
+            .get_name()
+            .ok_or_else(|| error::ErrorBadRequest(anyhow!("A form field was missing a name")))?;
+
+        match name {
+            "Token" => {
+                let data = field
+                    .next()
+                    .await
+                    .ok_or_else(|| {
+                        error::ErrorBadRequest(anyhow!("Token form field was missing a value"))
+                    })?
+                    .map_err(error::ErrorBadRequest)?;
+                let value =
+                    Uuid::from_str(std::str::from_utf8(&data).map_err(error::ErrorBadRequest)?)
+                        .map_err(error::ErrorBadRequest)?;
+
+                token = Some(value);
+            }
+            "ItemId" => {
+                let data = field
+                    .next()
+                    .await
+                    .ok_or_else(|| {
+                        error::ErrorBadRequest(anyhow!("ItemId form field was missing a value"))
+                    })?
+                    .map_err(error::ErrorBadRequest)?;
+                let value: i16 = std::str::from_utf8(&data)
+                    .map_err(error::ErrorBadRequest)?
+                    .parse()
+                    .map_err(error::ErrorBadRequest)?;
+
+                item_id = Some(value);
+            }
+            "Image" => {
+                let mut data = Vec::new();
+                while let Some(chunk) = field.next().await {
+                    data.extend_from_slice(&chunk?[..]);
+                }
+                let crc32c = crc32c(&data);
+
+                image = Some((data, crc32c));
+            }
+            _ => {
+                return Err(error::ErrorBadRequest(anyhow!(
+                    "Encountered unexpected field \"{}\"",
+                    name
+                )))
+            }
+        }
+    }
+
+    let token = token.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"Token\"")))?;
+    let item_id =
+        item_id.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"ItemId\"")))?;
+    let (image, crc32c_hash) =
+        image.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"Image\"")))?;
+
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let permissions = get_permissions_for_token(&mut *transaction, token)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    if !permissions
+        .iter()
+        .any(|e| e == token_permissions::CAN_ADD_IMAGE_TO_ITEM)
+    {
+        return Err(error::ErrorForbidden(anyhow!(
+            "Invalid token or insufficient permissions"
+        )));
+    }
+
+    let result = sqlx::query!(
+        r#"
+            INSERT INTO `ItemImages`
+                (ItemId, Image, CRC32CHash)
+            VALUES
+                (?, ?, ?)
+        "#,
+        item_id,
+        image,
+        crc32c_hash,
+    )
+    .execute(&mut *transaction)
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    let new_item_image_id = result.last_insert_id() as i32;
+
+    log_action(
+        &mut *transaction,
+        token,
+        format!(
+            "Uploaded image #{} for item #{}",
+            new_item_image_id, item_id
+        ),
+    )
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    transaction
+        .commit()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().finish())
 }
 
 async fn related_items(
