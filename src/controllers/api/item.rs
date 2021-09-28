@@ -296,14 +296,10 @@ async fn image_upload(
     let permissions = get_permissions_for_token(&mut *transaction, token)
         .await
         .map_err(error::ErrorInternalServerError)?;
-    if !permissions
-        .iter()
-        .any(|e| e == token_permissions::CAN_ADD_IMAGE_TO_ITEM)
-    {
-        return Err(error::ErrorForbidden(anyhow!(
-            "Invalid token or insufficient permissions"
-        )));
-    }
+    let auth = AuthDetails::new(permissions);
+
+    ensure_is_authorized(&auth, token_permissions::CAN_ADD_IMAGE_TO_ITEM)
+        .map_err(error::ErrorForbidden)?;
 
     let result = sqlx::query!(
         r#"

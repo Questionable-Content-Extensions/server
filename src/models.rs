@@ -1,10 +1,11 @@
 #![allow(clippy::use_self)]
 
-use crate::database::models::Comic as DatabaseComic;
+use crate::database::models::{Comic as DatabaseComic, LogEntry as DatabaseLogEntry};
 use anyhow::{anyhow, bail, Context};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize, Serializer};
 use std::convert::TryFrom;
+use uuid::Uuid;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -78,6 +79,26 @@ pub struct Item {
     pub total_comics: i64,
     pub presence: f64,
     pub has_image: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LogEntry {
+    pub identifier: Uuid,
+    pub date_time: DateTime<Utc>,
+    pub action: String,
+}
+
+impl TryFrom<DatabaseLogEntry> for LogEntry {
+    type Error = anyhow::Error;
+
+    fn try_from(l: DatabaseLogEntry) -> Result<Self, Self::Error> {
+        Ok(Self {
+            identifier: Uuid::parse_str(&l.UserToken)?,
+            date_time: DateTime::from_utc(l.DateTime, Utc),
+            action: l.Action,
+        })
+    }
 }
 
 #[derive(Debug)]

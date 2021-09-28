@@ -72,3 +72,11 @@ pub struct Token {
     pub CanRemoveImageFromItem: u8,
     pub CanRemoveItemFromComic: u8,
 }
+
+#[derive(Debug)]
+pub struct LogEntry {
+    pub id: i32,
+    pub UserToken: String,
+    pub DateTime: NaiveDateTime,
+    pub Action: String,
+}
