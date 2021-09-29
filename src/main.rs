@@ -61,6 +61,7 @@
 
 use crate::database::DbPool;
 use crate::util::{get_permissions_for_token, ComicUpdater, NewsUpdater};
+use actix_files::Files;
 use actix_web::dev::ServiceRequest;
 use actix_web::{error, web, App, Error, FromRequest, HttpServer};
 use actix_web_grants::GrantsMiddleware;
@@ -107,6 +108,7 @@ async fn main() -> Result<()> {
                 .wrap(actix_web::middleware::Compress::default())
                 .wrap(actix_web::middleware::Logger::default())
                 .service(web::scope("/api").configure(controllers::api::configure))
+                .service(Files::new("/", "./build/").index_file("index.html"))
         })
         .bind(&bind_address)?
         .run())

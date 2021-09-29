@@ -1,33 +1,36 @@
 {
-  "name": "qc-ext-server-net-app",
-  "version": "0.0.1",
-  "private": true,
-  "description": "QCExtensions.Server",
-  "repository": {
-    "type": "git",
-    "url": ""
-  },
-  "dependencies": {
-    "chart.js": "^2.7.2",
-    "chartjs-plugin-annotation": "^0.5.7",
-    "create-react-class": "^15.5.3",
-    "cross-fetch": "^2.1.0",
-    "prop-types": "^15.6.1",
-    "react": "16.2.0",
-    "react-dom": "16.2.0",
-    "react-router-dom": "^4.2.2",
-    "react-scripts": "1.1.1",
-    "semantic-ui-react": "^0.79.0"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "heroku-postbuild": "echo Skip build on Heroku"
-  },
-  "proxy": {
-    "/api": {
-      "target": "http://localhost:5000"
+    "name": "qc-ext-server-net-app",
+    "version": "0.0.1",
+    "private": true,
+    "description": "QCExtensions.Server",
+    "repository": {
+        "type": "git",
+        "url": ""
+    },
+    "dependencies": {
+        "chart.js": "^2.7.2",
+        "chartjs-plugin-annotation": "^0.5.7",
+        "create-react-class": "^15.5.3",
+        "cross-fetch": "^2.1.0",
+        "prop-types": "^15.6.1",
+        "react": "16.2.0",
+        "react-dom": "16.2.0",
+        "react-router-dom": "^4.2.2",
+        "react-scripts": "1.1.1",
+        "semantic-ui-react": "^0.79.0"
+    },
+    "scripts": {
+        "start": "react-scripts start",
+        "build": "react-scripts build"
+    },
+    "proxy": {
+        "/api": {
+            "target": "http://localhost:5000"
+        }
+    },
+    "heroku-run-build-script": true,
+    "engines": {
+        "node": "12.x",
+        "npm": "6.x"
     }
-  },
-  "heroku-run-build-script": true
 }
