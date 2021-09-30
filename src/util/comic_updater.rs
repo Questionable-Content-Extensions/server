@@ -6,11 +6,13 @@ use chrono::{DateTime, Datelike, Duration, NaiveTime, TimeZone, Timelike, Utc, W
 use chrono_tz::Tz;
 use const_format::concatcp;
 use ego_tree::NodeRef;
+use futures::{select, FutureExt};
 use ilyvion_util::string_extensions::StrExtensions;
 use log::{info, warn};
 use once_cell::sync::Lazy;
 use reqwest::Client;
 use scraper::{ElementRef, Html, Node, Selector};
+use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration as StdDuration};
 
 const FRONT_PAGE_URL: &str = "https://questionablecontent.net/";
@@ -31,10 +33,12 @@ impl ComicUpdater {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn background_comic_updater(
         &self,
         db_pool: &DbPool,
         news_updater: &NewsUpdater,
+        shutdown_receiver: &mut broadcast::Receiver<()>,
     ) -> sqlx::Result<()> {
         // Wait a short period of time to avoid hammering the website on frequent restarts due to some
         // unresolved startup panic.
@@ -56,8 +60,20 @@ impl ComicUpdater {
             let hours = delay.num_hours();
             let minutes = delay.num_minutes() - (hours * 60);
             info!("Waiting for {}:{} until next update.", hours, minutes);
-            sleep(delay.to_std().expect("valid delay")).await;
+
+            #[allow(clippy::mut_mut)]
+            {
+                select! {
+                    _ = sleep(delay.to_std().expect("valid delay")).fuse() => {},
+                    _ = shutdown_receiver.recv().fuse() => {
+                        info!("Shutting down background comic updater");
+                        break;
+                    },
+                };
+            }
         }
+
+        Ok(())
     }
 
     #[allow(clippy::too_many_lines)]

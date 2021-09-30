@@ -3,12 +3,14 @@ use crate::database::DbPool;
 use anyhow::Result;
 use chrono::Utc;
 use futures::lock::Mutex;
+use futures::{select, FutureExt};
 use log::{debug, info, warn};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
 use std::collections::HashSet;
+use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
 
 const QC_COMIC_URL_BASE: &str = "https://questionablecontent.net/view.php?comic=";
@@ -38,7 +40,12 @@ impl NewsUpdater {
         update_set.insert(comic);
     }
 
-    pub async fn background_news_updater(&self, db_pool: &DbPool) -> sqlx::Result<()> {
+    #[allow(clippy::too_many_lines)]
+    pub async fn background_news_updater(
+        &self,
+        db_pool: &DbPool,
+        shutdown_receiver: &mut broadcast::Receiver<()>,
+    ) -> sqlx::Result<()> {
         loop {
             let update_entries = self.get_pending_update_entries().await;
             debug!("There are {} news updates pending.", update_entries.len());
@@ -142,8 +149,19 @@ impl NewsUpdater {
 
             self.remove_pending_update_entries(update_entries).await;
 
-            sleep(TASK_DELAY_TIME).await;
+            #[allow(clippy::mut_mut)]
+            {
+                select! {
+                    _ = sleep(TASK_DELAY_TIME).fuse() => {},
+                    _ = shutdown_receiver.recv().fuse() => {
+                        info!("Shutting down background news updater");
+                        break;
+                    },
+                };
+            }
         }
+
+        Ok(())
     }
 
     pub async fn get_pending_update_entries(&self) -> Vec<i16> {

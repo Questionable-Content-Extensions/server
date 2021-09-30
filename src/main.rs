@@ -69,6 +69,7 @@ use anyhow::{anyhow, Context as _, Result};
 use log::{error, info};
 use serde::Deserialize;
 use std::sync::Arc;
+use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
 use util::Environment;
 
@@ -98,7 +99,7 @@ async fn main() -> Result<()> {
     let news_updater = Arc::clone(&http_news_updater);
 
     // Start HTTP server
-    let start_http_server = move || -> Result<_> {
+    let start_http_server = move || -> Result<actix_web::dev::Server> {
         Ok(HttpServer::new(move || {
             let auth = GrantsMiddleware::with_extractor(extract_permissions);
             App::new()
@@ -110,6 +111,7 @@ async fn main() -> Result<()> {
                 .service(web::scope("/api").configure(controllers::api::configure))
                 .service(Files::new("/", "./build/").index_file("index.html"))
         })
+        .disable_signals()
         .bind(&bind_address)?
         .run())
     };
@@ -121,21 +123,23 @@ async fn main() -> Result<()> {
         let background_news_updater = Arc::clone(&news_updater);
         let background_comic_news_updater = news_updater;
 
+        let (shutdown_sender, mut background_news_updater_shutdown_receiver) =
+            broadcast::channel(1);
+        let mut background_comic_updater_shutdown_receiver = shutdown_sender.subscribe();
+
         let background_news_updater = tokio::task::spawn(async move {
             info!("Background news updater starting...");
 
-            loop {
-                match background_news_updater
-                    .background_news_updater(&background_news_updater_db_pool)
-                    .await
-                {
-                    Err(e) => {
-                        error!("The background news updater returned an error: {}", e);
-                        info!("Waiting one minute before starting up again.");
-                        sleep(Duration::from_secs(60)).await;
-                    }
-                    _ => unreachable!(),
-                }
+            while let Err(e) = background_news_updater
+                .background_news_updater(
+                    &background_news_updater_db_pool,
+                    &mut background_news_updater_shutdown_receiver,
+                )
+                .await
+            {
+                error!("The background news updater returned an error: {}", e);
+                info!("Waiting one minute before starting up again.");
+                sleep(Duration::from_secs(60)).await;
             }
         });
 
@@ -143,32 +147,37 @@ async fn main() -> Result<()> {
             info!("Background comic updater starting...");
 
             let comic_updater = ComicUpdater::new();
-            loop {
-                match comic_updater
-                    .background_comic_updater(
-                        &background_comic_updater_db_pool,
-                        &background_comic_news_updater,
-                    )
-                    .await
-                {
-                    Err(e) => {
-                        error!("The background comic updater returned an error: {}", e);
-                        info!("Waiting one minute before starting up again.");
-                        sleep(Duration::from_secs(60)).await;
-                    }
-                    _ => unreachable!(),
-                }
+            while let Err(e) = comic_updater
+                .background_comic_updater(
+                    &background_comic_updater_db_pool,
+                    &background_comic_news_updater,
+                    &mut background_comic_updater_shutdown_receiver,
+                )
+                .await
+            {
+                error!("The background comic updater returned an error: {}", e);
+                info!("Waiting one minute before starting up again.");
+                sleep(Duration::from_secs(60)).await;
             }
         });
 
         let http_server = start_http_server()?;
 
-        let (http_server_result, background_news_updating_result, background_comic_updating_result) = futures::join!(
-            http_server,
+        tokio::signal::ctrl_c()
+            .await
+            .context("tokio::signal::ctrl_c failed")?;
+
+        // Receivers should be live at this point, although both services may have crashed,
+        // so let's not really assert anything about it.
+        info!("Shutting down HTTP server!");
+        let _ = shutdown_sender.send(());
+
+        let (_, background_news_updating_result, background_comic_updating_result) = futures::join!(
+            http_server.stop(true),
             background_news_updater,
             background_comic_updater
         );
-        http_server_result.context("actix_web::HttpServer crashed")?;
+
         background_news_updating_result.context("Background news updater crashed")?;
         background_comic_updating_result.context("Background comic updater crashed")?;
     } else {
