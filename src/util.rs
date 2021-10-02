@@ -3,9 +3,12 @@ use crate::models::token_permissions;
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
 use anyhow::anyhow;
 use chrono::Utc;
+use futures::Future;
 use ilyvion_util::string_extensions::StrExtensions;
 use log::info;
 use once_cell::sync::Lazy;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use uuid::Uuid;
 
 pub use comic_updater::*;
@@ -142,4 +145,39 @@ pub fn ensure_is_authorized(auth: &AuthDetails, permission: &str) -> anyhow::Res
     }
 
     Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub enum Either<A, B> {
+    /// First branch of the type
+    Left(A),
+    /// Second branch of the type
+    Right(B),
+}
+
+impl<A, B> Either<A, B> {
+    #[allow(unsafe_code)]
+    fn project(self: Pin<&mut Self>) -> Either<Pin<&mut A>, Pin<&mut B>> {
+        unsafe {
+            match self.get_unchecked_mut() {
+                Either::Left(a) => Either::Left(Pin::new_unchecked(a)),
+                Either::Right(b) => Either::Right(Pin::new_unchecked(b)),
+            }
+        }
+    }
+}
+
+impl<A, B> Future for Either<A, B>
+where
+    A: Future,
+    B: Future,
+{
+    type Output = Either<A::Output, B::Output>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        match self.project() {
+            Either::Left(x) => x.poll(cx).map(Either::Left),
+            Either::Right(x) => x.poll(cx).map(Either::Right),
+        }
+    }
 }

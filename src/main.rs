@@ -60,12 +60,14 @@
 // </editor-fold>
 
 use crate::database::DbPool;
-use crate::util::{get_permissions_for_token, ComicUpdater, NewsUpdater};
+use crate::util::{get_permissions_for_token, ComicUpdater, Either, NewsUpdater};
 use actix_files::Files;
 use actix_web::dev::ServiceRequest;
 use actix_web::{error, web, App, Error, FromRequest, HttpServer};
 use actix_web_grants::GrantsMiddleware;
 use anyhow::{anyhow, Context as _, Result};
+use futures::stream::{FuturesUnordered, StreamExt};
+use futures::{pin_mut, FutureExt};
 use log::{error, info};
 use serde::Deserialize;
 use std::sync::Arc;
@@ -116,6 +118,8 @@ async fn main() -> Result<()> {
         .run())
     };
 
+    let (shutdown_sender, mut background_news_updater_shutdown_receiver) = broadcast::channel(1);
+    let mut shutdown_futures = FuturesUnordered::new();
     if Environment::background_services_enabled() {
         let background_news_updater_db_pool = db_pool.clone();
         let background_comic_updater_db_pool = db_pool;
@@ -123,8 +127,6 @@ async fn main() -> Result<()> {
         let background_news_updater = Arc::clone(&news_updater);
         let background_comic_news_updater = news_updater;
 
-        let (shutdown_sender, mut background_news_updater_shutdown_receiver) =
-            broadcast::channel(1);
         let mut background_comic_updater_shutdown_receiver = shutdown_sender.subscribe();
 
         let background_news_updater = tokio::task::spawn(async move {
@@ -161,29 +163,41 @@ async fn main() -> Result<()> {
             }
         });
 
-        let http_server = start_http_server()?;
+        shutdown_futures.push(Either::Right(background_news_updater));
+        shutdown_futures.push(Either::Right(background_comic_updater));
+    }
 
-        tokio::signal::ctrl_c()
-            .await
-            .context("tokio::signal::ctrl_c failed")?;
+    let http_server = start_http_server()?;
 
-        // Receivers should be live at this point, although both services may have crashed,
-        // so let's not really assert anything about it.
-        info!("Shutting down HTTP server!");
-        let _ = shutdown_sender.send(());
-
-        let (_, background_news_updating_result, background_comic_updating_result) = futures::join!(
-            http_server.stop(true),
-            background_news_updater,
-            background_comic_updater
-        );
-
-        background_news_updating_result.context("Background news updater crashed")?;
-        background_comic_updating_result.context("Background comic updater crashed")?;
+    let ctrl_c = tokio::signal::ctrl_c();
+    if shutdown_futures.is_empty() {
+        ctrl_c.await.context("tokio::signal::ctrl_c failed")?;
     } else {
-        start_http_server()?
-            .await
-            .context("actix_web::HttpServer crashed")?;
+        let ctrl_c = ctrl_c.fuse();
+        pin_mut!(ctrl_c);
+        #[allow(clippy::mut_mut)]
+        {
+            futures::select! {
+                signal = ctrl_c => signal.context("tokio::signal::ctrl_c failed")?,
+                either = shutdown_futures.next().fuse() => match either {
+                    Some(Either::Right(result)) => result.context("Background service crashed")?,
+                    _ => unreachable!()
+                },
+            };
+        }
+    }
+
+    // Receivers should be live at this point, although both services may have crashed,
+    // so let's not really assert anything about it.
+    info!("Shutting down HTTP server!");
+    let _ = shutdown_sender.send(());
+
+    shutdown_futures.push(Either::Left(http_server.stop(true)));
+
+    while let Some(either) = shutdown_futures.next().await {
+        if let Either::Right(result) = either {
+            result?
+        }
     }
 
     Ok(())
