@@ -43,8 +43,7 @@ dependencies = [
 [[package]]
 name = "actix-grants-proc-macro"
 version = "2.0.0-beta.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f18383b3a14e6db055346e0e18b5b1b618c2e9ed178fcd1aea09603d2dd487c"
+source = "git+https://github.com/DDtKey/actix-web-grants.git?rev=b032b5bd5107bc7eae57edd7199e228143496896#b032b5bd5107bc7eae57edd7199e228143496896"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -260,8 +259,7 @@ dependencies = [
 [[package]]
 name = "actix-web-grants"
 version = "3.0.0-beta.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57be36b15a800c9a6b01dd3f45bf28a3c331c1b69f996f67ba1aa956a9e8b513"
+source = "git+https://github.com/DDtKey/actix-web-grants.git?rev=b032b5bd5107bc7eae57edd7199e228143496896#b032b5bd5107bc7eae57edd7199e228143496896"
 dependencies = [
  "actix-grants-proc-macro",
  "actix-web",

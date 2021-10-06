@@ -203,33 +203,29 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-#[allow(unsafe_code)]
-#[warn(clippy::cast_ref_to_mut)]
-async fn extract_permissions(request: &ServiceRequest) -> Result<Vec<String>, Error> {
+async fn extract_permissions(request: &mut ServiceRequest) -> Result<Vec<String>, Error> {
     #[derive(Debug, Deserialize)]
     struct TokenQuery {
         token: Option<uuid::Uuid>,
     }
 
     let token = {
-        // SAFETY: Yeah, no, this is completely bonkers, but I need the inner HttpRequest, so...
-        let mut_request: &mut ServiceRequest = unsafe { &mut *(request as *const _ as *mut _) };
+        let (http_request, payload) = request.parts_mut();
 
-        let (request, payload) = mut_request.parts_mut();
-
-        let token_query = web::Query::<TokenQuery>::from_request(&*request, &mut *payload).await?;
+        let token_query =
+            web::Query::<TokenQuery>::from_request(&*http_request, &mut *payload).await?;
         if let Some(token) = token_query.token {
             token
         } else {
             // Grab the payload and try parsing it as JSON
-            let bytes = web::Bytes::from_request(&*request, &mut *payload).await?;
+            let bytes = web::Bytes::from_request(&*http_request, &mut *payload).await?;
             let token_query: Result<TokenQuery, _> = serde_json::from_slice(&bytes[..]);
 
             // Now that we've grabbed the payload, we need to restore the payload
             // for the rest of the Actix machinery to do its thing.
             let mut payload = actix_http::h1::Payload::empty();
             payload.unread_data(bytes);
-            mut_request.set_payload(payload.into());
+            request.set_payload(payload.into());
 
             if let Ok(token_query) = token_query {
                 if let Some(token) = token_query.token {
