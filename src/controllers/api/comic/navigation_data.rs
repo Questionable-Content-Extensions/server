@@ -1,14 +1,14 @@
 use std::collections::BTreeMap;
 
 use crate::database::DbPoolConnection;
-use crate::models::{ItemNavigationData, NavigationData};
+use crate::models::{ComicId, ItemNavigationData, NavigationData};
 use actix_web::{error, Result};
 use futures::TryStreamExt;
 
 #[allow(clippy::too_many_lines)]
 pub async fn fetch_all_item_navigation_data(
     conn: &mut DbPoolConnection,
-    comic_id: i16,
+    comic_id: ComicId,
     is_guest_comic: Option<bool>,
     is_non_canon: Option<bool>,
 ) -> Result<Vec<ItemNavigationData>> {
@@ -49,7 +49,7 @@ pub async fn fetch_all_item_navigation_data(
 				AND (? is NULL OR c.isNonCanon = ?)
 			GROUP BY i.id
 		"#,
-        comic_id,
+        comic_id.into_inner(),
         is_guest_comic,
         is_guest_comic,
         is_non_canon,
@@ -79,7 +79,7 @@ pub async fn fetch_all_item_navigation_data(
 				AND (? is NULL OR c.isNonCanon = ?)
 			GROUP BY i.id
 		"#,
-        comic_id,
+        comic_id.into_inner(),
         is_guest_comic,
         is_guest_comic,
         is_non_canon,
@@ -100,12 +100,12 @@ pub async fn fetch_all_item_navigation_data(
     Ok(first_last_counts
         .into_iter()
         .map(|flc| ItemNavigationData {
-            id: flc.id,
+            id: flc.id.into(),
             navigation_data: NavigationData {
-                first: flc.first,
-                previous: previous.get(&flc.id).copied(),
-                next: next.get(&flc.id).copied(),
-                last: flc.last,
+                first: flc.first.map(Into::into),
+                previous: previous.get(&flc.id).copied().map(Into::into),
+                next: next.get(&flc.id).copied().map(Into::into),
+                last: flc.last.map(Into::into),
             },
             count: flc.count,
             short_name: None,
@@ -119,7 +119,7 @@ pub async fn fetch_all_item_navigation_data(
 #[allow(clippy::too_many_lines)]
 pub async fn fetch_comic_item_navigation_data(
     conn: &mut DbPoolConnection,
-    comic_id: i16,
+    comic_id: ComicId,
     is_guest_comic: Option<bool>,
     is_non_canon: Option<bool>,
 ) -> Result<Vec<ItemNavigationData>> {
@@ -146,7 +146,7 @@ pub async fn fetch_comic_item_navigation_data(
         is_guest_comic,
         is_non_canon,
         is_non_canon,
-        comic_id
+        comic_id.into_inner()
     )
     .fetch_all(&mut *conn)
     .await
@@ -167,8 +167,8 @@ pub async fn fetch_comic_item_navigation_data(
 				AND (? is NULL OR c.isNonCanon = ?)
 			GROUP BY i.id
 		"#,
-        comic_id,
-        comic_id,
+        comic_id.into_inner(),
+        comic_id.into_inner(),
         is_guest_comic,
         is_guest_comic,
         is_non_canon,
@@ -201,8 +201,8 @@ pub async fn fetch_comic_item_navigation_data(
 				AND (? is NULL OR c.isNonCanon = ?)
 			GROUP BY i.id
 		"#,
-        comic_id,
-        comic_id,
+        comic_id.into_inner(),
+        comic_id.into_inner(),
         is_guest_comic,
         is_guest_comic,
         is_non_canon,
@@ -223,12 +223,12 @@ pub async fn fetch_comic_item_navigation_data(
     Ok(first_last_counts
         .into_iter()
         .map(|flc| ItemNavigationData {
-            id: flc.id,
+            id: flc.id.into(),
             navigation_data: NavigationData {
-                first: flc.first,
-                previous: previous.get(&flc.id).copied(),
-                next: next.get(&flc.id).copied(),
-                last: flc.last,
+                first: flc.first.map(Into::into),
+                previous: previous.get(&flc.id).copied().map(Into::into),
+                next: next.get(&flc.id).copied().map(Into::into),
+                last: flc.last.map(Into::into),
             },
             count: flc.count,
             short_name: None,

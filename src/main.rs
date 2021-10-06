@@ -60,6 +60,7 @@
 // </editor-fold>
 
 use crate::database::DbPool;
+use crate::models::Token;
 use crate::util::{get_permissions_for_token, ComicUpdater, Either, NewsUpdater};
 use actix_files::Files;
 use actix_web::dev::ServiceRequest;
@@ -75,11 +76,12 @@ use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
 use util::Environment;
 
+#[macro_use]
+mod util;
+
 mod controllers;
 mod database;
 mod models;
-
-mod util;
 
 #[actix_web::main]
 async fn main() -> Result<()> {
@@ -206,7 +208,7 @@ async fn main() -> Result<()> {
 async fn extract_permissions(request: &mut ServiceRequest) -> Result<Vec<String>, Error> {
     #[derive(Debug, Deserialize)]
     struct TokenQuery {
-        token: Option<uuid::Uuid>,
+        token: Option<Token>,
     }
 
     let token = {

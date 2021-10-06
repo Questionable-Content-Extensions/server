@@ -1,16 +1,28 @@
 #![allow(clippy::use_self)]
 
 use crate::database::models::{Comic as DatabaseComic, LogEntry as DatabaseLogEntry};
-use anyhow::{anyhow, bail, Context};
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use uuid::Uuid;
+
+mod comic_id;
+mod image_type;
+mod item_color;
+mod item_id;
+mod item_type;
+mod token;
+
+pub use comic_id::ComicId;
+pub use image_type::ImageType;
+pub use item_color::ItemColor;
+pub use item_id::ItemId;
+pub use item_type::ItemType;
+pub use token::Token;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ComicList {
-    pub comic: i16,
+    pub comic: ComicId,
     pub title: String,
     pub is_non_canon: bool,
     pub is_guest_comic: bool,
@@ -19,7 +31,7 @@ pub struct ComicList {
 impl From<DatabaseComic> for ComicList {
     fn from(c: DatabaseComic) -> Self {
         Self {
-            comic: c.id,
+            comic: ComicId::from(c.id),
             title: c.title,
             is_guest_comic: c.isGuestComic != 0,
             is_non_canon: c.isNonCanon != 0,
@@ -30,7 +42,7 @@ impl From<DatabaseComic> for ComicList {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Comic {
-    pub comic: i16,
+    pub comic: ComicId,
     pub image_type: Option<ImageType>,
     pub has_data: bool,
     pub publish_date: Option<DateTime<Utc>>,
@@ -45,8 +57,8 @@ pub struct Comic {
     pub has_no_title: bool,
     pub has_no_tagline: bool,
     pub news: Option<String>,
-    pub previous: Option<i16>,
-    pub next: Option<i16>,
+    pub previous: Option<ComicId>,
+    pub next: Option<ComicId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub editor_data: Option<EditorData>,
     pub items: Vec<ItemNavigationData>,
@@ -57,7 +69,7 @@ pub struct Comic {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ItemList {
-    pub id: i16,
+    pub id: ItemId,
     pub short_name: String,
     pub name: String,
     pub r#type: ItemType,
@@ -68,13 +80,13 @@ pub struct ItemList {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Item {
-    pub id: i16,
+    pub id: ItemId,
     pub short_name: String,
     pub name: String,
     pub r#type: ItemType,
     pub color: ItemColor,
-    pub first: i16,
-    pub last: i16,
+    pub first: ComicId,
+    pub last: ComicId,
     pub appearances: i64,
     pub total_comics: i64,
     pub presence: f64,
@@ -84,7 +96,7 @@ pub struct Item {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogEntry {
-    pub identifier: Uuid,
+    pub identifier: Token,
     pub date_time: DateTime<Utc>,
     pub action: String,
 }
@@ -94,71 +106,17 @@ impl TryFrom<DatabaseLogEntry> for LogEntry {
 
     fn try_from(l: DatabaseLogEntry) -> Result<Self, Self::Error> {
         Ok(Self {
-            identifier: Uuid::parse_str(&l.UserToken)?,
+            identifier: uuid::Uuid::parse_str(&l.UserToken)?.into(),
             date_time: DateTime::from_utc(l.DateTime, Utc),
             action: l.Action,
         })
     }
 }
 
-#[derive(Debug)]
-pub struct ItemColor(pub u8, pub u8, pub u8);
-impl std::fmt::Display for ItemColor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if f.alternate() {
-            Ok(write!(f, "#{:02x}{:02x}{:02x}", self.0, self.1, self.2)?)
-        } else {
-            Ok(write!(f, "{:02x}{:02x}{:02x}", self.0, self.1, self.2)?)
-        }
-    }
-}
-impl Serialize for ItemColor {
-    #[inline]
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&self.to_string())
-    }
-}
-impl std::str::FromStr for ItemColor {
-    type Err = anyhow::Error;
-
-    fn from_str(mut s: &str) -> Result<Self, Self::Err> {
-        if let Some(sp) = s.strip_prefix('#') {
-            s = sp;
-        }
-
-        let red = s
-            .get(0..2)
-            .ok_or_else(|| anyhow!("Color is missing red component value"))
-            .and_then(|s| {
-                u8::from_str_radix(s, 16)
-                    .context("Red component of color is not a valid hexadecimal value")
-            })?;
-        let green = s
-            .get(2..4)
-            .ok_or_else(|| anyhow!("Color is missing green component value"))
-            .and_then(|s| {
-                u8::from_str_radix(s, 16)
-                    .context("Green component of color is not a valid hexadecimal value")
-            })?;
-        let blue = s
-            .get(4..6)
-            .ok_or_else(|| anyhow!("Color is missing blue component value"))
-            .and_then(|s| {
-                u8::from_str_radix(s, 16)
-                    .context("Blue component of color is not a valid hexadecimal value")
-            })?;
-
-        Ok(Self(red, green, blue))
-    }
-}
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RelatedItem {
-    pub id: i16,
+    pub id: ItemId,
     pub short_name: String,
     pub name: String,
     pub r#type: ItemType,
@@ -189,16 +147,16 @@ pub struct MissingNavigationData {
 
 #[derive(Debug, Serialize)]
 pub struct NavigationData {
-    pub first: Option<i16>,
-    pub previous: Option<i16>,
-    pub next: Option<i16>,
-    pub last: Option<i16>,
+    pub first: Option<ComicId>,
+    pub previous: Option<ComicId>,
+    pub next: Option<ComicId>,
+    pub last: Option<ComicId>,
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ItemNavigationData {
-    pub id: i16,
+    pub id: ItemId,
     pub short_name: Option<String>,
     pub name: Option<String>,
     pub r#type: Option<ItemType>,
@@ -219,62 +177,6 @@ pub enum Exclusion {
 #[serde(rename_all = "kebab-case")]
 pub enum Inclusion {
     All,
-}
-
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, sqlx::Type)]
-#[serde(rename_all = "camelCase")]
-#[repr(i32)]
-pub enum ImageType {
-    Unknown = 0,
-    Png = 1,
-    Gif = 2,
-    Jpeg = 3,
-}
-
-impl From<i32> for ImageType {
-    #[inline]
-    fn from(image_type: i32) -> Self {
-        match image_type {
-            0 => Self::Unknown,
-            1 => Self::Png,
-            2 => Self::Gif,
-            3 => Self::Jpeg,
-            _ => unreachable!("Invalid image type value: {}", image_type),
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, sqlx::Type)]
-#[serde(rename_all = "camelCase")]
-pub enum ItemType {
-    Cast,
-    Location,
-    Storyline,
-}
-
-impl ItemType {
-    #[inline]
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::Cast => "cast",
-            Self::Location => "location",
-            Self::Storyline => "storyline",
-        }
-    }
-}
-
-impl TryFrom<&'_ str> for ItemType {
-    type Error = anyhow::Error;
-
-    #[inline]
-    fn try_from(item_type: &'_ str) -> Result<Self, Self::Error> {
-        Ok(match item_type {
-            "cast" => Self::Cast,
-            "location" => Self::Location,
-            "storyline" => Self::Storyline,
-            _ => bail!("Invalid item type value: {}", item_type),
-        })
-    }
 }
 
 pub mod token_permissions {

@@ -1,5 +1,6 @@
 use crate::database::models::News;
 use crate::database::DbPool;
+use crate::models::ComicId;
 use anyhow::Result;
 use chrono::Utc;
 use futures::lock::Mutex;
@@ -22,7 +23,7 @@ static REPLACE_HTML_NEWLINES: Lazy<Regex> =
 
 pub struct NewsUpdater {
     client: Client,
-    update_set: Mutex<HashSet<i16>>,
+    update_set: Mutex<HashSet<ComicId>>,
 }
 
 impl NewsUpdater {
@@ -33,11 +34,11 @@ impl NewsUpdater {
         }
     }
 
-    pub async fn check_for(&self, comic: i16) {
-        info!("Scheduling a news update check for comic {}", comic);
+    pub async fn check_for(&self, comic_id: ComicId) {
+        info!("Scheduling a news update check for comic {}", comic_id);
 
         let mut update_set = self.update_set.lock().await;
-        update_set.insert(comic);
+        update_set.insert(comic_id);
     }
 
     #[allow(clippy::too_many_lines)]
@@ -60,7 +61,7 @@ impl NewsUpdater {
                             SELECT id FROM `comic`
                             WHERE `id` = ?
                         "#,
-                        comic_id
+                        comic_id.into_inner()
                     )
                     .fetch_optional(&mut *transaction)
                     .await?
@@ -80,7 +81,7 @@ impl NewsUpdater {
                             SELECT * FROM `news`
                             WHERE comic = ?
                         "#,
-                        comic_id
+                        comic_id.into_inner()
                     )
                     .fetch_optional(&mut *transaction)
                     .await?;
@@ -113,7 +114,7 @@ impl NewsUpdater {
                                 "UPDATE `news` SET updateFactor = ?, lastUpdated = ? WHERE comic = ?",
                                 new_update_factor,
                                 Utc::today().naive_utc(),
-                                comic_id
+                                comic_id.into_inner()
                             )
                             .execute(&mut *transaction)
                             .await?;
@@ -124,7 +125,7 @@ impl NewsUpdater {
                                 news_text,
                                 1.0,
                                 Utc::today().naive_utc(),
-                                comic_id
+                                comic_id.into_inner()
                             )
                             .execute(&mut *transaction)
                             .await?;
@@ -136,7 +137,7 @@ impl NewsUpdater {
                             news_text,
                             1.0,
                             Utc::today().naive_utc(),
-                            comic_id
+                            comic_id.into_inner()
                         )
                         .execute(&mut *transaction)
                         .await?;
@@ -164,19 +165,19 @@ impl NewsUpdater {
         Ok(())
     }
 
-    pub async fn get_pending_update_entries(&self) -> Vec<i16> {
+    pub async fn get_pending_update_entries(&self) -> Vec<ComicId> {
         let update_set = self.update_set.lock().await;
         update_set.iter().copied().collect()
     }
 
-    pub async fn remove_pending_update_entries(&self, update_entries: Vec<i16>) {
+    pub async fn remove_pending_update_entries(&self, update_entries: Vec<ComicId>) {
         let mut update_set = self.update_set.lock().await;
         update_set.retain(|e| !update_entries.contains(e));
     }
 
-    pub async fn fetch_news_for(&self, comic_id: i16) -> Result<String> {
+    pub async fn fetch_news_for(&self, comic_id: ComicId) -> Result<String> {
         let url = format!("{}{}", QC_COMIC_URL_BASE, comic_id);
-        let response = self.client.get(url).send().await; //?.text().await?;
+        let response = self.client.get(url).send().await;
         let qc_page = match response {
             Err(e) => {
                 anyhow::bail!(

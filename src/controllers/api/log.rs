@@ -1,6 +1,6 @@
 use crate::database::models::LogEntry as DatabaseLogEntry;
 use crate::database::DbPool;
-use crate::models::{token_permissions, LogEntry};
+use crate::models::{token_permissions, LogEntry, Token};
 use crate::util::ensure_is_authorized;
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
@@ -64,7 +64,7 @@ async fn get(
 
 #[derive(Debug, Deserialize)]
 struct LogQuery {
-    token: uuid::Uuid,
+    token: Token,
     page: u16,
 }
 

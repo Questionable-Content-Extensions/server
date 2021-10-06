@@ -5,14 +5,15 @@ use crate::controllers::api::comic::navigation_data::{
 use crate::database::models::{Comic as DatabaseComic, Item as DatabaseItem, News as DatabaseNews};
 use crate::database::DbPool;
 use crate::models::{
-    token_permissions, Comic, ComicList, Exclusion, Inclusion, ItemColor, ItemType,
+    token_permissions, Comic, ComicId, ComicList, Exclusion, Inclusion, ItemColor, ItemId,
+    ItemType, Token,
 };
 use crate::util::{ensure_is_authorized, log_action, NewsUpdater};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
 use anyhow::anyhow;
 use chrono::{DateTime, TimeZone, Utc};
-use futures::{TryFutureExt, TryStreamExt};
+use futures::TryStreamExt;
 use log::info;
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -83,12 +84,10 @@ async fn by_id(
     pool: web::Data<DbPool>,
     news_updater: web::Data<NewsUpdater>,
     query: web::Query<ByIdQuery>,
-    comic_id: web::Path<i16>,
+    comic_id: web::Path<ComicId>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    struct ComicId {
-        id: i16,
-    }
+    let comic_id = comic_id.into_inner();
 
     let mut conn = pool
         .acquire()
@@ -107,14 +106,13 @@ async fn by_id(
 		SELECT * FROM `comic`
 		WHERE `id` = ?
 	"#,
-        *comic_id
+        comic_id.into_inner()
     )
     .fetch_optional(&mut conn)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    let previous: Option<i16> = sqlx::query_as!(
-        ComicId,
+    let previous: Option<i16> = sqlx::query_scalar!(
         r#"
 			SELECT id
 			FROM `comic`
@@ -123,19 +121,17 @@ async fn by_id(
 				AND (? is NULL OR `isNonCanon` = ?)
 			ORDER BY id DESC
 		"#,
-        *comic_id,
+        comic_id.into_inner(),
         is_guest_comic,
         is_guest_comic,
         is_non_canon,
         is_non_canon,
     )
     .fetch_optional(&mut conn)
-    .map_ok(|c| c.map(|i| i.id))
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    let next: Option<i16> = sqlx::query_as!(
-        ComicId,
+    let next: Option<i16> = sqlx::query_scalar!(
         r#"
 			SELECT id
 			FROM `comic`
@@ -144,19 +140,18 @@ async fn by_id(
 				AND (? is NULL OR `isNonCanon` = ?)
 			ORDER BY id ASC
 		"#,
-        *comic_id,
+        comic_id.into_inner(),
         is_guest_comic,
         is_guest_comic,
         is_non_canon,
         is_non_canon,
     )
     .fetch_optional(&mut conn)
-    .map_ok(|c| c.map(|i| i.id))
     .await
     .map_err(error::ErrorInternalServerError)?;
 
     let news: Option<DatabaseNews> = if comic.is_some() {
-        news_updater.check_for(*comic_id).await;
+        news_updater.check_for(comic_id).await;
 
         sqlx::query_as!(
             DatabaseNews,
@@ -164,7 +159,7 @@ async fn by_id(
 				SELECT * FROM `news`
 				WHERE `comic` = ?
 			"#,
-            *comic_id
+            comic_id.into_inner()
         )
         .fetch_optional(&mut conn)
         .await
@@ -174,12 +169,12 @@ async fn by_id(
     };
 
     let editor_data = if auth.has_permission(token_permissions::HAS_VALID_TOKEN) {
-        Some(fetch_editor_data_for_comic(&mut conn, *comic_id).await?)
+        Some(fetch_editor_data_for_comic(&mut conn, comic_id).await?)
     } else {
         None
     };
 
-    let mut items: BTreeMap<i16, DatabaseItem> = sqlx::query_as!(
+    let mut items: BTreeMap<ItemId, DatabaseItem> = sqlx::query_as!(
         DatabaseItem,
         r#"
             SELECT i.*
@@ -187,67 +182,66 @@ async fn by_id(
             JOIN occurences o ON o.items_id = i.id
             WHERE o.comic_id = ?
         "#,
-        *comic_id,
+        comic_id.into_inner(),
     )
     .fetch(&mut conn)
-    .map_ok(|i| (i.id, i))
+    .map_ok(|i| (i.id.into(), i))
     .try_collect()
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    let (comic_navigation_items, all_navigation_items) = if items.is_empty()
-        && !matches!(query.include, Some(Inclusion::All))
-    {
-        (vec![], vec![])
-    } else if let Some(Inclusion::All) = query.include {
-        let mut all_items: BTreeMap<i16, DatabaseItem> = sqlx::query_as!(
-            DatabaseItem,
-            r#"
+    let (comic_navigation_items, all_navigation_items) =
+        if items.is_empty() && !matches!(query.include, Some(Inclusion::All)) {
+            (vec![], vec![])
+        } else if let Some(Inclusion::All) = query.include {
+            let mut all_items: BTreeMap<ItemId, DatabaseItem> = sqlx::query_as!(
+                DatabaseItem,
+                r#"
 				SELECT *
 				FROM items
 			"#,
-        )
-        .fetch(&mut conn)
-        .map_ok(|i| (i.id, i))
-        .try_collect()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+            )
+            .fetch(&mut conn)
+            .map_ok(|i| (i.id.into(), i))
+            .try_collect()
+            .await
+            .map_err(error::ErrorInternalServerError)?;
 
-        let mut all_navigation_items =
-            fetch_all_item_navigation_data(&mut conn, *comic_id, is_guest_comic, is_non_canon)
-                .await?;
-        let mut navigation_items_in_comic = vec![];
-        let mut i = 0;
-        while i < all_navigation_items.len() {
-            let element = &mut all_navigation_items[i];
-            if items.get(&element.id).is_some() {
-                let element = all_navigation_items.remove(i);
-                navigation_items_in_comic.push(element);
-            } else {
-                i += 1;
+            let mut all_navigation_items =
+                fetch_all_item_navigation_data(&mut conn, comic_id, is_guest_comic, is_non_canon)
+                    .await?;
+            let mut navigation_items_in_comic = vec![];
+            let mut i = 0;
+            while i < all_navigation_items.len() {
+                let element = &mut all_navigation_items[i];
+                if items.get(&element.id).is_some() {
+                    let element = all_navigation_items.remove(i);
+                    navigation_items_in_comic.push(element);
+                } else {
+                    i += 1;
+                }
             }
-        }
 
-        transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut all_items)
-            .map_err(error::ErrorInternalServerError)?;
-        transfer_item_data_to_navigation_item(&mut all_navigation_items, &mut all_items)
-            .map_err(error::ErrorInternalServerError)?;
+            transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut all_items)
+                .map_err(error::ErrorInternalServerError)?;
+            transfer_item_data_to_navigation_item(&mut all_navigation_items, &mut all_items)
+                .map_err(error::ErrorInternalServerError)?;
 
-        (navigation_items_in_comic, all_navigation_items)
-    } else {
-        let mut navigation_items_in_comic =
-            fetch_comic_item_navigation_data(&mut conn, *comic_id, is_guest_comic, is_non_canon)
-                .await?;
+            (navigation_items_in_comic, all_navigation_items)
+        } else {
+            let mut navigation_items_in_comic =
+                fetch_comic_item_navigation_data(&mut conn, comic_id, is_guest_comic, is_non_canon)
+                    .await?;
 
-        transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut items)
-            .map_err(error::ErrorInternalServerError)?;
+            transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut items)
+                .map_err(error::ErrorInternalServerError)?;
 
-        (navigation_items_in_comic, vec![])
-    };
+            (navigation_items_in_comic, vec![])
+        };
 
     let comic = if let Some(comic) = comic {
         Comic {
-            comic: *comic_id,
+            comic: comic_id,
             has_data: true,
             image_type: Some(comic.ImageType.into()),
             publish_date: comic.publishDate.map(|nd| DateTime::from_utc(nd, Utc)),
@@ -262,15 +256,15 @@ async fn by_id(
             has_no_title: comic.HasNoTitle != 0,
             has_no_tagline: comic.HasNoTagline != 0,
             news: news.map(|n| n.news),
-            previous,
-            next,
+            previous: previous.map(Into::into),
+            next: next.map(Into::into),
             editor_data,
             items: comic_navigation_items,
             all_items: all_navigation_items,
         }
     } else {
         Comic {
-            comic: *comic_id,
+            comic: comic_id,
             has_data: false,
             image_type: None,
             publish_date: None,
@@ -285,8 +279,8 @@ async fn by_id(
             has_no_title: false,
             has_no_tagline: false,
             news: None,
-            previous,
-            next,
+            previous: previous.map(Into::into),
+            next: next.map(Into::into),
             editor_data,
             items: comic_navigation_items,
             all_items: all_navigation_items,
@@ -387,7 +381,7 @@ async fn add_item(
                     comic_id = ?
             "#,
             request.item_id,
-            request.comic_id,
+            request.comic_id.into_inner(),
         )
         .fetch_one(&mut *transaction)
         .await
@@ -410,7 +404,7 @@ async fn add_item(
             VALUES
                 (?, ?)
         "#,
-        request.comic_id,
+        request.comic_id.into_inner(),
         request.item_id
     )
     .execute(&mut *transaction)
@@ -455,7 +449,7 @@ async fn remove_item(
             WHERE
                 id = ?
         "#,
-        request.comic_id,
+        request.comic_id.into_inner(),
     )
     .fetch_one(&mut *transaction)
     .await
@@ -487,7 +481,7 @@ async fn remove_item(
                 comic_id = ?
         "#,
         request.item_id,
-        request.comic_id,
+        request.comic_id.into_inner(),
     )
     .execute(&mut *transaction)
     .await
@@ -533,7 +527,7 @@ async fn set_title(
         r#"
             SELECT title FROM `comic` WHERE id = ?
         "#,
-        request.comic_id
+        request.comic_id.into_inner()
     )
     .fetch_one(&mut *transaction)
     .await
@@ -547,7 +541,7 @@ async fn set_title(
                 id = ?
         "#,
         request.title,
-        request.comic_id,
+        request.comic_id.into_inner(),
     )
     .execute(&mut *transaction)
     .await
@@ -606,7 +600,7 @@ async fn set_tagline(
         r#"
             SELECT tagline FROM `comic` WHERE id = ?
         "#,
-        request.comic_id
+        request.comic_id.into_inner()
     )
     .fetch_one(&mut *transaction)
     .await
@@ -620,7 +614,7 @@ async fn set_tagline(
                 id = ?
         "#,
         request.tagline,
-        request.comic_id,
+        request.comic_id.into_inner(),
     )
     .execute(&mut *transaction)
     .await
@@ -682,7 +676,7 @@ async fn set_publish_date(
         r#"
             SELECT publishDate FROM `comic` WHERE id = ?
         "#,
-        request.comic_id
+        request.comic_id.into_inner()
     )
     .fetch_one(&mut *transaction)
     .await
@@ -699,7 +693,7 @@ async fn set_publish_date(
         "#,
         request.publish_date.naive_utc(),
         request.is_accurate_publish_date,
-        request.comic_id,
+        request.comic_id.into_inner(),
     )
     .execute(&mut *transaction)
     .await
@@ -842,7 +836,7 @@ async fn set_flag(
                         id = ?
                 "#,
                 request.flag_value,
-                request.comic_id,
+                request.comic_id.into_inner(),
             )
             .execute(&mut *transaction),
         ),
@@ -858,7 +852,7 @@ async fn set_flag(
                         id = ?
                 "#,
                 request.flag_value,
-                request.comic_id,
+                request.comic_id.into_inner(),
             )
             .execute(&mut *transaction),
         ),
@@ -874,7 +868,7 @@ async fn set_flag(
                         id = ?
                 "#,
                 request.flag_value,
-                request.comic_id,
+                request.comic_id.into_inner(),
             )
             .execute(&mut *transaction),
         ),
@@ -890,7 +884,7 @@ async fn set_flag(
                         id = ?
                 "#,
                 request.flag_value,
-                request.comic_id,
+                request.comic_id.into_inner(),
             )
             .execute(&mut *transaction),
         ),
@@ -906,7 +900,7 @@ async fn set_flag(
                         id = ?
                 "#,
                 request.flag_value,
-                request.comic_id,
+                request.comic_id.into_inner(),
             )
             .execute(&mut *transaction),
         ),
@@ -922,7 +916,7 @@ async fn set_flag(
                         id = ?
                 "#,
                 request.flag_value,
-                request.comic_id,
+                request.comic_id.into_inner(),
             )
             .execute(&mut *transaction),
         ),
@@ -938,7 +932,7 @@ async fn set_flag(
                         id = ?
                 "#,
                 request.flag_value,
-                request.comic_id,
+                request.comic_id.into_inner(),
             )
             .execute(&mut *transaction),
         ),
@@ -972,7 +966,7 @@ async fn set_flag(
 
 fn transfer_item_data_to_navigation_item(
     navigation_items: &mut Vec<crate::models::ItemNavigationData>,
-    items: &mut BTreeMap<i16, DatabaseItem>,
+    items: &mut BTreeMap<ItemId, DatabaseItem>,
 ) -> anyhow::Result<()> {
     for navigation_item in navigation_items {
         let DatabaseItem {
@@ -1024,7 +1018,7 @@ async fn fetch_comic_list(
 }
 
 #[inline]
-async fn ensure_comic_exists<'e, 'c: 'e, E>(executor: E, comic_id: i16) -> sqlx::Result<()>
+async fn ensure_comic_exists<'e, 'c: 'e, E>(executor: E, comic_id: ComicId) -> sqlx::Result<()>
 where
     E: 'e + sqlx::Executor<'c, Database = sqlx::MySql>,
 {
@@ -1035,7 +1029,7 @@ where
             VALUES
                 (?)
         "#,
-        comic_id,
+        comic_id.into_inner(),
     )
     .execute(executor)
     .await?;
@@ -1062,8 +1056,8 @@ struct ByIdQuery {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct AddItemToComicBody {
-    token: uuid::Uuid,
-    comic_id: i16,
+    token: Token,
+    comic_id: ComicId,
     item_id: i16,
     #[serde(default)]
     new_item_name: Option<String>,
@@ -1074,32 +1068,32 @@ struct AddItemToComicBody {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RemoveItemFromComicBody {
-    token: uuid::Uuid,
-    comic_id: i16,
+    token: Token,
+    comic_id: ComicId,
     item_id: i16,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SetTitleBody {
-    token: uuid::Uuid,
-    comic_id: i16,
+    token: Token,
+    comic_id: ComicId,
     title: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SetTaglineBody {
-    token: uuid::Uuid,
-    comic_id: i16,
+    token: Token,
+    comic_id: ComicId,
     tagline: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SetPublishDateBody {
-    token: uuid::Uuid,
-    comic_id: i16,
+    token: Token,
+    comic_id: ComicId,
     publish_date: DateTime<Utc>,
     is_accurate_publish_date: bool,
 }
@@ -1107,8 +1101,8 @@ struct SetPublishDateBody {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SetFlagBody {
-    token: uuid::Uuid,
-    comic_id: i16,
+    token: Token,
+    comic_id: ComicId,
     flag_value: bool,
 }
 

@@ -1,5 +1,5 @@
 use crate::database::DbPool;
-use crate::models::ImageType;
+use crate::models::{ComicId, ImageType};
 use crate::util::{Environment, NewsUpdater};
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Datelike, Duration, NaiveTime, TimeZone, Timelike, Utc, Weekday};
@@ -77,7 +77,7 @@ impl ComicUpdater {
     }
 
     #[allow(clippy::too_many_lines)]
-    async fn fetch_latest_comic_data(&self, db_pool: &DbPool) -> Result<i16> {
+    async fn fetch_latest_comic_data(&self, db_pool: &DbPool) -> Result<ComicId> {
         #[allow(nonstandard_style)]
         struct NeedsQuery {
             title: String,
@@ -310,7 +310,7 @@ impl ComicUpdater {
         info!("Saving any changes to the database.");
         transaction.commit().await?;
 
-        Ok(comic_id)
+        Ok(comic_id.into())
     }
 }
 

@@ -1,10 +1,10 @@
 use crate::database::DbPoolConnection;
-use crate::models::{EditorData, ItemType, MissingNavigationData, NavigationData};
+use crate::models::{ComicId, EditorData, ItemType, MissingNavigationData, NavigationData};
 use actix_web::{error, Result};
 
 pub async fn fetch_editor_data_for_comic(
     conn: &mut DbPoolConnection,
-    comic_id: i16,
+    comic_id: ComicId,
 ) -> Result<EditorData> {
     let cast = fetch_navigation_data_for_item(&mut *conn, comic_id, ItemType::Cast).await?;
     let location = fetch_navigation_data_for_item(&mut *conn, comic_id, ItemType::Location).await?;
@@ -26,7 +26,7 @@ pub async fn fetch_editor_data_for_comic(
 
 async fn fetch_navigation_data_for_tagline(
     conn: &mut DbPoolConnection,
-    comic_id: i16,
+    comic_id: ComicId,
 ) -> Result<NavigationData> {
     let (first, last) = sqlx::query_as!(
         FirstLast,
@@ -56,7 +56,7 @@ async fn fetch_navigation_data_for_tagline(
 			ORDER BY c.id DESC
 			LIMIT 1
 		"#,
-        comic_id
+        comic_id.into_inner()
     )
     .fetch_optional(&mut *conn)
     .await
@@ -73,23 +73,23 @@ async fn fetch_navigation_data_for_tagline(
 			ORDER BY c.id ASC
 			LIMIT 1
 		"#,
-        comic_id
+        comic_id.into_inner()
     )
     .fetch_optional(&mut *conn)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
     Ok(NavigationData {
-        first,
-        previous,
-        next,
-        last,
+        first: first.map(Into::into),
+        previous: previous.map(Into::into),
+        next: next.map(Into::into),
+        last: last.map(Into::into),
     })
 }
 
 async fn fetch_navigation_data_for_title(
     conn: &mut DbPoolConnection,
-    comic_id: i16,
+    comic_id: ComicId,
 ) -> Result<NavigationData> {
     let (first, last) = sqlx::query_as!(
         FirstLast,
@@ -117,7 +117,7 @@ async fn fetch_navigation_data_for_title(
 			ORDER BY c.id DESC
 			LIMIT 1
 		"#,
-        comic_id
+        comic_id.into_inner()
     )
     .fetch_optional(&mut *conn)
     .await
@@ -133,23 +133,23 @@ async fn fetch_navigation_data_for_title(
 			ORDER BY c.id ASC
 			LIMIT 1
 		"#,
-        comic_id
+        comic_id.into_inner()
     )
     .fetch_optional(&mut *conn)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
     Ok(NavigationData {
-        first,
-        previous,
-        next,
-        last,
+        first: first.map(Into::into),
+        previous: previous.map(Into::into),
+        next: next.map(Into::into),
+        last: last.map(Into::into),
     })
 }
 
 async fn fetch_navigation_data_for_item(
     conn: &mut DbPoolConnection,
-    comic_id: i16,
+    comic_id: ComicId,
     item: ItemType,
 ) -> Result<NavigationData> {
     let first = fetch_first_for_item(&mut *conn, item).await?;
@@ -165,7 +165,10 @@ async fn fetch_navigation_data_for_item(
     })
 }
 
-async fn fetch_first_for_item(conn: &mut DbPoolConnection, item: ItemType) -> Result<Option<i16>> {
+async fn fetch_first_for_item(
+    conn: &mut DbPoolConnection,
+    item: ItemType,
+) -> Result<Option<ComicId>> {
     let item = item.as_str();
     let first = sqlx::query_scalar!(
         r#"
@@ -195,14 +198,14 @@ async fn fetch_first_for_item(conn: &mut DbPoolConnection, item: ItemType) -> Re
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    Ok(first)
+    Ok(first.map(Into::into))
 }
 
 async fn fetch_previous_for_item(
     conn: &mut DbPoolConnection,
     item: ItemType,
-    comic_id: i16,
-) -> Result<Option<i16>> {
+    comic_id: ComicId,
+) -> Result<Option<ComicId>> {
     let item = item.as_str();
     let previous = sqlx::query_scalar!(
         r#"
@@ -225,7 +228,7 @@ async fn fetch_previous_for_item(
 			LIMIT 1
 		"#,
         item,
-        comic_id,
+        comic_id.into_inner(),
         item,
         item,
         item,
@@ -234,14 +237,14 @@ async fn fetch_previous_for_item(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    Ok(previous)
+    Ok(previous.map(Into::into))
 }
 
 async fn fetch_next_for_item(
     conn: &mut DbPoolConnection,
     item: ItemType,
-    comic_id: i16,
-) -> Result<Option<i16>> {
+    comic_id: ComicId,
+) -> Result<Option<ComicId>> {
     let item = item.as_str();
     let next = sqlx::query_scalar!(
         r#"
@@ -264,7 +267,7 @@ async fn fetch_next_for_item(
 			LIMIT 1
 		"#,
         item,
-        comic_id,
+        comic_id.into_inner(),
         item,
         item,
         item,
@@ -273,10 +276,13 @@ async fn fetch_next_for_item(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    Ok(next)
+    Ok(next.map(Into::into))
 }
 
-async fn fetch_last_for_item(conn: &mut DbPoolConnection, item: ItemType) -> Result<Option<i16>> {
+async fn fetch_last_for_item(
+    conn: &mut DbPoolConnection,
+    item: ItemType,
+) -> Result<Option<ComicId>> {
     let item = item.as_str();
     let last = sqlx::query_scalar!(
         r#"
@@ -306,7 +312,7 @@ async fn fetch_last_for_item(conn: &mut DbPoolConnection, item: ItemType) -> Res
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    Ok(last)
+    Ok(last.map(Into::into))
 }
 
 #[derive(Debug, sqlx::FromRow)]

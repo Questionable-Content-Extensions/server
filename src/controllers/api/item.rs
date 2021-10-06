@@ -2,8 +2,8 @@ use crate::controllers::api::comic::navigation_data::fetch_all_item_navigation_d
 use crate::database::models::Item as DatabaseItem;
 use crate::database::DbPool;
 use crate::models::{
-    token_permissions, Item, ItemColor, ItemImageList, ItemList, ItemNavigationData, ItemType,
-    RelatedItem,
+    token_permissions, Item, ItemColor, ItemId, ItemImageList, ItemList, ItemNavigationData,
+    ItemType, RelatedItem, Token,
 };
 use crate::util::{ensure_is_authorized, get_permissions_for_token, log_action};
 use actix_multipart::Multipart;
@@ -17,7 +17,6 @@ use std::cmp::Reverse;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::str::FromStr;
-use uuid::Uuid;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").route(web::get().to(all)))
@@ -49,11 +48,11 @@ async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    let all_navigation_items = fetch_all_item_navigation_data(&mut conn, 1, None, None)
+    let all_navigation_items = fetch_all_item_navigation_data(&mut conn, 1.into(), None, None)
         .await?
         .into_iter()
         .map(|i| (i.id, i))
-        .collect::<BTreeMap<i16, ItemNavigationData>>();
+        .collect::<BTreeMap<ItemId, ItemNavigationData>>();
 
     let mut items = vec![];
     for item in all_items {
@@ -66,9 +65,10 @@ async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             Color_Green: color_green,
             Color_Blue: color_blue,
         } = item;
+        let id = id.into();
 
         let count = all_navigation_items
-            .get(&item.id)
+            .get(&id)
             .map(|i| i.count)
             .unwrap_or_default();
 
@@ -87,12 +87,15 @@ async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(items))
 }
 
-async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<i16>) -> Result<HttpResponse> {
+async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Result<HttpResponse> {
     struct Occurrence {
         min: Option<i16>,
         max: Option<i16>,
         count: i64,
     }
+
+    let item_id = item_id.into_inner();
+
     let mut conn = pool
         .acquire()
         .await
@@ -104,12 +107,12 @@ async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<i16>) -> Result<HttpR
             SELECT * FROM `items`
             WHERE `id` = ?
         "#,
-        *item_id
+        item_id.into_inner()
     )
     .fetch_optional(&mut conn)
     .await
     .map_err(error::ErrorInternalServerError)?
-    .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {} exists", *item_id)))?;
+    .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {} exists", item_id)))?;
 
     let item_occurrence = sqlx::query_as!(
         Occurrence,
@@ -121,7 +124,7 @@ async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<i16>) -> Result<HttpR
             FROM `occurences`
             WHERE `items_id` = ?
         "#,
-        *item_id
+        item_id.into_inner()
     )
     .fetch_one(&mut conn)
     .await
@@ -141,20 +144,20 @@ async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<i16>) -> Result<HttpR
             SELECT COUNT(*) FROM `ItemImages`
             WHERE ItemId = ?
         "#,
-        *item_id
+        item_id.into_inner()
     )
     .fetch_one(&mut conn)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
     let item = Item {
-        id: *item_id,
+        id: item_id,
         short_name: item.shortName,
         name: item.name,
         r#type: ItemType::try_from(&*item.r#type).map_err(error::ErrorInternalServerError)?,
         color: ItemColor(item.Color_Red, item.Color_Green, item.Color_Blue),
-        first: item_occurrence.min.unwrap_or_default(),
-        last: item_occurrence.max.unwrap_or_default(),
+        first: item_occurrence.min.map(Into::into).unwrap_or_default(),
+        last: item_occurrence.max.map(Into::into).unwrap_or_default(),
         appearances: item_occurrence.count,
         total_comics,
         presence: if total_comics == 0 {
@@ -220,7 +223,7 @@ async fn image_upload(
     pool: web::Data<DbPool>,
     mut image_upload_form: Multipart,
 ) -> Result<HttpResponse> {
-    let mut token: Option<Uuid> = None;
+    let mut token: Option<uuid::Uuid> = None;
     let mut item_id: Option<i16> = None;
     let mut image: Option<(Vec<u8>, u32)> = None;
 
@@ -243,9 +246,10 @@ async fn image_upload(
                         error::ErrorBadRequest(anyhow!("Token form field was missing a value"))
                     })?
                     .map_err(error::ErrorBadRequest)?;
-                let value =
-                    Uuid::from_str(std::str::from_utf8(&data).map_err(error::ErrorBadRequest)?)
-                        .map_err(error::ErrorBadRequest)?;
+                let value = uuid::Uuid::from_str(
+                    std::str::from_utf8(&data).map_err(error::ErrorBadRequest)?,
+                )
+                .map_err(error::ErrorBadRequest)?;
 
                 token = Some(value);
             }
@@ -282,7 +286,9 @@ async fn image_upload(
         }
     }
 
-    let token = token.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"Token\"")))?;
+    let token = Token::from(
+        token.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"Token\"")))?,
+    );
     let item_id =
         item_id.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"ItemId\"")))?;
     let (image, crc32c_hash) =
@@ -560,6 +566,7 @@ async fn related_items(
             color_blue,
             count,
         } = ri;
+        let id = id.into();
 
         let item = RelatedItem {
             id,
@@ -578,7 +585,7 @@ async fn related_items(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SetItemPropertyBody {
-    token: uuid::Uuid,
+    token: Token,
     #[serde(rename = "item")]
     item_id: i16,
     property: String,

@@ -1,5 +1,5 @@
-use crate::database::models::Token;
-use crate::models::token_permissions;
+use crate::database::models::Token as DatabaseToken;
+use crate::models::{token_permissions, Token};
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
 use anyhow::anyhow;
 use chrono::Utc;
@@ -9,7 +9,6 @@ use log::info;
 use once_cell::sync::Lazy;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use uuid::Uuid;
 
 pub use comic_updater::*;
 pub use news_updater::*;
@@ -64,7 +63,7 @@ impl Environment {
 
 pub async fn log_action<'e, 'c: 'e, E>(
     executor: E,
-    token: Uuid,
+    token: Token,
     action: impl AsRef<str>,
 ) -> sqlx::Result<()>
 where
@@ -92,13 +91,13 @@ where
 
 pub async fn get_permissions_for_token<'e, 'c: 'e, E>(
     executor: E,
-    token: uuid::Uuid,
+    token: Token,
 ) -> sqlx::Result<Vec<String>>
 where
     E: 'e + sqlx::Executor<'c, Database = sqlx::MySql>,
 {
     let result = sqlx::query_as!(
-        Token,
+        DatabaseToken,
         r#"
             SELECT * FROM `token`
             WHERE `id` = ?
@@ -180,4 +179,14 @@ where
             Either::Right(x) => x.poll(cx).map(Either::Right),
         }
     }
+}
+
+macro_rules! derive_transparent_display {
+    ($ty:ty) => {
+        impl ::std::fmt::Display for $ty {
+            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+                ::std::write!(f, "{}", self.0)
+            }
+        }
+    };
 }
