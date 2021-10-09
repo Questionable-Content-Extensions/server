@@ -15,7 +15,7 @@ use futures::StreamExt;
 use serde::Deserialize;
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
@@ -48,11 +48,16 @@ async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    let all_navigation_items = fetch_all_item_navigation_data(&mut conn, 1.into(), None, None)
-        .await?
-        .into_iter()
-        .map(|i| (i.id, i))
-        .collect::<BTreeMap<ItemId, ItemNavigationData>>();
+    let all_navigation_items = fetch_all_item_navigation_data(
+        &mut conn,
+        1.try_into().expect("1 is valid comic id"),
+        None,
+        None,
+    )
+    .await?
+    .into_iter()
+    .map(|i| (i.id, i))
+    .collect::<BTreeMap<ItemId, ItemNavigationData>>();
 
     let mut items = vec![];
     for item in all_items {
@@ -156,8 +161,18 @@ async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Result<Ht
         name: item.name,
         r#type: ItemType::try_from(&*item.r#type).map_err(error::ErrorInternalServerError)?,
         color: ItemColor(item.Color_Red, item.Color_Green, item.Color_Blue),
-        first: item_occurrence.min.map(Into::into).unwrap_or_default(),
-        last: item_occurrence.max.map(Into::into).unwrap_or_default(),
+        first: item_occurrence
+            .min
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds")
+            .unwrap_or_default(),
+        last: item_occurrence
+            .max
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds")
+            .unwrap_or_default(),
         appearances: item_occurrence.count,
         total_comics,
         presence: if total_comics == 0 {

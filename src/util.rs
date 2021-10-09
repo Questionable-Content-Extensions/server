@@ -7,6 +7,9 @@ use futures::Future;
 use ilyvion_util::string_extensions::StrExtensions;
 use log::info;
 use once_cell::sync::Lazy;
+use semval::context::Context as ValidationContext;
+use semval::{Invalidity, Validate};
+use std::fmt::Display;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -181,12 +184,38 @@ where
     }
 }
 
-macro_rules! derive_transparent_display {
-    ($ty:ty) => {
-        impl ::std::fmt::Display for $ty {
-            fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                ::std::write!(f, "{}", self.0)
-            }
+struct ValidationContextErrorFormatter<V: Invalidity + Display> {
+    invalidations: Vec<V>,
+}
+
+impl<V: Invalidity + Display> From<ValidationContext<V>> for ValidationContextErrorFormatter<V> {
+    #[inline]
+    fn from(validation_context: ValidationContext<V>) -> Self {
+        Self {
+            invalidations: validation_context.into_iter().collect(),
         }
-    };
+    }
+}
+
+impl<V: Invalidity + Display> Display for ValidationContextErrorFormatter<V> {
+    #[inline]
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Validation failed: ")?;
+        for v in &self.invalidations {
+            writeln!(f, "* {}", v)?;
+        }
+
+        Ok(())
+    }
+}
+
+#[inline]
+pub fn ensure_is_valid<V: Validate>(v: &V) -> Result<(), anyhow::Error>
+where
+    V::Invalidity: Display,
+{
+    if let Err(c) = v.validate() {
+        return Err(anyhow!("{}", ValidationContextErrorFormatter::from(c)));
+    }
+    Ok(())
 }

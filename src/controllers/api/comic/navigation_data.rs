@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::convert::TryInto;
 
 use crate::database::DbPoolConnection;
 use crate::models::{ComicId, ItemNavigationData, NavigationData};
@@ -102,10 +103,28 @@ pub async fn fetch_all_item_navigation_data(
         .map(|flc| ItemNavigationData {
             id: flc.id.into(),
             navigation_data: NavigationData {
-                first: flc.first.map(Into::into),
-                previous: previous.get(&flc.id).copied().map(Into::into),
-                next: next.get(&flc.id).copied().map(Into::into),
-                last: flc.last.map(Into::into),
+                first: flc
+                    .first
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .expect("database has valid comicIds"),
+                previous: previous
+                    .get(&flc.id)
+                    .copied()
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .expect("database has valid comicIds"),
+                next: next
+                    .get(&flc.id)
+                    .copied()
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .expect("database has valid comicIds"),
+                last: flc
+                    .last
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .expect("database has valid comicIds"),
             },
             count: flc.count,
             short_name: None,
@@ -225,10 +244,28 @@ pub async fn fetch_comic_item_navigation_data(
         .map(|flc| ItemNavigationData {
             id: flc.id.into(),
             navigation_data: NavigationData {
-                first: flc.first.map(Into::into),
-                previous: previous.get(&flc.id).copied().map(Into::into),
-                next: next.get(&flc.id).copied().map(Into::into),
-                last: flc.last.map(Into::into),
+                first: flc
+                    .first
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .expect("database has valid comicIds"),
+                previous: previous
+                    .get(&flc.id)
+                    .copied()
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .expect("database has valid comicIds"),
+                next: next
+                    .get(&flc.id)
+                    .copied()
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .expect("database has valid comicIds"),
+                last: flc
+                    .last
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .expect("database has valid comicIds"),
             },
             count: flc.count,
             short_name: None,

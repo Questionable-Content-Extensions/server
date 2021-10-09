@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use crate::database::DbPoolConnection;
 use crate::models::{ComicId, EditorData, ItemType, MissingNavigationData, NavigationData};
 use actix_web::{error, Result};
@@ -80,10 +82,22 @@ async fn fetch_navigation_data_for_tagline(
     .map_err(error::ErrorInternalServerError)?;
 
     Ok(NavigationData {
-        first: first.map(Into::into),
-        previous: previous.map(Into::into),
-        next: next.map(Into::into),
-        last: last.map(Into::into),
+        first: first
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds"),
+        previous: previous
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds"),
+        next: next
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds"),
+        last: last
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds"),
     })
 }
 
@@ -140,10 +154,22 @@ async fn fetch_navigation_data_for_title(
     .map_err(error::ErrorInternalServerError)?;
 
     Ok(NavigationData {
-        first: first.map(Into::into),
-        previous: previous.map(Into::into),
-        next: next.map(Into::into),
-        last: last.map(Into::into),
+        first: first
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds"),
+        previous: previous
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds"),
+        next: next
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds"),
+        last: last
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds"),
     })
 }
 
@@ -198,7 +224,10 @@ async fn fetch_first_for_item(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    Ok(first.map(Into::into))
+    Ok(first
+        .map(TryInto::try_into)
+        .transpose()
+        .expect("database has valid comicIds"))
 }
 
 async fn fetch_previous_for_item(
@@ -237,7 +266,10 @@ async fn fetch_previous_for_item(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    Ok(previous.map(Into::into))
+    Ok(previous
+        .map(TryInto::try_into)
+        .transpose()
+        .expect("database has valid comicIds"))
 }
 
 async fn fetch_next_for_item(
@@ -276,7 +308,10 @@ async fn fetch_next_for_item(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    Ok(next.map(Into::into))
+    Ok(next
+        .map(TryInto::try_into)
+        .transpose()
+        .expect("database has valid comicIds"))
 }
 
 async fn fetch_last_for_item(
@@ -312,7 +347,10 @@ async fn fetch_last_for_item(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    Ok(last.map(Into::into))
+    Ok(last
+        .map(TryInto::try_into)
+        .transpose()
+        .expect("database has valid comicIds"))
 }
 
 #[derive(Debug, sqlx::FromRow)]

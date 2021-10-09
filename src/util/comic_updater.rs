@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use crate::database::DbPool;
 use crate::models::{ComicId, ImageType};
 use crate::util::{Environment, NewsUpdater};
@@ -310,7 +312,9 @@ impl ComicUpdater {
         info!("Saving any changes to the database.");
         transaction.commit().await?;
 
-        Ok(comic_id.into())
+        Ok(comic_id
+            .try_into()
+            .map_err(|_| anyhow!("comic id extracted from front page is invalid"))?)
     }
 }
 

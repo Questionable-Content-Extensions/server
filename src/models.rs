@@ -12,7 +12,7 @@ mod item_id;
 mod item_type;
 mod token;
 
-pub use comic_id::ComicId;
+pub use comic_id::*;
 pub use image_type::ImageType;
 pub use item_color::ItemColor;
 pub use item_id::ItemId;
@@ -31,7 +31,7 @@ pub struct ComicList {
 impl From<DatabaseComic> for ComicList {
     fn from(c: DatabaseComic) -> Self {
         Self {
-            comic: ComicId::from(c.id),
+            comic: ComicId::try_from(c.id).expect("database has valid comicIds"),
             title: c.title,
             is_guest_comic: c.isGuestComic != 0,
             is_non_canon: c.isNonCanon != 0,
