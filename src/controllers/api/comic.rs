@@ -11,7 +11,6 @@ use crate::models::{
 use crate::util::{ensure_is_authorized, log_action, NewsUpdater};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
-use anyhow::anyhow;
 use chrono::{DateTime, TimeZone, Utc};
 use futures::TryStreamExt;
 use log::info;
@@ -23,12 +22,13 @@ mod editor_data;
 pub(crate) mod navigation_data;
 
 mod add_item;
+mod remove_item;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").route(web::get().to(all)))
         .service(web::resource("/excluded").route(web::get().to(excluded)))
         .service(web::resource("/additem").route(web::post().to(add_item::add_item)))
-        .service(web::resource("/removeitem").route(web::post().to(remove_item)))
+        .service(web::resource("/removeitem").route(web::post().to(remove_item::remove_item)))
         .service(web::resource("/settitle").route(web::post().to(set_title)))
         .service(web::resource("/settagline").route(web::post().to(set_tagline)))
         .service(web::resource("/setpublishdate").route(web::post().to(set_publish_date)))
@@ -302,82 +302,6 @@ async fn by_id(
     };
 
     Ok(HttpResponse::Ok().json(comic))
-}
-
-async fn remove_item(
-    pool: web::Data<DbPool>,
-    request: web::Json<RemoveItemFromComicBody>,
-    auth: AuthDetails,
-) -> Result<HttpResponse> {
-    ensure_is_authorized(&auth, token_permissions::CAN_REMOVE_ITEM_FROM_COMIC)
-        .map_err(error::ErrorForbidden)?;
-
-    let mut transaction = pool
-        .begin()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let comic_exists = sqlx::query_scalar!(
-        r#"
-            SELECT COUNT(1) FROM `comic`
-            WHERE
-                id = ?
-        "#,
-        request.comic_id.into_inner(),
-    )
-    .fetch_one(&mut *transaction)
-    .await
-    .map_err(error::ErrorInternalServerError)?
-        == 1;
-
-    if !comic_exists {
-        return Err(error::ErrorBadRequest(anyhow!("Comic does not exist")));
-    }
-
-    let item = sqlx::query_as!(
-        DatabaseItem,
-        r#"
-            SELECT * FROM `items` WHERE id = ?
-        "#,
-        request.item_id
-    )
-    .fetch_optional(&mut *transaction)
-    .await
-    .map_err(error::ErrorInternalServerError)?
-    .ok_or_else(|| error::ErrorBadRequest(anyhow!("Item does not exist")))?;
-
-    sqlx::query!(
-        r#"
-            DELETE FROM `occurences`
-            WHERE
-                items_id = ?
-            AND
-                comic_id = ?
-        "#,
-        request.item_id,
-        request.comic_id.into_inner(),
-    )
-    .execute(&mut *transaction)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
-
-    log_action(
-        &mut *transaction,
-        request.token,
-        format!(
-            "Removed {} #{} ({}) from comic #{}",
-            item.r#type, item.id, item.name, request.comic_id
-        ),
-    )
-    .await
-    .map_err(error::ErrorInternalServerError)?;
-
-    transaction
-        .commit()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    Ok(HttpResponse::Ok().body("Item removed from comic"))
 }
 
 async fn set_title(
@@ -925,14 +849,6 @@ struct ExcludedQuery {
 struct ByIdQuery {
     exclude: Option<Exclusion>,
     include: Option<Inclusion>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct RemoveItemFromComicBody {
-    token: Token,
-    comic_id: ComicId,
-    item_id: i16,
 }
 
 #[derive(Debug, Deserialize)]

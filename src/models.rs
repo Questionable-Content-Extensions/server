@@ -15,7 +15,7 @@ mod token;
 pub use comic_id::*;
 pub use image_type::ImageType;
 pub use item_color::ItemColor;
-pub use item_id::ItemId;
+pub use item_id::*;
 pub use item_type::ItemType;
 pub use token::Token;
 

@@ -44,7 +44,8 @@ impl Validate for ItemId {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Display, Eq, PartialEq)]
 pub enum ItemIdInvalidity {
+    #[display("itemId cannot be 0")]
     MinValue,
 }

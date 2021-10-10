@@ -7,8 +7,8 @@ use futures::Future;
 use ilyvion_util::string_extensions::StrExtensions;
 use log::info;
 use once_cell::sync::Lazy;
-use semval::context::Context as ValidationContext;
 use semval::{Invalidity, Validate};
+use std::cell::RefCell;
 use std::fmt::Display;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -184,24 +184,30 @@ where
     }
 }
 
-struct ValidationContextErrorFormatter<V: Invalidity + Display> {
-    invalidations: Vec<V>,
+struct InvalidityFormatter<I: IntoIterator<Item = V>, V: Invalidity + Display> {
+    invalidations: RefCell<Option<I>>,
 }
 
-impl<V: Invalidity + Display> From<ValidationContext<V>> for ValidationContextErrorFormatter<V> {
+impl<I: IntoIterator<Item = V>, V: Invalidity + Display> From<I> for InvalidityFormatter<I, V> {
     #[inline]
-    fn from(validation_context: ValidationContext<V>) -> Self {
+    fn from(iterator: I) -> Self {
         Self {
-            invalidations: validation_context.into_iter().collect(),
+            invalidations: RefCell::new(Some(iterator)),
         }
     }
 }
 
-impl<V: Invalidity + Display> Display for ValidationContextErrorFormatter<V> {
+impl<I: IntoIterator<Item = V>, V: Invalidity + Display> Display for InvalidityFormatter<I, V> {
     #[inline]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let invalidations = self
+            .invalidations
+            .borrow_mut()
+            .take()
+            .expect("this method should only ever get called once");
+
         writeln!(f, "Validation failed: ")?;
-        for v in &self.invalidations {
+        for v in invalidations {
             writeln!(f, "* {}", v)?;
         }
 
@@ -215,7 +221,7 @@ where
     V::Invalidity: Display,
 {
     if let Err(c) = v.validate() {
-        return Err(anyhow!("{}", ValidationContextErrorFormatter::from(c)));
+        return Err(anyhow!("{}", InvalidityFormatter::from(c)));
     }
     Ok(())
 }
