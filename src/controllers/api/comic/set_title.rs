@@ -98,10 +98,6 @@ impl Validate for SetTitleBody {
     fn validate(&self) -> semval::Result<Self::Invalidity> {
         ValidationContext::new()
             .validate_with(&self.comic_id, SetTitleBodyInvalidity::ComicId)
-            .invalidate_if(
-                self.title.is_empty(),
-                SetTitleBodyInvalidity::EmptyTitleInvalidity,
-            )
             .into()
     }
 }
@@ -110,6 +106,4 @@ impl Validate for SetTitleBody {
 pub(crate) enum SetTitleBodyInvalidity {
     #[display("{0}")]
     ComicId(ComicIdInvalidity),
-    #[display("title must not be empty")]
-    EmptyTitleInvalidity,
 }
