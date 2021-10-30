@@ -1,6 +1,7 @@
 #![allow(clippy::use_self)]
 
 use crate::database::models::{Comic as DatabaseComic, LogEntry as DatabaseLogEntry};
+use chrono::TimeZone;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -107,7 +108,7 @@ impl TryFrom<DatabaseLogEntry> for LogEntry {
     fn try_from(l: DatabaseLogEntry) -> Result<Self, Self::Error> {
         Ok(Self {
             identifier: uuid::Uuid::parse_str(&l.UserToken)?.into(),
-            date_time: DateTime::from_utc(l.DateTime, Utc),
+            date_time: Utc.from_utc_datetime(&l.DateTime),
             action: l.Action,
         })
     }

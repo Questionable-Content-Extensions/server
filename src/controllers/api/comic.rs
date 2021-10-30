@@ -247,7 +247,7 @@ async fn by_id(
             comic: comic_id,
             has_data: true,
             image_type: Some(comic.ImageType.into()),
-            publish_date: comic.publishDate.map(|nd| DateTime::from_utc(nd, Utc)),
+            publish_date: comic.publishDate.map(|nd| Utc.from_utc_datetime(&nd)),
             is_accurate_publish_date: comic.isAccuratePublishDate != 0,
             title: Some(comic.title),
             tagline: comic.tagline,
