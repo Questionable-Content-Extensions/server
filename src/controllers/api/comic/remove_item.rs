@@ -8,8 +8,7 @@ use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
 use anyhow::anyhow;
 use parse_display::Display;
-use semval::context::Context as ValidationContext;
-use semval::{Result as ValidationResult, Validate};
+use semval::{context::Context as ValidationContext, Result as ValidationResult, Validate};
 use serde::Deserialize;
 
 pub(crate) async fn remove_item(

@@ -23,6 +23,7 @@ pub(crate) mod navigation_data;
 
 mod add_item;
 mod remove_item;
+mod set_tagline;
 mod set_title;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
@@ -31,7 +32,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(web::resource("/additem").route(web::post().to(add_item::add_item)))
         .service(web::resource("/removeitem").route(web::post().to(remove_item::remove_item)))
         .service(web::resource("/settitle").route(web::post().to(set_title::set_title)))
-        .service(web::resource("/settagline").route(web::post().to(set_tagline)))
+        .service(web::resource("/settagline").route(web::post().to(set_tagline::set_tagline)))
         .service(web::resource("/setpublishdate").route(web::post().to(set_publish_date)))
         .service(web::resource("/setguest").route(web::post().to(set_guest)))
         .service(web::resource("/setnoncanon").route(web::post().to(set_non_canon)))
@@ -303,82 +304,6 @@ async fn by_id(
     };
 
     Ok(HttpResponse::Ok().json(comic))
-}
-
-async fn set_tagline(
-    pool: web::Data<DbPool>,
-    request: web::Json<SetTaglineBody>,
-    auth: AuthDetails,
-) -> Result<HttpResponse> {
-    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
-        .map_err(error::ErrorForbidden)?;
-
-    let mut transaction = pool
-        .begin()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    ensure_comic_exists(&mut *transaction, request.comic_id)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let old_tagline = sqlx::query_scalar!(
-        r#"
-            SELECT tagline FROM `comic` WHERE id = ?
-        "#,
-        request.comic_id.into_inner()
-    )
-    .fetch_one(&mut *transaction)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
-
-    sqlx::query!(
-        r#"
-            UPDATE `comic`
-            SET tagline = ?
-            WHERE
-                id = ?
-        "#,
-        request.tagline,
-        request.comic_id.into_inner(),
-    )
-    .execute(&mut *transaction)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
-
-    match old_tagline {
-        Some(old_tagline) if !old_tagline.is_empty() => {
-            log_action(
-                &mut *transaction,
-                request.token,
-                format!(
-                    "Changed tagline on comic #{} from \"{}\" to \"{}\"",
-                    request.comic_id, old_tagline, request.tagline
-                ),
-            )
-            .await
-            .map_err(error::ErrorInternalServerError)?;
-        }
-        _ => {
-            log_action(
-                &mut *transaction,
-                request.token,
-                format!(
-                    "Set tagline on comic #{} to \"{}\"",
-                    request.comic_id, request.tagline
-                ),
-            )
-            .await
-            .map_err(error::ErrorInternalServerError)?;
-        }
-    }
-
-    transaction
-        .commit()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    Ok(HttpResponse::Ok().body("Tagline set or updated for comic"))
 }
 
 async fn set_publish_date(
@@ -777,14 +702,6 @@ struct ExcludedQuery {
 struct ByIdQuery {
     exclude: Option<Exclusion>,
     include: Option<Inclusion>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct SetTaglineBody {
-    token: Token,
-    comic_id: ComicId,
-    tagline: String,
 }
 
 #[derive(Debug, Deserialize)]

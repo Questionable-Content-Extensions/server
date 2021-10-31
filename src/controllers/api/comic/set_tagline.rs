@@ -8,9 +8,9 @@ use parse_display::Display;
 use semval::{context::Context as ValidationContext, Validate};
 use serde::Deserialize;
 
-pub(crate) async fn set_title(
+pub(crate) async fn set_tagline(
     pool: web::Data<DbPool>,
-    request: web::Json<SetTitleBody>,
+    request: web::Json<SetTaglineBody>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
@@ -27,9 +27,9 @@ pub(crate) async fn set_title(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let old_title = sqlx::query_scalar!(
+    let old_tagline = sqlx::query_scalar!(
         r#"
-            SELECT title FROM `comic` WHERE id = ?
+            SELECT tagline FROM `comic` WHERE id = ?
         "#,
         request.comic_id.into_inner()
     )
@@ -40,39 +40,42 @@ pub(crate) async fn set_title(
     sqlx::query!(
         r#"
             UPDATE `comic`
-            SET title = ?
+            SET tagline = ?
             WHERE
                 id = ?
         "#,
-        request.title,
+        request.tagline,
         request.comic_id.into_inner(),
     )
     .execute(&mut *transaction)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    if old_title.is_empty() {
-        log_action(
-            &mut *transaction,
-            request.token,
-            format!(
-                "Set title on comic #{} to \"{}\"",
-                request.comic_id, request.title
-            ),
-        )
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-    } else {
-        log_action(
-            &mut *transaction,
-            request.token,
-            format!(
-                "Changed title on comic #{} from \"{}\" to \"{}\"",
-                request.comic_id, old_title, request.title
-            ),
-        )
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+    match old_tagline {
+        Some(old_tagline) if !old_tagline.is_empty() => {
+            log_action(
+                &mut *transaction,
+                request.token,
+                format!(
+                    "Changed tagline on comic #{} from \"{}\" to \"{}\"",
+                    request.comic_id, old_tagline, request.tagline
+                ),
+            )
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+        }
+        _ => {
+            log_action(
+                &mut *transaction,
+                request.token,
+                format!(
+                    "Set tagline on comic #{} to \"{}\"",
+                    request.comic_id, request.tagline
+                ),
+            )
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+        }
     }
 
     transaction
@@ -80,29 +83,29 @@ pub(crate) async fn set_title(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body("Title set or updated for comic"))
+    Ok(HttpResponse::Ok().body("Tagline set or updated for comic"))
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct SetTitleBody {
+pub(crate) struct SetTaglineBody {
     token: Token,
     comic_id: ComicId,
-    title: String,
+    tagline: String,
 }
 
-impl Validate for SetTitleBody {
-    type Invalidity = SetTitleBodyInvalidity;
+impl Validate for SetTaglineBody {
+    type Invalidity = SetTaglineBodyInvalidity;
 
     fn validate(&self) -> semval::Result<Self::Invalidity> {
         ValidationContext::new()
-            .validate_with(&self.comic_id, SetTitleBodyInvalidity::ComicId)
+            .validate_with(&self.comic_id, SetTaglineBodyInvalidity::ComicId)
             .into()
     }
 }
 
 #[derive(Copy, Clone, Debug, Display, Eq, PartialEq)]
-pub(crate) enum SetTitleBodyInvalidity {
+pub(crate) enum SetTaglineBodyInvalidity {
     #[display("{0}")]
     ComicId(ComicIdInvalidity),
 }

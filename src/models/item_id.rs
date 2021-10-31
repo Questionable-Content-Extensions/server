@@ -1,6 +1,5 @@
 use parse_display::Display;
-use semval::context::Context as ValidationContext;
-use semval::{Result as ValidationResult, Validate};
+use semval::{context::Context as ValidationContext, Result as ValidationResult, Validate};
 use serde::{Deserialize, Serialize};
 
 #[derive(
