@@ -1,12 +1,13 @@
-use crate::controllers::api::comic::ensure_comic_exists;
-use crate::database::DbPool;
-use crate::models::{token_permissions, ComicId, ComicIdInvalidity, Token};
-use crate::util::{ensure_is_authorized, ensure_is_valid, log_action};
+use crate::models::{ComicId, ComicIdInvalidity, Token};
+use crate::util::{ensure_is_authorized, ensure_is_valid};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
+use database::models::{Comic as DatabaseComic, LogEntry};
+use database::DbPool;
 use parse_display::Display;
 use semval::{context::Context as ValidationContext, Validate};
 use serde::Deserialize;
+use shared::token_permissions;
 
 pub(crate) async fn set_title(
     pool: web::Data<DbPool>,
@@ -23,38 +24,27 @@ pub(crate) async fn set_title(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    ensure_comic_exists(&mut *transaction, request.comic_id)
+    DatabaseComic::ensure_exists_by_id(&mut *transaction, request.comic_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let old_title = sqlx::query_scalar!(
-        r#"
-            SELECT title FROM `comic` WHERE id = ?
-        "#,
-        request.comic_id.into_inner()
-    )
-    .fetch_one(&mut *transaction)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    let old_title = DatabaseComic::title_by_id(&mut *transaction, request.comic_id.into_inner())
+        .await
+        .map_err(error::ErrorInternalServerError)?
+        .expect("Due to ensure_exists_by_id call, this should never be None");
 
-    sqlx::query!(
-        r#"
-            UPDATE `comic`
-            SET title = ?
-            WHERE
-                id = ?
-        "#,
-        request.title,
+    DatabaseComic::update_title_by_id(
+        &mut *transaction,
         request.comic_id.into_inner(),
+        &request.title,
     )
-    .execute(&mut *transaction)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
     if old_title.is_empty() {
-        log_action(
+        LogEntry::log_action(
             &mut *transaction,
-            request.token,
+            request.token.to_string(),
             format!(
                 "Set title on comic #{} to \"{}\"",
                 request.comic_id, request.title
@@ -63,9 +53,9 @@ pub(crate) async fn set_title(
         .await
         .map_err(error::ErrorInternalServerError)?;
     } else {
-        log_action(
+        LogEntry::log_action(
             &mut *transaction,
-            request.token,
+            request.token.to_string(),
             format!(
                 "Changed title on comic #{} from \"{}\" to \"{}\"",
                 request.comic_id, old_title, request.title

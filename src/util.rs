@@ -1,11 +1,7 @@
-use crate::database::models::Token as DatabaseToken;
-use crate::models::{token_permissions, Token};
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
-use anyhow::anyhow;
-use chrono::Utc;
+use anyhow::{anyhow, Result};
 use futures::Future;
 use ilyvion_util::string_extensions::StrExtensions;
-use log::info;
 use once_cell::sync::Lazy;
 use semval::{Invalidity, Validate};
 use std::cell::RefCell;
@@ -62,82 +58,6 @@ impl Environment {
             "off" | "false" | "no" | "0"
         )
     }
-}
-
-pub async fn log_action<'e, 'c: 'e, E>(
-    executor: E,
-    token: Token,
-    action: impl AsRef<str>,
-) -> sqlx::Result<()>
-where
-    E: 'e + sqlx::Executor<'c, Database = sqlx::MySql>,
-{
-    let action = action.as_ref();
-    sqlx::query!(
-        r#"
-            INSERT INTO `log_entry`
-                (UserToken, DateTime, Action)
-            VALUES
-                (?, ?, ?)
-        "#,
-        token.to_string(),
-        Utc::now().naive_utc(),
-        action,
-    )
-    .execute(executor)
-    .await?;
-
-    info!("{}", action);
-
-    Ok(())
-}
-
-pub async fn get_permissions_for_token<'e, 'c: 'e, E>(
-    executor: E,
-    token: Token,
-) -> sqlx::Result<Vec<String>>
-where
-    E: 'e + sqlx::Executor<'c, Database = sqlx::MySql>,
-{
-    let result = sqlx::query_as!(
-        DatabaseToken,
-        r#"
-            SELECT * FROM `token`
-            WHERE `id` = ?
-        "#,
-        token.to_string()
-    )
-    .fetch_optional(executor)
-    .await?;
-
-    let token = if let Some(token) = result {
-        token
-    } else {
-        // Invalid token provided, there are no permissions
-        return Ok(vec![]);
-    };
-
-    let mut permissions = Vec::with_capacity(7);
-    permissions.push(token_permissions::HAS_VALID_TOKEN.to_string());
-    if token.CanAddItemToComic != 0 {
-        permissions.push(token_permissions::CAN_ADD_ITEM_TO_COMIC.to_string());
-    }
-    if token.CanRemoveItemFromComic != 0 {
-        permissions.push(token_permissions::CAN_REMOVE_ITEM_FROM_COMIC.to_string());
-    }
-    if token.CanChangeComicData != 0 {
-        permissions.push(token_permissions::CAN_CHANGE_COMIC_DATA.to_string());
-    }
-    if token.CanAddImageToItem != 0 {
-        permissions.push(token_permissions::CAN_ADD_IMAGE_TO_ITEM.to_string());
-    }
-    if token.CanRemoveImageFromItem != 0 {
-        permissions.push(token_permissions::CAN_REMOVE_IMAGE_FROM_ITEM.to_string());
-    }
-    if token.CanChangeItemData != 0 {
-        permissions.push(token_permissions::CAN_CHANGE_ITEM_DATA.to_string());
-    }
-    Ok(permissions)
 }
 
 #[inline]

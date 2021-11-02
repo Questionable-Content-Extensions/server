@@ -1,7 +1,6 @@
 use parse_display::Display;
 use semval::{context::Context as ValidationContext, Result as ValidationResult, Validate};
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
 
 #[derive(
     Copy,
@@ -24,6 +23,12 @@ impl ComicId {
     #[inline]
     pub fn into_inner(self) -> u16 {
         self.0
+    }
+}
+
+impl From<u16> for ComicId {
+    fn from(comic_id: u16) -> Self {
+        Self(comic_id)
     }
 }
 

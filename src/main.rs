@@ -59,14 +59,15 @@
 #![warn(clippy::too_many_lines)]
 // </editor-fold>
 
-use crate::database::DbPool;
 use crate::models::Token;
-use crate::util::{get_permissions_for_token, ComicUpdater, Either, NewsUpdater};
+use crate::util::{ComicUpdater, Either, NewsUpdater};
 use actix_files::Files;
 use actix_web::dev::ServiceRequest;
 use actix_web::{error, web, App, Error, FromRequest, HttpServer};
 use actix_web_grants::GrantsMiddleware;
 use anyhow::{anyhow, Context as _, Result};
+use database::models::Token as DatabaseToken;
+use database::DbPool;
 use futures::stream::{FuturesUnordered, StreamExt};
 use futures::{pin_mut, FutureExt};
 use log::{error, info};
@@ -80,7 +81,7 @@ use util::Environment;
 mod util;
 
 mod controllers;
-mod database;
+//mod database;
 mod models;
 
 #[actix_web::main]
@@ -96,7 +97,7 @@ async fn main() -> Result<()> {
     let bind_address = format!("0.0.0.0:{}", Environment::port());
     info!("Starting server at: {}", &bind_address);
 
-    let http_db_pool = DbPool::create().await;
+    let http_db_pool = DbPool::create(Environment::database_url()).await;
     let db_pool = http_db_pool.clone();
 
     let http_news_updater: web::Data<NewsUpdater> = web::Data::new(NewsUpdater::new());
@@ -252,7 +253,9 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<Vec<String>
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(get_permissions_for_token(&mut conn, token)
-        .await
-        .map_err(error::ErrorInternalServerError)?)
+    Ok(
+        DatabaseToken::get_permissions_for_token(&mut conn, token.to_string())
+            .await
+            .map_err(error::ErrorInternalServerError)?,
+    )
 }

@@ -1,8 +1,9 @@
 #![allow(clippy::use_self)]
 
-use crate::database::models::{Comic as DatabaseComic, LogEntry as DatabaseLogEntry};
 use chrono::TimeZone;
 use chrono::{DateTime, Utc};
+use database::models::ItemImageMetadata;
+use database::models::{Comic as DatabaseComic, LogEntry as DatabaseLogEntry};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
@@ -102,15 +103,15 @@ pub struct LogEntry {
     pub action: String,
 }
 
-impl TryFrom<DatabaseLogEntry> for LogEntry {
-    type Error = anyhow::Error;
-
-    fn try_from(l: DatabaseLogEntry) -> Result<Self, Self::Error> {
-        Ok(Self {
-            identifier: uuid::Uuid::parse_str(&l.UserToken)?.into(),
+impl From<DatabaseLogEntry> for LogEntry {
+    fn from(l: DatabaseLogEntry) -> Self {
+        Self {
+            identifier: uuid::Uuid::parse_str(&l.UserToken)
+                .expect("Tokens from the database are valid")
+                .into(),
             date_time: Utc.from_utc_datetime(&l.DateTime),
             action: l.Action,
-        })
+        }
     }
 }
 
@@ -130,6 +131,16 @@ pub struct RelatedItem {
 pub struct ItemImageList {
     pub id: i32,
     pub crc32c_hash: u32,
+}
+
+impl From<ItemImageMetadata> for ItemImageList {
+    #[inline]
+    fn from(ii: ItemImageMetadata) -> Self {
+        Self {
+            id: ii.Id,
+            crc32c_hash: ii.CRC32CHash,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -178,14 +189,4 @@ pub enum Exclusion {
 #[serde(rename_all = "kebab-case")]
 pub enum Inclusion {
     All,
-}
-
-pub mod token_permissions {
-    pub const HAS_VALID_TOKEN: &str = "HAS_VALID_TOKEN";
-    pub const CAN_ADD_ITEM_TO_COMIC: &str = "CAN_ADD_ITEM_TO_COMIC";
-    pub const CAN_REMOVE_ITEM_FROM_COMIC: &str = "CAN_REMOVE_ITEM_FROM_COMIC";
-    pub const CAN_CHANGE_COMIC_DATA: &str = "CAN_CHANGE_COMIC_DATA";
-    pub const CAN_ADD_IMAGE_TO_ITEM: &str = "CAN_ADD_IMAGE_TO_ITEM";
-    pub const CAN_REMOVE_IMAGE_FROM_ITEM: &str = "CAN_REMOVE_IMAGE_FROM_ITEM";
-    pub const CAN_CHANGE_ITEM_DATA: &str = "CAN_CHANGE_ITEM_DATA";
 }

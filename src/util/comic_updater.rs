@@ -1,16 +1,17 @@
 use std::convert::TryInto;
 
-use crate::database::DbPool;
 use crate::models::{ComicId, ImageType};
 use crate::util::{Environment, NewsUpdater};
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Datelike, Duration, NaiveTime, TimeZone, Timelike, Utc, Weekday};
 use chrono_tz::Tz;
 use const_format::concatcp;
+use database::models::Comic as DatabaseComic;
+use database::DbPool;
 use ego_tree::NodeRef;
 use futures::{select, FutureExt};
 use ilyvion_util::string_extensions::StrExtensions;
-use log::{info, warn};
+use log::info;
 use once_cell::sync::Lazy;
 use reqwest::Client;
 use scraper::{ElementRef, Html, Node, Selector};
@@ -41,7 +42,7 @@ impl ComicUpdater {
         db_pool: &DbPool,
         news_updater: &NewsUpdater,
         shutdown_receiver: &mut broadcast::Receiver<()>,
-    ) -> sqlx::Result<()> {
+    ) -> anyhow::Result<()> {
         // Wait a short period of time to avoid hammering the website on frequent restarts due to some
         // unresolved startup panic.
         sleep(STARTUP_DELAY_DURATION).await;
@@ -53,10 +54,8 @@ impl ComicUpdater {
                 now.format("%A, %d %B %Y")
             );
 
-            match self.fetch_latest_comic_data(db_pool).await {
-                Err(e) => warn!("{}", e),
-                Ok(comic_id) => news_updater.check_for(comic_id).await,
-            }
+            let comic_id = self.fetch_latest_comic_data(db_pool).await?;
+            news_updater.check_for(comic_id).await;
 
             let delay = time_until_next_update(now);
             let hours = delay.num_hours();
@@ -80,12 +79,6 @@ impl ComicUpdater {
 
     #[allow(clippy::too_many_lines)]
     async fn fetch_latest_comic_data(&self, db_pool: &DbPool) -> Result<ComicId> {
-        #[allow(nonstandard_style)]
-        struct NeedsQuery {
-            title: String,
-            ImageType: i32,
-        }
-
         info!("Fetching QC front page");
         let response = self.client.get(FRONT_PAGE_URL).send().await;
         let qc_front_page = match response {
@@ -118,7 +111,7 @@ impl ComicUpdater {
                 anyhow!("Could not fetch front page, couldn't get comic image element source")
             })?;
 
-            let (comic_image, comic_type): (i16, i32) = {
+            let (comic_image, comic_type): (u16, i32) = {
                 let (comic_image, comic_type) = comic_image_url
                     .rsplit_once("/")
                     .ok_or_else(|| {
@@ -200,21 +193,8 @@ impl ComicUpdater {
 
         let mut transaction = db_pool.begin().await?;
 
-        let (needs_title, needs_image_type) = if let Some(needs) = sqlx::query_as!(
-            NeedsQuery,
-            r#"
-                SELECT title, ImageType FROM `comic`
-                WHERE `id` = ?
-            "#,
-            comic_id
-        )
-        .fetch_optional(&mut *transaction)
-        .await?
-        {
-            (needs.title.is_empty(), needs.ImageType == 0)
-        } else {
-            (true, true)
-        };
+        let (needs_title, needs_image_type) =
+            DatabaseComic::needs_updating_by_id(&mut *transaction, comic_id).await?;
 
         info!(
             "Comic #{} needs title: {}, needs image type: {}",
@@ -270,23 +250,12 @@ impl ComicUpdater {
                 ImageType::from(image_type)
             );
 
-            sqlx::query!(
-                r#"
-                    INSERT INTO `comic`
-                        (id, title, imagetype)
-                    VALUES
-                        (?, ?, ?)
-                    ON DUPLICATE KEY UPDATE
-                        title = ?,
-                        imagetype = ?
-                "#,
+            DatabaseComic::insert_or_update_title_and_imagetype_by_id(
+                &mut *transaction,
                 comic_id,
-                title,
-                image_type,
-                title,
+                &title,
                 image_type,
             )
-            .execute(&mut *transaction)
             .await?;
         } else if needs_image_type && image_type != 0 {
             info!(
@@ -295,18 +264,7 @@ impl ComicUpdater {
                 ImageType::from(image_type)
             );
 
-            sqlx::query!(
-                r#"
-                    UPDATE `comic`
-                    SET
-                        ImageType = ?
-                    WHERE id = ?
-                "#,
-                image_type,
-                comic_id,
-            )
-            .execute(&mut *transaction)
-            .await?;
+            DatabaseComic::update_image_type_by_id(&mut *transaction, comic_id, image_type).await?;
         }
 
         info!("Saving any changes to the database.");

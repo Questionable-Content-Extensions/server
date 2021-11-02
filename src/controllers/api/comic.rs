@@ -2,19 +2,18 @@ use crate::controllers::api::comic::editor_data::fetch_editor_data_for_comic;
 use crate::controllers::api::comic::navigation_data::{
     fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
 };
-use crate::database::models::{Comic as DatabaseComic, Item as DatabaseItem, News as DatabaseNews};
-use crate::database::DbPool;
-use crate::models::{
-    token_permissions, Comic, ComicId, ComicList, Exclusion, Inclusion, ItemColor, ItemId,
-    ItemType, Token,
-};
-use crate::util::{ensure_is_authorized, log_action, NewsUpdater};
+use crate::models::{Comic, ComicId, ComicList, Exclusion, Inclusion, ItemColor, ItemType, Token};
+use crate::util::{ensure_is_authorized, NewsUpdater};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
 use chrono::{DateTime, TimeZone, Utc};
-use futures::TryStreamExt;
+use database::models::{
+    Comic as DatabaseComic, Item as DatabaseItem, LogEntry, News as DatabaseNews,
+};
+use database::DbPool;
 use log::info;
 use serde::Deserialize;
+use shared::token_permissions;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 
@@ -98,76 +97,40 @@ async fn by_id(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let (is_guest_comic, is_non_canon) = match query.exclude {
+    let (include_guest_comics, include_non_canon_comics) = match query.exclude {
         None => (None, None),
         Some(Exclusion::Guest) => (Some(false), None),
         Some(Exclusion::NonCanon) => (None, Some(false)),
     };
 
-    let comic: Option<DatabaseComic> = sqlx::query_as!(
-        DatabaseComic,
-        r#"
-		SELECT * FROM `comic`
-		WHERE `id` = ?
-	"#,
-        comic_id.into_inner()
+    let comic = DatabaseComic::by_id(&mut conn, comic_id.into_inner())
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let previous = DatabaseComic::previous_id(
+        &mut conn,
+        comic_id.into_inner(),
+        include_guest_comics,
+        include_non_canon_comics,
     )
-    .fetch_optional(&mut conn)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    let previous: Option<i16> = sqlx::query_scalar!(
-        r#"
-			SELECT id
-			FROM `comic`
-			WHERE id < ?
-				AND (? is NULL OR `isGuestComic` = ?)
-				AND (? is NULL OR `isNonCanon` = ?)
-			ORDER BY id DESC
-		"#,
+    let next = DatabaseComic::next_id(
+        &mut conn,
         comic_id.into_inner(),
-        is_guest_comic,
-        is_guest_comic,
-        is_non_canon,
-        is_non_canon,
+        include_guest_comics,
+        include_non_canon_comics,
     )
-    .fetch_optional(&mut conn)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
-
-    let next: Option<i16> = sqlx::query_scalar!(
-        r#"
-			SELECT id
-			FROM `comic`
-			WHERE id > ?
-				AND (? is NULL OR `isGuestComic` = ?)
-				AND (? is NULL OR `isNonCanon` = ?)
-			ORDER BY id ASC
-		"#,
-        comic_id.into_inner(),
-        is_guest_comic,
-        is_guest_comic,
-        is_non_canon,
-        is_non_canon,
-    )
-    .fetch_optional(&mut conn)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
     let news: Option<DatabaseNews> = if comic.is_some() {
         news_updater.check_for(comic_id).await;
 
-        sqlx::query_as!(
-            DatabaseNews,
-            r#"
-				SELECT * FROM `news`
-				WHERE `comic` = ?
-			"#,
-            comic_id.into_inner()
-        )
-        .fetch_optional(&mut conn)
-        .await
-        .map_err(error::ErrorInternalServerError)?
+        DatabaseNews::by_comic_id(&mut conn, comic_id.into_inner())
+            .await
+            .map_err(error::ErrorInternalServerError)?
     } else {
         None
     };
@@ -178,47 +141,31 @@ async fn by_id(
         None
     };
 
-    let mut items: BTreeMap<ItemId, DatabaseItem> = sqlx::query_as!(
-        DatabaseItem,
-        r#"
-            SELECT i.*
-            FROM items i
-            JOIN occurences o ON o.items_id = i.id
-            WHERE o.comic_id = ?
-        "#,
-        comic_id.into_inner(),
-    )
-    .fetch(&mut conn)
-    .map_ok(|i| (i.id.into(), i))
-    .try_collect()
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    let mut items =
+        DatabaseItem::occurrences_in_comic_mapped_by_id(&mut conn, comic_id.into_inner())
+            .await
+            .map_err(error::ErrorInternalServerError)?;
 
     let (comic_navigation_items, all_navigation_items) =
         if items.is_empty() && !matches!(query.include, Some(Inclusion::All)) {
             (vec![], vec![])
         } else if let Some(Inclusion::All) = query.include {
-            let mut all_items: BTreeMap<ItemId, DatabaseItem> = sqlx::query_as!(
-                DatabaseItem,
-                r#"
-				SELECT *
-				FROM items
-			"#,
-            )
-            .fetch(&mut conn)
-            .map_ok(|i| (i.id.into(), i))
-            .try_collect()
-            .await
-            .map_err(error::ErrorInternalServerError)?;
+            let mut all_items = DatabaseItem::all_mapped_by_id(&mut conn)
+                .await
+                .map_err(error::ErrorInternalServerError)?;
 
-            let mut all_navigation_items =
-                fetch_all_item_navigation_data(&mut conn, comic_id, is_guest_comic, is_non_canon)
-                    .await?;
+            let mut all_navigation_items = fetch_all_item_navigation_data(
+                &mut conn,
+                comic_id,
+                include_guest_comics,
+                include_non_canon_comics,
+            )
+            .await?;
             let mut navigation_items_in_comic = vec![];
             let mut i = 0;
             while i < all_navigation_items.len() {
                 let element = &mut all_navigation_items[i];
-                if items.get(&element.id).is_some() {
+                if items.get(&element.id.into_inner()).is_some() {
                     let element = all_navigation_items.remove(i);
                     navigation_items_in_comic.push(element);
                 } else {
@@ -233,9 +180,13 @@ async fn by_id(
 
             (navigation_items_in_comic, all_navigation_items)
         } else {
-            let mut navigation_items_in_comic =
-                fetch_comic_item_navigation_data(&mut conn, comic_id, is_guest_comic, is_non_canon)
-                    .await?;
+            let mut navigation_items_in_comic = fetch_comic_item_navigation_data(
+                &mut conn,
+                comic_id,
+                include_guest_comics,
+                include_non_canon_comics,
+            )
+            .await?;
 
             transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut items)
                 .map_err(error::ErrorInternalServerError)?;
@@ -319,41 +270,28 @@ async fn set_publish_date(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    ensure_comic_exists(&mut *transaction, request.comic_id)
+    DatabaseComic::ensure_exists_by_id(&mut *transaction, request.comic_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let old_publish_date = sqlx::query_scalar!(
-        r#"
-            SELECT publishDate FROM `comic` WHERE id = ?
-        "#,
-        request.comic_id.into_inner()
-    )
-    .fetch_one(&mut *transaction)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    let old_publish_date =
+        DatabaseComic::publish_date_by_id(&mut *transaction, request.comic_id.into_inner())
+            .await
+            .map_err(error::ErrorInternalServerError)?;
 
-    sqlx::query!(
-        r#"
-            UPDATE `comic`
-            SET
-                publishDate = ?,
-                isAccuratePublishDate = ?
-            WHERE
-                id = ?
-        "#,
-        request.publish_date.naive_utc(),
-        request.is_accurate_publish_date,
+    DatabaseComic::update_publish_date_by_id(
+        &mut *transaction,
         request.comic_id.into_inner(),
+        request.publish_date,
+        request.is_accurate_publish_date,
     )
-    .execute(&mut *transaction)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
     if let Some(old_publish_date) = old_publish_date {
-        log_action(
+        LogEntry::log_action(
             &mut *transaction,
-            request.token,
+            request.token.to_string(),
             format!(
                 "Changed publish date on comic #{} from \"{}\" to \"{}\"",
                 request.comic_id,
@@ -367,9 +305,9 @@ async fn set_publish_date(
         .await
         .map_err(error::ErrorInternalServerError)?;
     } else {
-        log_action(
+        LogEntry::log_action(
             &mut *transaction,
-            request.token,
+            request.token.to_string(),
             format!(
                 "Set publish date on comic #{} to \"{}\"",
                 request.comic_id,
@@ -470,130 +408,88 @@ async fn set_flag(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    ensure_comic_exists(&mut *transaction, request.comic_id)
+    DatabaseComic::ensure_exists_by_id(&mut *transaction, request.comic_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let (true_value_log_text, false_value_log_text, sql_future) = match flag {
+    let (true_value_log_text, false_value_log_text, sql_result) = match flag {
         FlagType::IsGuestComic => (
             "to be a guest comic",
             "to be a Jeph comic",
-            sqlx::query!(
-                r#"
-                    UPDATE `comic`
-                    SET
-                        isGuestComic = ?
-                    WHERE
-                        id = ?
-                "#,
-                request.flag_value,
+            DatabaseComic::update_is_guest_comic_by_id(
+                &mut *transaction,
                 request.comic_id.into_inner(),
+                request.flag_value,
             )
-            .execute(&mut *transaction),
+            .await,
         ),
         FlagType::IsNonCanon => (
             "to be non-canon",
             "to be canon",
-            sqlx::query!(
-                r#"
-                    UPDATE `comic`
-                    SET
-                        isNonCanon = ?
-                    WHERE
-                        id = ?
-                "#,
-                request.flag_value,
+            DatabaseComic::update_is_non_canon_by_id(
+                &mut *transaction,
                 request.comic_id.into_inner(),
+                request.flag_value,
             )
-            .execute(&mut *transaction),
+            .await,
         ),
         FlagType::HasNoCast => (
             "to have no cast",
             "to have cast",
-            sqlx::query!(
-                r#"
-                    UPDATE `comic`
-                    SET
-                        HasNoCast = ?
-                    WHERE
-                        id = ?
-                "#,
-                request.flag_value,
+            DatabaseComic::update_has_no_cast_by_id(
+                &mut *transaction,
                 request.comic_id.into_inner(),
+                request.flag_value,
             )
-            .execute(&mut *transaction),
+            .await,
         ),
         FlagType::HasNoLocation => (
             "to have no locations",
             "to have locations",
-            sqlx::query!(
-                r#"
-                    UPDATE `comic`
-                    SET
-                        HasNoLocation = ?
-                    WHERE
-                        id = ?
-                "#,
-                request.flag_value,
+            DatabaseComic::update_has_no_location_by_id(
+                &mut *transaction,
                 request.comic_id.into_inner(),
+                request.flag_value,
             )
-            .execute(&mut *transaction),
+            .await,
         ),
         FlagType::HasNoStoryline => (
             "to have no storylines",
             "to have storylines",
-            sqlx::query!(
-                r#"
-                    UPDATE `comic`
-                    SET
-                        HasNoStoryline = ?
-                    WHERE
-                        id = ?
-                "#,
-                request.flag_value,
+            DatabaseComic::update_has_no_storyline_by_id(
+                &mut *transaction,
                 request.comic_id.into_inner(),
+                request.flag_value,
             )
-            .execute(&mut *transaction),
+            .await,
         ),
         FlagType::HasNoTitle => (
             "to have no title",
             "to have a title",
-            sqlx::query!(
-                r#"
-                    UPDATE `comic`
-                    SET
-                        HasNoTitle = ?
-                    WHERE
-                        id = ?
-                "#,
-                request.flag_value,
+            DatabaseComic::update_has_no_title_by_id(
+                &mut *transaction,
                 request.comic_id.into_inner(),
+                request.flag_value,
             )
-            .execute(&mut *transaction),
+            .await,
         ),
         FlagType::HasNoTagline => (
             "to have no tagline",
             "to have a tagline",
-            sqlx::query!(
-                r#"
-                    UPDATE `comic`
-                    SET
-                        HasNoTagline = ?
-                    WHERE
-                        id = ?
-                "#,
-                request.flag_value,
+            DatabaseComic::update_has_no_tagline_by_id(
+                &mut *transaction,
                 request.comic_id.into_inner(),
+                request.flag_value,
             )
-            .execute(&mut *transaction),
+            .await,
         ),
     };
 
-    sql_future.await.map_err(error::ErrorInternalServerError)?;
+    sql_result.map_err(error::ErrorInternalServerError)?;
 
-    log_action(
+    LogEntry::log_action(
         &mut *transaction,
-        request.token,
+        request.token.to_string(),
         format!(
             "Set comic #{} {}",
             request.comic_id,
@@ -617,7 +513,7 @@ async fn set_flag(
 
 fn transfer_item_data_to_navigation_item(
     navigation_items: &mut Vec<crate::models::ItemNavigationData>,
-    items: &mut BTreeMap<ItemId, DatabaseItem>,
+    items: &mut BTreeMap<u16, DatabaseItem>,
 ) -> anyhow::Result<()> {
     for navigation_item in navigation_items {
         let DatabaseItem {
@@ -629,7 +525,7 @@ fn transfer_item_data_to_navigation_item(
             Color_Green: color_green,
             Color_Blue: color_blue,
         } = items
-            .remove(&navigation_item.id)
+            .remove(&navigation_item.id.into_inner())
             .expect("item data for navigation item");
         navigation_item.short_name = Some(short_name);
         navigation_item.name = Some(name);
@@ -646,46 +542,12 @@ async fn fetch_comic_list(
     is_guest_comic: Option<bool>,
     is_non_canon: Option<bool>,
 ) -> Result<Vec<ComicList>> {
-    let comics: Vec<ComicList> = sqlx::query_as!(
-        DatabaseComic,
-        r#"
-			SELECT * FROM `comic`
-			WHERE (? is NULL OR `isGuestComic` = ?)
-				AND (? is NULL OR `isNonCanon` = ?)
-			ORDER BY id ASC
-		"#,
-        is_guest_comic,
-        is_guest_comic,
-        is_non_canon,
-        is_non_canon
-    )
-    .fetch(&**pool)
-    .map_ok(From::from)
-    .try_collect()
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    let comics: Vec<ComicList> =
+        DatabaseComic::all_with_mapping(&**pool, is_guest_comic, is_non_canon, From::from)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
 
     Ok(comics)
-}
-
-#[inline]
-async fn ensure_comic_exists<'e, 'c: 'e, E>(executor: E, comic_id: ComicId) -> sqlx::Result<()>
-where
-    E: 'e + sqlx::Executor<'c, Database = sqlx::MySql>,
-{
-    sqlx::query!(
-        r#"
-            INSERT IGNORE INTO `comic`
-                (id)
-            VALUES
-                (?)
-        "#,
-        comic_id.into_inner(),
-    )
-    .execute(executor)
-    .await?;
-
-    Ok(())
 }
 
 #[derive(Debug, Deserialize)]

@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Alexander Krivács Schrøder <alexschrod@gmail.com>"]
 edition = "2021"
 default-run = "qcext-server"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,15 +17,6 @@ log = "0.4"
 pretty_env_logger = "0.4"
 dotenv = "0.15"
 once_cell = "1.8"
-sqlx = { version = "0.5", features = [
-    "runtime-tokio-native-tls",
-    "mysql",
-    "macros",
-    "migrate",
-    "uuid",
-    "chrono",
-    "offline",
-] }
 serde = "1.0"
 uuid = { version = "0.8", features = ["serde"] }
 chrono = { version = "0.4", features = ["serde"] }
@@ -44,3 +36,8 @@ crc32c = "0.6"
 actix-files = "0.6.0-beta.7"
 semval = "0.1"
 parse-display = "0.5"
+shared = { path = "./shared" }
+database = { path = "./database" }
+
+[workspace]
+members = ["database", "shared"]

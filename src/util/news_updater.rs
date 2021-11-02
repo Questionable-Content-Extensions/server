@@ -1,8 +1,8 @@
-use crate::database::models::News;
-use crate::database::DbPool;
 use crate::models::ComicId;
 use anyhow::Result;
 use chrono::Utc;
+use database::models::{Comic, News};
+use database::DbPool;
 use futures::lock::Mutex;
 use futures::{select, FutureExt};
 use log::{debug, info, warn};
@@ -46,7 +46,7 @@ impl NewsUpdater {
         &self,
         db_pool: &DbPool,
         shutdown_receiver: &mut broadcast::Receiver<()>,
-    ) -> sqlx::Result<()> {
+    ) -> anyhow::Result<()> {
         loop {
             let update_entries = self.get_pending_update_entries().await;
             debug!("There are {} news updates pending.", update_entries.len());
@@ -56,16 +56,8 @@ impl NewsUpdater {
 
                 let mut transaction = db_pool.begin().await?;
                 for comic_id in update_entries.iter().copied() {
-                    let comic_exists = sqlx::query_scalar!(
-                        r#"
-                            SELECT id FROM `comic`
-                            WHERE `id` = ?
-                        "#,
-                        comic_id.into_inner()
-                    )
-                    .fetch_optional(&mut *transaction)
-                    .await?
-                    .is_some();
+                    let comic_exists =
+                        Comic::exists_by_id(&mut *transaction, comic_id.into_inner()).await?;
 
                     if !comic_exists {
                         info!(
@@ -75,16 +67,7 @@ impl NewsUpdater {
                         continue;
                     }
 
-                    let news = sqlx::query_as!(
-                        News,
-                        r#"
-                            SELECT * FROM `news`
-                            WHERE comic = ?
-                        "#,
-                        comic_id.into_inner()
-                    )
-                    .fetch_optional(&mut *transaction)
-                    .await?;
+                    let news = News::by_comic_id(&mut *transaction, comic_id.into_inner()).await?;
 
                     if let Some(news) = &news {
                         if !news.is_outdated() {
@@ -110,36 +93,33 @@ impl NewsUpdater {
                                 comic_id
                             );
                             let new_update_factor = news.updateFactor + 0.5;
-                            sqlx::query!(
-                                "UPDATE `news` SET updateFactor = ?, lastUpdated = ? WHERE comic = ?",
+                            News::update_last_updated_by_comic_id(
+                                &mut *transaction,
+                                comic_id.into_inner(),
                                 new_update_factor,
                                 Utc::today().naive_utc(),
-                                comic_id.into_inner()
                             )
-                            .execute(&mut *transaction)
                             .await?;
                         } else {
                             info!("News text for comic #{} has changed. Resetting update factor and updating text.",comic_id);
-                            sqlx::query!(
-                                "UPDATE `news` SET news = ?, updateFactor = ?, lastUpdated = ? WHERE comic = ?",
-                                news_text,
+                            News::update_by_comic_id(
+                                &mut *transaction,
+                                comic_id.into_inner(),
+                                &news_text,
                                 1.0,
                                 Utc::today().naive_utc(),
-                                comic_id.into_inner()
                             )
-                            .execute(&mut *transaction)
                             .await?;
                         }
                     } else {
                         info!("News text for comic #{} has changed. Resetting update factor and updating text.",comic_id);
-                        sqlx::query!(
-                            "INSERT INTO `news` (news, updateFactor, lastUpdated, comic) VALUES (?, ?, ?, ?)",
-                            news_text,
+                        News::create_for_comic_id(
+                            &mut *transaction,
+                            comic_id.into_inner(),
+                            &news_text,
                             1.0,
                             Utc::today().naive_utc(),
-                            comic_id.into_inner()
                         )
-                        .execute(&mut *transaction)
                         .await?;
                     }
                 }

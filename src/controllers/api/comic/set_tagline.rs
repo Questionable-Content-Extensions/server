@@ -1,12 +1,13 @@
-use crate::controllers::api::comic::ensure_comic_exists;
-use crate::database::DbPool;
-use crate::models::{token_permissions, ComicId, ComicIdInvalidity, Token};
-use crate::util::{ensure_is_authorized, ensure_is_valid, log_action};
+use crate::models::{ComicId, ComicIdInvalidity, Token};
+use crate::util::{ensure_is_authorized, ensure_is_valid};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
+use database::models::{Comic as DatabaseComic, LogEntry};
+use database::DbPool;
 use parse_display::Display;
 use semval::{context::Context as ValidationContext, Validate};
 use serde::Deserialize;
+use shared::token_permissions;
 
 pub(crate) async fn set_tagline(
     pool: web::Data<DbPool>,
@@ -23,39 +24,28 @@ pub(crate) async fn set_tagline(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    ensure_comic_exists(&mut *transaction, request.comic_id)
+    DatabaseComic::ensure_exists_by_id(&mut *transaction, request.comic_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let old_tagline = sqlx::query_scalar!(
-        r#"
-            SELECT tagline FROM `comic` WHERE id = ?
-        "#,
-        request.comic_id.into_inner()
-    )
-    .fetch_one(&mut *transaction)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    let old_tagline =
+        DatabaseComic::tagline_by_id(&mut *transaction, request.comic_id.into_inner())
+            .await
+            .map_err(error::ErrorInternalServerError)?;
 
-    sqlx::query!(
-        r#"
-            UPDATE `comic`
-            SET tagline = ?
-            WHERE
-                id = ?
-        "#,
-        request.tagline,
+    DatabaseComic::update_tagline_by_id(
+        &mut *transaction,
         request.comic_id.into_inner(),
+        &request.tagline,
     )
-    .execute(&mut *transaction)
     .await
     .map_err(error::ErrorInternalServerError)?;
 
     match old_tagline {
         Some(old_tagline) if !old_tagline.is_empty() => {
-            log_action(
+            LogEntry::log_action(
                 &mut *transaction,
-                request.token,
+                request.token.to_string(),
                 format!(
                     "Changed tagline on comic #{} from \"{}\" to \"{}\"",
                     request.comic_id, old_tagline, request.tagline
@@ -65,9 +55,9 @@ pub(crate) async fn set_tagline(
             .map_err(error::ErrorInternalServerError)?;
         }
         _ => {
-            log_action(
+            LogEntry::log_action(
                 &mut *transaction,
-                request.token,
+                request.token.to_string(),
                 format!(
                     "Set tagline on comic #{} to \"{}\"",
                     request.comic_id, request.tagline

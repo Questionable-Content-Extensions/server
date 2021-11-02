@@ -1,12 +1,11 @@
-use crate::database::models::LogEntry as DatabaseLogEntry;
-use crate::database::DbPool;
-use crate::models::{token_permissions, LogEntry, Token};
+use crate::models::{LogEntry, Token};
 use crate::util::ensure_is_authorized;
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
-use futures::TryStreamExt;
+use database::models::LogEntry as DatabaseLogEntry;
+use database::DbPool;
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use shared::token_permissions;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("").route(web::get().to(get)));
@@ -27,32 +26,14 @@ async fn get(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let log_entry_count = sqlx::query_scalar!(
-        r#"
-            SELECT COUNT(*) FROM `log_entry`
-        "#,
-    )
-    .fetch_one(&mut conn)
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    let log_entry_count = DatabaseLogEntry::count(&mut conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
 
-    let start_entry = (query.page.saturating_sub(1)) * PAGE_SIZE;
-
-    let log_entries: Vec<LogEntry> = sqlx::query_as!(
-        DatabaseLogEntry,
-        r#"
-            SELECT * FROM `log_entry`
-            ORDER BY `DateTime` DESC
-            LIMIT ?, 10
-        "#,
-        start_entry
-    )
-    .fetch(&mut conn)
-    .map_err(anyhow::Error::from)
-    .and_then(|l| futures::future::ready(TryFrom::try_from(l)))
-    .try_collect()
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    let log_entries =
+        DatabaseLogEntry::by_page_number_with_mapping(&mut conn, query.page, LogEntry::from)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().json(LogResponse {
         log_entries,

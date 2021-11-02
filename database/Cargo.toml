@@ -1,0 +1,22 @@
+[package]
+name = "database"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sqlx = { version = "0.5", features = [
+    "runtime-tokio-native-tls",
+    "mysql",
+    "macros",
+    "migrate",
+    "uuid",
+    "chrono",
+    "offline",
+] }
+chrono = { version = "0.4", features = ["serde"] }
+log = "0.4"
+futures = "0.3"
+shared = { path = "../shared" }

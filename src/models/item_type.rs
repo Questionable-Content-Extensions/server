@@ -1,9 +1,9 @@
 use anyhow::bail;
+use database::models::ItemType as DatabaseItemType;
 use serde::{Deserialize, Serialize};
-use sqlx::Type;
 use std::convert::TryFrom;
 
-#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize, Type)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum ItemType {
     Cast,
@@ -33,5 +33,15 @@ impl TryFrom<&'_ str> for ItemType {
             "storyline" => Self::Storyline,
             _ => bail!("Invalid item type value: {}", item_type),
         })
+    }
+}
+
+impl From<ItemType> for DatabaseItemType {
+    fn from(i: ItemType) -> Self {
+        match i {
+            ItemType::Cast => DatabaseItemType::Cast,
+            ItemType::Location => DatabaseItemType::Location,
+            ItemType::Storyline => DatabaseItemType::Storyline,
+        }
     }
 }
