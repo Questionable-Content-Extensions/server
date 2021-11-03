@@ -6,7 +6,7 @@ use crate::models::{Comic, ComicId, ComicList, Exclusion, Inclusion, ItemColor, 
 use crate::util::{ensure_is_authorized, NewsUpdater};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{TimeZone, Utc};
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, LogEntry, News as DatabaseNews,
 };
@@ -22,6 +22,7 @@ pub(crate) mod navigation_data;
 
 mod add_item;
 mod remove_item;
+mod set_publish_date;
 mod set_tagline;
 mod set_title;
 
@@ -32,7 +33,10 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(web::resource("/removeitem").route(web::post().to(remove_item::remove_item)))
         .service(web::resource("/settitle").route(web::post().to(set_title::set_title)))
         .service(web::resource("/settagline").route(web::post().to(set_tagline::set_tagline)))
-        .service(web::resource("/setpublishdate").route(web::post().to(set_publish_date)))
+        .service(
+            web::resource("/setpublishdate")
+                .route(web::post().to(set_publish_date::set_publish_date)),
+        )
         .service(web::resource("/setguest").route(web::post().to(set_guest)))
         .service(web::resource("/setnoncanon").route(web::post().to(set_non_canon)))
         .service(web::resource("/setnocast").route(web::post().to(set_no_cast)))
@@ -255,72 +259,6 @@ async fn by_id(
     };
 
     Ok(HttpResponse::Ok().json(comic))
-}
-
-async fn set_publish_date(
-    pool: web::Data<DbPool>,
-    request: web::Json<SetPublishDateBody>,
-    auth: AuthDetails,
-) -> Result<HttpResponse> {
-    ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
-        .map_err(error::ErrorForbidden)?;
-
-    let mut transaction = pool
-        .begin()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    DatabaseComic::ensure_exists_by_id(&mut *transaction, request.comic_id.into_inner())
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let old_publish_date =
-        DatabaseComic::publish_date_by_id(&mut *transaction, request.comic_id.into_inner())
-            .await
-            .map_err(error::ErrorInternalServerError)?;
-
-    DatabaseComic::update_publish_date_by_id(
-        &mut *transaction,
-        request.comic_id.into_inner(),
-        request.publish_date,
-        request.is_accurate_publish_date,
-    )
-    .await
-    .map_err(error::ErrorInternalServerError)?;
-
-    if let Some(old_publish_date) = old_publish_date {
-        LogEntry::log_action(
-            &mut *transaction,
-            request.token.to_string(),
-            format!(
-                "Changed publish date on comic #{} from \"{}\" to \"{}\"",
-                request.comic_id,
-                Utc.from_utc_datetime(&old_publish_date)
-                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                request
-                    .publish_date
-                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-            ),
-        )
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-    } else {
-        LogEntry::log_action(
-            &mut *transaction,
-            request.token.to_string(),
-            format!(
-                "Set publish date on comic #{} to \"{}\"",
-                request.comic_id,
-                request
-                    .publish_date
-                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-            ),
-        )
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-    }
-
-    Ok(HttpResponse::Ok().finish())
 }
 
 async fn set_guest(
@@ -564,15 +502,6 @@ struct ExcludedQuery {
 struct ByIdQuery {
     exclude: Option<Exclusion>,
     include: Option<Inclusion>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct SetPublishDateBody {
-    token: Token,
-    comic_id: ComicId,
-    publish_date: DateTime<Utc>,
-    is_accurate_publish_date: bool,
 }
 
 #[derive(Debug, Deserialize)]

@@ -1,5 +1,6 @@
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
 use anyhow::{anyhow, Result};
+use chrono::{DateTime, Datelike, NaiveDate, TimeZone, Timelike, Utc};
 use futures::Future;
 use ilyvion_util::string_extensions::StrExtensions;
 use once_cell::sync::Lazy;
@@ -144,4 +145,70 @@ where
         return Err(anyhow!("{}", InvalidityFormatter::from(c)));
     }
     Ok(())
+}
+
+pub(crate) trait AddMonths {
+    fn add_months(self, add_months: u32) -> Self;
+}
+
+impl AddMonths for DateTime<Utc> {
+    fn add_months(self, mut add_months: u32) -> Self {
+        let mut year = self.year();
+        let mut month = self.month();
+        let mut day = self.day();
+
+        // Add whole years first
+        while add_months >= 12 {
+            year += 1;
+            add_months -= 12;
+        }
+
+        // Check if remaining months add up to cross another year boundary
+        month = if month + add_months > 12 {
+            year += 1;
+            (month + add_months) % 12
+        } else {
+            month + add_months
+        };
+
+        // Check if the day we have is bigger than the biggest day of the resulting month
+        // and if so, truncateca
+        let days_in_month = get_days_from_month(year, month) as u32;
+        if day > days_in_month {
+            day = days_in_month;
+        }
+
+        Utc.ymd(year, month, day)
+            .and_hms(self.hour(), self.minute(), self.second())
+    }
+}
+
+fn get_days_from_month(year: i32, month: u32) -> i64 {
+    NaiveDate::from_ymd(
+        match month {
+            12 => year + 1,
+            _ => year,
+        },
+        match month {
+            12 => 1,
+            _ => month + 1,
+        },
+        1,
+    )
+    .signed_duration_since(NaiveDate::from_ymd(year, month, 1))
+    .num_days()
+}
+
+#[test]
+fn test_add_month() {
+    let jan012000 = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0);
+    for m in 1..12 {
+        let result = jan012000.add_months(m);
+        assert_eq!(result.month(), m + 1);
+    }
+
+    let jan312000 = Utc.ymd(2000, 1, 31).and_hms(0, 0, 0);
+    let result = jan312000.add_months(1);
+    assert_eq!(result.month(), 2);
+    assert_eq!(result.day(), 29);
 }
