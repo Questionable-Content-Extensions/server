@@ -1,177 +1,31 @@
-use crate::controllers::api::comic::navigation_data::fetch_all_item_navigation_data;
-use crate::models::{
-    ComicId, Item, ItemColor, ItemId, ItemImageList, ItemList, ItemNavigationData, ItemType,
-    RelatedItem, Token,
-};
+use crate::models::{ItemColor, Token};
 use crate::util::ensure_is_authorized;
 use actix_multipart::Multipart;
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
 use anyhow::anyhow;
 use crc32c::crc32c;
-use database::models::{
-    Comic as DatabaseComic, Item as DatabaseItem, LogEntry, RelatedItem as RelatedDatabaseItem,
-    Token as DatabaseToken,
-};
+use database::models::{Item as DatabaseItem, LogEntry, Token as DatabaseToken};
 use database::DbPool;
 use futures::StreamExt;
 use serde::Deserialize;
 use shared::token_permissions;
-use std::cmp::Reverse;
-use std::collections::BTreeMap;
-use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
+mod all;
+mod by_id;
+
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::resource("/").route(web::get().to(all)))
+    cfg.service(web::resource("/").route(web::get().to(all::all)))
         .service(web::resource("setproperty").route(web::post().to(set_property)))
         .service(web::resource("image/upload").route(web::post().to(image_upload)))
-        .service(web::resource("image/{imageId}").route(web::get().to(image)))
-        .service(web::resource("friends/{itemId}").route(web::get().to(friends)))
-        .service(web::resource("locations/{itemId}").route(web::get().to(locations)))
-        .service(web::resource("{itemId}").route(web::get().to(by_id)))
-        .service(web::resource("{itemId}/friends").route(web::get().to(friends)))
-        .service(web::resource("{itemId}/locations").route(web::get().to(locations)))
-        .service(web::resource("{itemId}/images").route(web::get().to(images)));
-}
-
-async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let all_items = DatabaseItem::all(&mut conn)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let all_navigation_items =
-        fetch_all_item_navigation_data(&mut conn, ComicId::from(1), None, None)
-            .await?
-            .into_iter()
-            .map(|i| (i.id, i))
-            .collect::<BTreeMap<ItemId, ItemNavigationData>>();
-
-    let mut items = vec![];
-    for item in all_items {
-        let DatabaseItem {
-            id,
-            shortName: short_name,
-            name,
-            r#type,
-            Color_Red: color_red,
-            Color_Green: color_green,
-            Color_Blue: color_blue,
-        } = item;
-        let id = id.into();
-
-        let count = all_navigation_items
-            .get(&id)
-            .map(|i| i.count)
-            .unwrap_or_default();
-
-        items.push(ItemList {
-            id,
-            short_name,
-            name,
-            r#type: ItemType::try_from(&*r#type).map_err(error::ErrorInternalServerError)?,
-            color: ItemColor(color_red, color_green, color_blue),
-            count,
-        })
-    }
-
-    items.sort_by_key(|i| Reverse(i.count));
-
-    Ok(HttpResponse::Ok().json(items))
-}
-
-async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Result<HttpResponse> {
-    let item_id = item_id.into_inner();
-
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let item = DatabaseItem::by_id(&mut conn, item_id.into_inner())
-        .await
-        .map_err(error::ErrorInternalServerError)?
-        .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {} exists", item_id)))?;
-
-    let item_occurrence =
-        DatabaseItem::first_and_last_apperance_and_count_by_id(&mut conn, item_id.into_inner())
-            .await
-            .map_err(error::ErrorInternalServerError)?;
-
-    let total_comics = DatabaseComic::count(&mut conn)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let image_count = DatabaseItem::image_count_by_id(&mut conn, item_id.into_inner())
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let item = Item {
-        id: item_id,
-        short_name: item.shortName,
-        name: item.name,
-        r#type: ItemType::try_from(&*item.r#type).map_err(error::ErrorInternalServerError)?,
-        color: ItemColor(item.Color_Red, item.Color_Green, item.Color_Blue),
-        first: item_occurrence
-            .first
-            .map(TryInto::try_into)
-            .transpose()
-            .expect("database has valid comicIds")
-            .unwrap_or_default(),
-        last: item_occurrence
-            .last
-            .map(TryInto::try_into)
-            .transpose()
-            .expect("database has valid comicIds")
-            .unwrap_or_default(),
-        appearances: item_occurrence.count,
-        total_comics,
-        presence: if total_comics == 0 {
-            0.0
-        } else {
-            item_occurrence.count as f64 * 100.0 / total_comics as f64
-        },
-        has_image: image_count > 0,
-    };
-
-    Ok(HttpResponse::Ok().json(item))
-}
-
-async fn friends(pool: web::Data<DbPool>, item_id: web::Path<u16>) -> Result<HttpResponse> {
-    let items = related_items(pool, *item_id, ItemType::Cast, 5).await?;
-
-    Ok(HttpResponse::Ok().json(items))
-}
-
-async fn locations(pool: web::Data<DbPool>, item_id: web::Path<u16>) -> Result<HttpResponse> {
-    let items = related_items(pool, *item_id, ItemType::Location, 5).await?;
-
-    Ok(HttpResponse::Ok().json(items))
-}
-
-async fn images(pool: web::Data<DbPool>, item_id: web::Path<u16>) -> Result<HttpResponse> {
-    let item_image_list =
-        DatabaseItem::image_metadatas_by_id_with_mapping(&***pool, *item_id, ItemImageList::from)
-            .await
-            .map_err(error::ErrorInternalServerError)?;
-
-    Ok(HttpResponse::Ok().json(item_image_list))
-}
-
-async fn image(pool: web::Data<DbPool>, image_id: web::Path<i32>) -> Result<HttpResponse> {
-    let image = DatabaseItem::image_by_image_id(&***pool, *image_id)
-        .await
-        .map_err(error::ErrorInternalServerError)?
-        .ok_or_else(|| {
-            error::ErrorNotFound(anyhow!("No item image with id {} exists", *image_id))
-        })?;
-
-    Ok(HttpResponse::Ok().content_type("image/png").body(image))
+        .service(web::resource("image/{imageId}").route(web::get().to(by_id::image)))
+        .service(web::resource("friends/{itemId}").route(web::get().to(by_id::friends)))
+        .service(web::resource("locations/{itemId}").route(web::get().to(by_id::locations)))
+        .service(web::resource("{itemId}").route(web::get().to(by_id::by_id)))
+        .service(web::resource("{itemId}/friends").route(web::get().to(by_id::friends)))
+        .service(web::resource("{itemId}/locations").route(web::get().to(by_id::locations)))
+        .service(web::resource("{itemId}/images").route(web::get().to(by_id::images)));
 }
 
 #[allow(clippy::too_many_lines)]
@@ -419,44 +273,6 @@ async fn set_property(
         "Item property {} has been updated on item #{}",
         request.property, request.item_id
     )))
-}
-
-async fn related_items(
-    pool: web::Data<DbPool>,
-    item_id: u16,
-    r#type: ItemType,
-    amount: i64,
-) -> Result<Vec<RelatedItem>> {
-    DatabaseItem::related_items_by_id_and_type_with_mapping(
-        &***pool,
-        item_id,
-        r#type.into(),
-        amount,
-        |ri| {
-            let RelatedDatabaseItem {
-                id,
-                short_name,
-                name,
-                r#type,
-                color_red,
-                color_green,
-                color_blue,
-                count,
-            } = ri;
-            let id = id.into();
-
-            RelatedItem {
-                id,
-                short_name,
-                name,
-                r#type: ItemType::try_from(&*r#type).expect("Item types in the database are valid"),
-                color: ItemColor(color_red, color_green, color_blue),
-                count,
-            }
-        },
-    )
-    .await
-    .map_err(error::ErrorInternalServerError)
 }
 
 #[derive(Debug, Deserialize)]
