@@ -1,11 +1,10 @@
-# QCExtensions.Server
+# qcext-server
 
 ## Usage
 
 ```bash
 npm install
-dotnet restore
-dotnet run -p src/QCExtensions.Server/QCExtensions.Server.csproj
+cargo run
 npm start
 ```
 
@@ -13,9 +12,9 @@ npm start
 
 ### Manual
 
-Using custom buildpack [dotnetcore-buildpack](https://github.com/alexschrod/dotnetcore-buildpack)
+Using custom buildpack [heroku-buildpack-rust](https://github.com/alexschrod/heroku-buildpack-rust)
 
 ```bash
-heroku buildpacks:set https://github.com/alexschrod/dotnetcore-buildpack
+heroku buildpacks:set https://github.com/alexschrod/heroku-buildpack-rust
 heroku buildpacks:add --index 1 heroku/nodejs
 ```

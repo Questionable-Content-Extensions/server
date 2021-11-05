@@ -2,7 +2,7 @@
     "name": "qc-ext-server-net-app",
     "version": "0.0.1",
     "private": true,
-    "description": "QCExtensions.Server",
+    "description": "qcext-server",
     "repository": {
         "type": "git",
         "url": ""
