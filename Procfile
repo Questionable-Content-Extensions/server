@@ -1,2 +1,2 @@
-release: ./target/release/sqlx mig run
+release: sh ./sqlx-mig.sh
 web: ./target/release/qcext-server
