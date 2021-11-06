@@ -2,8 +2,7 @@
 
 use chrono::TimeZone;
 use chrono::{DateTime, Utc};
-use database::models::ItemImageMetadata;
-use database::models::{Comic as DatabaseComic, LogEntry as DatabaseLogEntry};
+use database::models::{Comic as DatabaseComic, ItemImageMetadata, LogListEntry};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
@@ -98,17 +97,15 @@ pub struct Item {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogEntry {
-    pub identifier: Token,
+    pub identifier: String,
     pub date_time: DateTime<Utc>,
     pub action: String,
 }
 
-impl From<DatabaseLogEntry> for LogEntry {
-    fn from(l: DatabaseLogEntry) -> Self {
+impl From<LogListEntry> for LogEntry {
+    fn from(l: LogListEntry) -> Self {
         Self {
-            identifier: uuid::Uuid::parse_str(&l.UserToken)
-                .expect("Tokens from the database are valid")
-                .into(),
+            identifier: l.identifier,
             date_time: Utc.from_utc_datetime(&l.DateTime),
             action: l.Action,
         }

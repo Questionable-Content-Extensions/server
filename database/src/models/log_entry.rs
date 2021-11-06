@@ -33,16 +33,21 @@ impl LogEntry {
     ) -> sqlx::Result<Vec<T>>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
-        F: FnMut(Self) -> T,
+        F: FnMut(LogListEntry) -> T,
     {
         let start_entry = (page.saturating_sub(1)) * PAGE_SIZE;
 
         sqlx::query_as!(
-            Self,
+            LogListEntry,
             r#"
-            SELECT * FROM `log_entry`
-            ORDER BY `DateTime` DESC
-            LIMIT ?, ?
+                SELECT
+                    t.identifier,
+                    l.DateTime,
+                    l.Action
+                FROM `log_entry` l
+                JOIN `token` t ON t.id = l.UserToken
+                ORDER BY `DateTime` DESC
+                LIMIT ?, ?
         "#,
             start_entry,
             PAGE_SIZE,
@@ -94,4 +99,10 @@ impl LogEntry {
 
         Ok(())
     }
+}
+
+pub struct LogListEntry {
+    pub identifier: String,
+    pub DateTime: NaiveDateTime,
+    pub Action: String,
 }

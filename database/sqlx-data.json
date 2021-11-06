@@ -100,70 +100,6 @@
       ]
     }
   },
-  "1a128a74b680c690d7adcbbb2a870331a35303c27c754b4c4dca819eee0971db": {
-    "query": "\n            SELECT * FROM `log_entry`\n            ORDER BY `DateTime` DESC\n            LIMIT ?, ?\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 515
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "UserToken",
-          "type_info": {
-            "type": "String",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 224,
-            "max_size": 144
-          }
-        },
-        {
-          "ordinal": 2,
-          "name": "DateTime",
-          "type_info": {
-            "type": "Datetime",
-            "flags": {
-              "bits": 4225
-            },
-            "char_set": 63,
-            "max_size": 19
-          }
-        },
-        {
-          "ordinal": 3,
-          "name": "Action",
-          "type_info": {
-            "type": "Blob",
-            "flags": {
-              "bits": 4113
-            },
-            "char_set": 224,
-            "max_size": 4294967295
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "20231eb6d521373fdd80a6154b814154cb3a661b163622c427be053488cfd2db": {
     "query": "\n                UPDATE `items`\n                SET shortName = ?\n                WHERE\n                    id = ?\n            ",
     "describe": {
@@ -1150,6 +1086,57 @@
       },
       "nullable": [
         true
+      ]
+    }
+  },
+  "b3594417e8ec848a37d839f9e06f037fe2f6119d1d8cbad358cafd3f95919467": {
+    "query": "\n                SELECT\n                    t.identifier,\n                    l.DateTime,\n                    l.Action\n                FROM `log_entry` l\n                JOIN `token` t ON t.id = l.UserToken\n                ORDER BY `DateTime` DESC\n                LIMIT ?, ?\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "identifier",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4097
+            },
+            "char_set": 224,
+            "max_size": 200
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "DateTime",
+          "type_info": {
+            "type": "Datetime",
+            "flags": {
+              "bits": 4225
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "Action",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4113
+            },
+            "char_set": 224,
+            "max_size": 4294967295
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 2
+      },
+      "nullable": [
+        false,
+        false,
+        false
       ]
     }
   },
