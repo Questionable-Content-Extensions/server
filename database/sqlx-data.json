@@ -164,31 +164,6 @@
       ]
     }
   },
-  "1b9bdf8b0f77cf9feb079509e3a2ec93c10d4e0f94d2c363e112b06eaaa8ee15": {
-    "query": "\n                SELECT\n                    Image\n                FROM `ItemImages`\n                WHERE ItemId = ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "Image",
-          "type_info": {
-            "type": "Blob",
-            "flags": {
-              "bits": 4241
-            },
-            "char_set": 63,
-            "max_size": 4294967295
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
   "20231eb6d521373fdd80a6154b814154cb3a661b163622c427be053488cfd2db": {
     "query": "\n                UPDATE `items`\n                SET shortName = ?\n                WHERE\n                    id = ?\n            ",
     "describe": {
@@ -972,6 +947,31 @@
         "Right": 2
       },
       "nullable": []
+    }
+  },
+  "8909946aebde5c23ac800caed228cac3473d7cf6d5ba3c674ea4cfca6e8a12c3": {
+    "query": "\n                SELECT\n                    Image\n                FROM `ItemImages`\n                WHERE Id = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "Image",
+          "type_info": {
+            "type": "Blob",
+            "flags": {
+              "bits": 4241
+            },
+            "char_set": 63,
+            "max_size": 4294967295
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false
+      ]
     }
   },
   "9343da77ceea0ac1d898e3f96a7902f878586259ab2a085691cdfb0105330396": {

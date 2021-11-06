@@ -446,7 +446,7 @@ impl Item {
                 SELECT
                     Image
                 FROM `ItemImages`
-                WHERE ItemId = ?
+                WHERE Id = ?
             "#,
             image_id
         )
