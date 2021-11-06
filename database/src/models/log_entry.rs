@@ -19,7 +19,7 @@ impl LogEntry {
     {
         sqlx::query_scalar!(
             r#"
-            SELECT COUNT(*) FROM `log_entry`
+                SELECT COUNT(*) FROM `log_entry`
             "#,
         )
         .fetch_one(executor)
@@ -48,7 +48,7 @@ impl LogEntry {
                 JOIN `token` t ON t.id = l.UserToken
                 ORDER BY `DateTime` DESC
                 LIMIT ?, ?
-        "#,
+            "#,
             start_entry,
             PAGE_SIZE,
         )

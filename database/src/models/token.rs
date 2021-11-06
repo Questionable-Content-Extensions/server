@@ -25,9 +25,9 @@ impl Token {
         let result = sqlx::query_as!(
             Self,
             r#"
-            SELECT * FROM `token`
-            WHERE `id` = ?
-        "#,
+                SELECT * FROM `token`
+                WHERE `id` = ?
+            "#,
             token
         )
         .fetch_optional(executor)

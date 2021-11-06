@@ -342,12 +342,12 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                    UPDATE `comic`
-                    SET
-                        HasNoTitle = ?
-                    WHERE
-                        id = ?
-                "#,
+                UPDATE `comic`
+                SET
+                    HasNoTitle = ?
+                WHERE
+                    id = ?
+            "#,
             has_no_title,
             id,
         )
@@ -365,12 +365,12 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                    UPDATE `comic`
-                    SET
-                        HasNoTagline = ?
-                    WHERE
-                        id = ?
-                "#,
+                UPDATE `comic`
+                SET
+                    HasNoTagline = ?
+                WHERE
+                    id = ?
+            "#,
             has_no_tagline,
             id,
         )

@@ -584,7 +584,7 @@ impl Item {
                 GROUP BY i2.id
                 ORDER BY count DESC
                 LIMIT ?
-                "#,
+            "#,
             id,
             r#type,
             amount
