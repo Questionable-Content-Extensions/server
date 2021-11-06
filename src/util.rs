@@ -44,7 +44,7 @@ pub struct Environment;
 lazy_environment!(PORT, port);
 lazy_environment!(DATABASE_URL, database_url);
 lazy_environment!(QC_TIMEZONE, qc_timezone);
-lazy_environment!(, BACKGROUND_SERVICES, background_services);
+lazy_environment!(BACKGROUND_SERVICES, background_services);
 
 impl Environment {
     pub fn init() {
