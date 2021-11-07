@@ -11,6 +11,7 @@ use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
 use std::collections::HashSet;
+use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
 
@@ -23,22 +24,24 @@ static REPLACE_HTML_NEWLINES: Lazy<Regex> =
 
 pub struct NewsUpdater {
     client: Client,
-    update_set: Mutex<HashSet<ComicId>>,
+    update_set: Arc<Mutex<HashSet<ComicId>>>,
 }
 
 impl NewsUpdater {
     pub fn new() -> Self {
         Self {
             client: Client::new(),
-            update_set: Mutex::new(HashSet::new()),
+            update_set: Arc::new(Mutex::new(HashSet::new())),
         }
     }
 
     pub async fn check_for(&self, comic_id: ComicId) {
         info!("Scheduling a news update check for comic {}", comic_id);
-
-        let mut update_set = self.update_set.lock().await;
-        update_set.insert(comic_id);
+        let update_set = Arc::clone(&self.update_set);
+        tokio::task::spawn(async move {
+            let mut update_set = update_set.lock().await;
+            update_set.insert(comic_id);
+        });
     }
 
     #[allow(clippy::too_many_lines)]
