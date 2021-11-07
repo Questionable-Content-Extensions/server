@@ -60,7 +60,10 @@ impl ComicUpdater {
             let delay = time_until_next_update(now);
             let hours = delay.num_hours();
             let minutes = delay.num_minutes() - (hours * 60);
-            info!("Waiting for {}:{} until next update.", hours, minutes);
+            info!(
+                "Waiting for {} hours and {} minutes until doing another update.",
+                hours, minutes
+            );
 
             #[allow(clippy::mut_mut)]
             {
