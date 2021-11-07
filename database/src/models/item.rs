@@ -6,13 +6,13 @@ use crate::models::ItemType;
 
 #[derive(Debug)]
 pub struct Item {
-    pub id: i16,
-    pub shortName: String,
+    pub id: u16,
+    pub short_name: String,
     pub name: String,
     pub r#type: String,
-    pub Color_Blue: u8,
-    pub Color_Green: u8,
-    pub Color_Red: u8,
+    pub color_blue: u8,
+    pub color_green: u8,
+    pub color_red: u8,
 }
 
 impl Item {
@@ -26,10 +26,10 @@ impl Item {
         sqlx::query_as!(
             Self,
             r#"
-                SELECT i.*
-                FROM items i
-                JOIN occurences o ON o.items_id = i.id
-                WHERE o.comic_id = ?
+                SELECT `i`.*
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                WHERE `o`.`comic_id` = ?
             "#,
             comic_id,
         )
@@ -47,7 +47,7 @@ impl Item {
             Self,
             r#"
                 SELECT *
-                FROM items
+                FROM `Item`
             "#,
         )
         .fetch_all(executor)
@@ -62,7 +62,7 @@ impl Item {
             Self,
             r#"
                 SELECT *
-                FROM items
+                FROM `Item`
             "#,
         )
         .fetch(executor)
@@ -78,7 +78,7 @@ impl Item {
         sqlx::query_as!(
             Self,
             r#"
-                SELECT * FROM `items` WHERE id = ?
+                SELECT * FROM `Item` WHERE `id` = ?
             "#,
             id
         )
@@ -97,8 +97,8 @@ impl Item {
     {
         sqlx::query!(
             r#"
-                INSERT INTO `items`
-                    (name, shortName, type)
+                INSERT INTO `Item`
+                    (`name`, `short_name`, `type`)
                 VALUES
                     (?, ?, ?)
             "#,
@@ -121,12 +121,12 @@ impl Item {
             ItemFirstLastCount,
             r#"
                 SELECT
-                    items_id AS id,
-                    MIN(comic_id) AS first,
-                    MAX(comic_id) AS last,
-                    COUNT(comic_id) AS count
-                FROM `occurences`
-                WHERE `items_id` = ?
+                    `item_id` AS `id`,
+                    MIN(`comic_id`) AS `first`,
+                    MAX(`comic_id`) AS `last`,
+                    COUNT(`comic_id`) AS `count`
+                FROM `Occurrence`
+                WHERE `item_id` = ?
             "#,
             id
         )
@@ -146,17 +146,17 @@ impl Item {
             ItemFirstLastCount,
             r#"
                 SELECT
-                    i.id,
-                    MIN(c.id) as first,
-                    MAX(c.id) as last,
-                    COUNT(c.id) as count
-                FROM items i
-                JOIN occurences o ON o.items_id = i.id
-                JOIN comic c ON c.id = o.comic_id
-                    AND (? is NULL OR c.isGuestComic = ?)
-                    AND (? is NULL OR c.isNonCanon = ?)
-                GROUP by i.id
-                ORDER BY count DESC
+                    `i`.`id`,
+                    MIN(`c`.`id`) as `first`,
+                    MAX(`c`.`id`) as `last`,
+                    COUNT(`c`.`id`) as `count`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`
+                    AND (? is NULL OR `c`.`is_guest_comic` = ?)
+                    AND (? is NULL OR `c`.`is_non_canon` = ?)
+                GROUP by `i`.`id`
+                ORDER BY `count` DESC
             "#,
             include_guest_comics,
             include_guest_comics,
@@ -179,14 +179,16 @@ impl Item {
         sqlx::query_as!(
             PrevNext,
             r#"
-                SELECT i.id as id, MAX(c.id) as comic
-                FROM items i
-                JOIN occurences o ON o.items_id = i.id
-                JOIN comic c ON c.id = o.comic_id
-                WHERE c.id < ?
-                    AND (? is NULL OR c.isGuestComic = ?)
-                    AND (? is NULL OR c.isNonCanon = ?)
-                GROUP BY i.id
+                SELECT
+                    `i`.`id` as `id`,
+                    MAX(`c`.`id`) as `comic`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`
+                WHERE `c`.`id` < ?
+                    AND (? is NULL OR `c`.`is_guest_comic` = ?)
+                    AND (? is NULL OR `c`.`is_non_canon` = ?)
+                GROUP BY `i`.`id`
             "#,
             comic_id,
             include_guest_comics,
@@ -218,13 +220,15 @@ impl Item {
         sqlx::query_as!(
             PrevNext,
             r#"
-                SELECT i.id as id, MIN(c.id) as comic
-                FROM items i
-                JOIN occurences o ON o.items_id = i.id
-                JOIN comic c ON c.id = o.comic_id
-                WHERE c.id > ?
-                    AND (? is NULL OR c.isGuestComic = ?)
-                    AND (? is NULL OR c.isNonCanon = ?)
+                SELECT
+                    `i`.`id` as `id`,
+                    MIN(`c`.`id`) as `comic`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`
+                WHERE `c`.`id` > ?
+                    AND (? is NULL OR `c`.`is_guest_comic` = ?)
+                    AND (? is NULL OR `c`.`is_non_canon` = ?)
                 GROUP BY i.id
             "#,
             comic_id,
@@ -260,20 +264,20 @@ impl Item {
             ItemFirstLastCount,
             r#"
                 SELECT
-                    i.id,
-                    MIN(c.id) as first,
-                    MAX(c.id) as last,
-                    COUNT(c.id) as count
-                FROM items i
-                JOIN occurences o ON o.items_id = i.id
-                JOIN comic c ON c.id = o.comic_id
-                    AND (? is NULL OR c.isGuestComic = ?)
-                    AND (? is NULL OR c.isNonCanon = ?)
-                WHERE i.id IN (
-                    SELECT items_id FROM `occurences` WHERE comic_id = ?
+                    `i`.`id`,
+                    MIN(`c`.`id`) as `first`,
+                    MAX(`c`.`id`) as `last`,
+                    COUNT(`c`.`id`) as `count`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`
+                    AND (? is NULL OR `c`.`is_guest_comic` = ?)
+                    AND (? is NULL OR `c`.`is_non_canon` = ?)
+                WHERE `i`.`id` IN (
+                    SELECT `item_id` FROM `Occurrence` WHERE `comic_id` = ?
                 )
-                GROUP by i.id
-                ORDER BY count DESC
+                GROUP by `i`.`id`
+                ORDER BY `count` DESC
             "#,
             include_guest_comics,
             include_guest_comics,
@@ -297,17 +301,19 @@ impl Item {
         sqlx::query_as!(
             PrevNext,
             r#"
-                SELECT i.id as id, MAX(c.id) as comic
-                FROM items i
-                JOIN occurences o ON o.items_id = i.id
-                JOIN comic c ON c.id = o.comic_id
-                WHERE c.id < ?
-                    AND i.id IN (
-                        SELECT items_id FROM `occurences` WHERE comic_id = ?
+                SELECT
+                    `i`.`id` as `id`,
+                    MAX(`c`.`id`) as `comic`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`
+                WHERE `c`.`id` < ?
+                    AND `i`.`id` IN (
+                        SELECT `item_id` FROM `Occurrence` WHERE `comic_id` = ?
                     )
-                    AND (? is NULL OR c.isGuestComic = ?)
-                    AND (? is NULL OR c.isNonCanon = ?)
-                GROUP BY i.id
+                    AND (? is NULL OR `c`.`is_guest_comic` = ?)
+                    AND (? is NULL OR `c`.`is_non_canon` = ?)
+                GROUP BY `i`.`id`
             "#,
             comic_id,
             comic_id,
@@ -340,17 +346,19 @@ impl Item {
         sqlx::query_as!(
             PrevNext,
             r#"
-                SELECT i.id as id, MIN(c.id) as comic
-                FROM items i
-                JOIN occurences o ON o.items_id = i.id
-                JOIN comic c ON c.id = o.comic_id
-                WHERE c.id > ?
-                AND i.id IN (
-                    SELECT items_id FROM `occurences` WHERE comic_id = ?
-                )
-                    AND (? is NULL OR c.isGuestComic = ?)
-                    AND (? is NULL OR c.isNonCanon = ?)
-                GROUP BY i.id
+                SELECT
+                    `i`.`id` as `id`,
+                    MIN(`c`.`id`) as `comic`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`
+                WHERE `c`.`id` > ?
+                    AND `i`.`id` IN (
+                        SELECT `item_id` FROM `Occurrence` WHERE `comic_id` = ?
+                    )
+                    AND (? is NULL OR `c`.`is_guest_comic` = ?)
+                    AND (? is NULL OR `c`.`is_non_canon` = ?)
+                GROUP BY `i`.`id`
             "#,
             comic_id,
             comic_id,
@@ -377,8 +385,8 @@ impl Item {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT COUNT(*) FROM `ItemImages`
-                WHERE ItemId = ?
+                SELECT COUNT(*) FROM `ItemImage`
+                WHERE `item_id` = ?
             "#,
             id
         )
@@ -397,10 +405,10 @@ impl Item {
             ItemImageMetadata,
             r#"
                 SELECT
-                    Id,
-                    CRC32CHash
-                FROM `ItemImages`
-                WHERE ItemId = ?
+                    `id`,
+                    `crc32c_hash`
+                FROM `ItemImage`
+                WHERE `item_id` = ?
             "#,
             id
         )
@@ -421,10 +429,10 @@ impl Item {
             ItemImageMetadata,
             r#"
                 SELECT
-                    Id,
-                    CRC32CHash
-                FROM `ItemImages`
-                WHERE ItemId = ?
+                    `id`,
+                    `crc32c_hash`
+                FROM `ItemImage`
+                WHERE `item_id` = ?
             "#,
             id
         )
@@ -443,10 +451,9 @@ impl Item {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT
-                    Image
-                FROM `ItemImages`
-                WHERE Id = ?
+                SELECT `image`
+                FROM `ItemImage`
+                WHERE `id` = ?
             "#,
             image_id
         )
@@ -465,8 +472,8 @@ impl Item {
     {
         sqlx::query!(
             r#"
-                INSERT INTO `ItemImages`
-                    (ItemId, Image, CRC32CHash)
+                INSERT INTO `ItemImage`
+                    (`item_id`, `image`, `crc32c_hash`)
                 VALUES
                     (?, ?, ?)
             "#,
@@ -488,10 +495,9 @@ impl Item {
     {
         sqlx::query_scalar!(
             r#"
-                UPDATE `items`
-                SET name = ?
-                WHERE
-                    id = ?
+                UPDATE `Item`
+                SET `name` = ?
+                WHERE `id` = ?
             "#,
             name,
             id
@@ -510,10 +516,9 @@ impl Item {
     {
         sqlx::query_scalar!(
             r#"
-                UPDATE `items`
-                SET shortName = ?
-                WHERE
-                    id = ?
+                UPDATE `Item`
+                SET `short_name` = ?
+                WHERE `id` = ?
             "#,
             short_name,
             id
@@ -534,13 +539,12 @@ impl Item {
     {
         sqlx::query_scalar!(
             r#"
-                UPDATE `items`
+                UPDATE `Item`
                 SET
-                    Color_Red = ?,
-                    Color_Green = ?,
-                    Color_Blue = ?
-                WHERE
-                    id = ?
+                    `color_red` = ?,
+                    `color_green` = ?,
+                    `color_blue` = ?
+                WHERE `id` = ?
             "#,
             red,
             green,
@@ -566,23 +570,17 @@ impl Item {
             RelatedItem,
             r#"
                 SELECT
-                    i2.id,
-                    i2.shortName as short_name,
-                    i2.name,
-                    i2.type,
-                    i2.Color_Red as color_red,
-                    i2.Color_Green as color_green,
-                    i2.Color_Blue as color_blue,
-                    COUNT(i2.id) as count
-                FROM items i
-                JOIN occurences o ON i.id = o.items_id
-                JOIN occurences o2 ON o.comic_id = o2.comic_id
-                JOIN items i2 ON o2.items_id = i2.id
-                WHERE i.id = ?
-                    AND i2.id <> i.id
-                    AND i2.type = ?
-                GROUP BY i2.id
-                ORDER BY count DESC
+                    `i2`.*,
+                    COUNT(`i2`.`id`) as `count`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `i`.`id` = `o`.`item_id`
+                JOIN `Occurrence` `o2` ON `o`.`comic_id` = `o2`.`comic_id`
+                JOIN Item `i2` ON `o2`.`item_id` = `i2`.`id`
+                WHERE `i`.`id` = ?
+                    AND `i2`.`id` <> `i`.`id`
+                    AND `i2`.`type` = ?
+                GROUP BY `i2`.`id`
+                ORDER BY `count` DESC
                 LIMIT ?
             "#,
             id,
@@ -597,27 +595,27 @@ impl Item {
 }
 
 pub struct ItemImageMetadata {
-    pub Id: i32,
-    pub CRC32CHash: u32,
+    pub id: u32,
+    pub crc32c_hash: u32,
 }
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct ItemFirstLastCount {
-    pub id: i16,
-    pub first: Option<i16>,
-    pub last: Option<i16>,
+    pub id: u16,
+    pub first: Option<u16>,
+    pub last: Option<u16>,
     pub count: i64,
 }
 
 #[derive(Debug, sqlx::FromRow)]
 struct PrevNext {
-    id: i16,
-    comic: Option<i16>,
+    id: u16,
+    comic: Option<u16>,
 }
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct RelatedItem {
-    pub id: i16,
+    pub id: u16,
     pub short_name: String,
     pub name: String,
     pub r#type: String,

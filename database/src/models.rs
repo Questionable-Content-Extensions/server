@@ -1,5 +1,3 @@
-#![allow(nonstandard_style)]
-
 mod comic;
 mod item;
 mod item_type;

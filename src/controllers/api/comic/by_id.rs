@@ -130,18 +130,18 @@ pub(crate) async fn by_id(
         Comic {
             comic: comic_id,
             has_data: true,
-            image_type: Some(comic.ImageType.into()),
-            publish_date: comic.publishDate.map(|nd| Utc.from_utc_datetime(&nd)),
-            is_accurate_publish_date: comic.isAccuratePublishDate != 0,
+            image_type: Some(comic.image_type.into()),
+            publish_date: comic.publish_date.map(|nd| Utc.from_utc_datetime(&nd)),
+            is_accurate_publish_date: comic.is_accurate_publish_date != 0,
             title: Some(comic.title),
             tagline: comic.tagline,
-            is_guest_comic: comic.isGuestComic != 0,
-            is_non_canon: comic.isNonCanon != 0,
-            has_no_cast: comic.HasNoCast != 0,
-            has_no_location: comic.HasNoLocation != 0,
-            has_no_storyline: comic.HasNoStoryline != 0,
-            has_no_title: comic.HasNoTitle != 0,
-            has_no_tagline: comic.HasNoTagline != 0,
+            is_guest_comic: comic.is_guest_comic != 0,
+            is_non_canon: comic.is_non_canon != 0,
+            has_no_cast: comic.has_no_cast != 0,
+            has_no_location: comic.has_no_location != 0,
+            has_no_storyline: comic.has_no_storyline != 0,
+            has_no_title: comic.has_no_title != 0,
+            has_no_tagline: comic.has_no_tagline != 0,
             news: news.map(|n| n.news),
             previous: previous
                 .map(TryInto::try_into)
@@ -196,12 +196,12 @@ fn transfer_item_data_to_navigation_item(
     for navigation_item in navigation_items {
         let DatabaseItem {
             id: _,
-            shortName: short_name,
+            short_name,
             name,
             r#type,
-            Color_Red: color_red,
-            Color_Green: color_green,
-            Color_Blue: color_blue,
+            color_red,
+            color_green,
+            color_blue,
         } = items
             .remove(&navigation_item.id.into_inner())
             .expect("item data for navigation item");

@@ -15,11 +15,11 @@ impl Occurrence {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT COUNT(1) FROM `occurences`
+                SELECT COUNT(1) FROM `Occurrence`
                 WHERE
-                    items_id = ?
+                    `item_id` = ?
                 AND
-                    comic_id = ?
+                    `comic_id` = ?
             "#,
             item_id,
             comic_id,
@@ -39,8 +39,8 @@ impl Occurrence {
     {
         sqlx::query!(
             r#"
-                INSERT INTO `occurences`
-                    (comic_id, items_id)
+                INSERT INTO `Occurrence`
+                    (`comic_id`, `item_id`)
                 VALUES
                     (?, ?)
             "#,
@@ -61,11 +61,11 @@ impl Occurrence {
     {
         sqlx::query!(
             r#"
-                DELETE FROM `occurences`
+                DELETE FROM `Occurrence`
                 WHERE
-                    items_id = ?
+                    `item_id` = ?
                 AND
-                    comic_id = ?
+                    `comic_id` = ?
             "#,
             comic_id,
             item_id

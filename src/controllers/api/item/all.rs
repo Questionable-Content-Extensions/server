@@ -28,12 +28,12 @@ pub(crate) async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
     for item in all_items {
         let DatabaseItem {
             id,
-            shortName: short_name,
+            short_name,
             name,
             r#type,
-            Color_Red: color_red,
-            Color_Green: color_green,
-            Color_Blue: color_blue,
+            color_red,
+            color_green,
+            color_blue,
         } = item;
         let id = id.into();
 

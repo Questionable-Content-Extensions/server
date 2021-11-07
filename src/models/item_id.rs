@@ -26,10 +26,10 @@ impl ItemId {
     }
 }
 
-impl From<i16> for ItemId {
+impl From<u16> for ItemId {
     #[inline]
-    fn from(comic_id: i16) -> Self {
-        Self(comic_id as u16)
+    fn from(comic_id: u16) -> Self {
+        Self(comic_id)
     }
 }
 

@@ -3,11 +3,11 @@ use log::debug;
 
 #[derive(Debug)]
 pub struct News {
-    pub comic: i16,
-    pub lastUpdated: NaiveDate,
+    pub comic_id: u16,
+    pub last_updated: NaiveDate,
     pub news: String,
-    pub updateFactor: f64,
-    pub isLocked: i8,
+    pub update_factor: f64,
+    pub is_locked: u8,
 }
 
 impl News {
@@ -21,8 +21,8 @@ impl News {
         sqlx::query_as!(
             Self,
             r#"
-				SELECT * FROM `news`
-				WHERE `comic` = ?
+				SELECT * FROM `News`
+				WHERE `comic_id` = ?
 			"#,
             comic_id
         )
@@ -41,12 +41,12 @@ impl News {
     {
         sqlx::query_scalar!(
             r#"
-                UPDATE `news`
+                UPDATE `News`
                 SET
-                    updateFactor = ?,
-                    lastUpdated = ?
+                    `update_factor` = ?,
+                    `last_updated` = ?
                 WHERE
-                    comic = ?
+                    `comic_id` = ?
             "#,
             update_factor,
             last_updated,
@@ -68,13 +68,13 @@ impl News {
     {
         sqlx::query_scalar!(
             r#"
-                UPDATE `news`
+                UPDATE `News`
                 SET
-                    news = ?,
-                    updateFactor = ?,
-                    lastUpdated = ?
+                    `news` = ?,
+                    `update_factor` = ?,
+                    `last_updated` = ?
                 WHERE
-                    comic = ?
+                    `comic_id` = ?
             "#,
             news,
             update_factor,
@@ -97,8 +97,8 @@ impl News {
     {
         sqlx::query_scalar!(
             r#"
-                INSERT INTO `news`
-                    (news, updateFactor, lastUpdated, comic)
+                INSERT INTO `News`
+                    (`news`, `update_factor`, `last_updated`, `comic_id`)
                 VALUES
                     (?, ?, ?, ?)
             "#,
@@ -114,21 +114,21 @@ impl News {
 
 impl News {
     pub fn is_outdated(&self) -> bool {
-        let days_since_update = (chrono::Utc::today().naive_utc() - self.lastUpdated).num_days();
-        let update_factor_days = (31.0 * self.updateFactor) as i64;
-        let locked = self.isLocked != 0;
+        let days_since_update = (chrono::Utc::today().naive_utc() - self.last_updated).num_days();
+        let update_factor_days = (31.0 * self.update_factor) as i64;
+        let locked = self.is_locked != 0;
 
         debug!(
             "News outdated info: id:{} updated:{} factor:{} locked:{} | ({} > {} = {})",
-            self.comic,
-            self.lastUpdated,
-            self.updateFactor,
+            self.comic_id,
+            self.last_updated,
+            self.update_factor,
             locked,
             days_since_update,
             update_factor_days,
             days_since_update > update_factor_days
         );
 
-        !locked && self.updateFactor < 12.0 && days_since_update > update_factor_days
+        !locked && self.update_factor < 12.0 && days_since_update > update_factor_days
     }
 }

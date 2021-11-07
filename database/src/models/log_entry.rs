@@ -6,10 +6,10 @@ const PAGE_SIZE: u16 = 10;
 
 #[derive(Debug)]
 pub struct LogEntry {
-    pub id: i32,
-    pub UserToken: String,
-    pub DateTime: NaiveDateTime,
-    pub Action: String,
+    pub id: u32,
+    pub user_token: String,
+    pub date_time: NaiveDateTime,
+    pub action: String,
 }
 
 impl LogEntry {
@@ -19,7 +19,7 @@ impl LogEntry {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT COUNT(*) FROM `log_entry`
+                SELECT COUNT(*) FROM `LogEntry`
             "#,
         )
         .fetch_one(executor)
@@ -41,12 +41,12 @@ impl LogEntry {
             LogListEntry,
             r#"
                 SELECT
-                    t.identifier,
-                    l.DateTime,
-                    l.Action
-                FROM `log_entry` l
-                JOIN `token` t ON t.id = l.UserToken
-                ORDER BY `DateTime` DESC
+                    `t`.`identifier`,
+                    `l`.`date_time`,
+                    `l`.`action`
+                FROM `LogEntry` `l`
+                JOIN `Token` `t` ON `t`.`id` = `l`.`user_token`
+                ORDER BY `date_time` DESC
                 LIMIT ?, ?
             "#,
             start_entry,
@@ -69,8 +69,8 @@ impl LogEntry {
     {
         sqlx::query!(
             r#"
-                INSERT INTO `log_entry`
-                    (UserToken, DateTime, Action)
+                INSERT INTO `LogEntry`
+                    (`user_token`, `date_time`, `action`)
                 VALUES
                     (?, ?, ?)
             "#,
@@ -103,6 +103,6 @@ impl LogEntry {
 
 pub struct LogListEntry {
     pub identifier: String,
-    pub DateTime: NaiveDateTime,
-    pub Action: String,
+    pub date_time: NaiveDateTime,
+    pub action: String,
 }

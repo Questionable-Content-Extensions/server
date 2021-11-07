@@ -5,19 +5,19 @@ use crate::models::ItemType;
 
 #[derive(Debug)]
 pub struct Comic {
-    pub id: i16,
-    pub ImageType: i32,
-    pub isGuestComic: i8,
-    pub isNonCanon: i8,
-    pub HasNoCast: u8,
-    pub HasNoLocation: u8,
-    pub HasNoStoryline: u8,
-    pub HasNoTitle: u8,
-    pub HasNoTagline: u8,
+    pub id: u16,
+    pub image_type: i32,
+    pub is_guest_comic: u8,
+    pub is_non_canon: u8,
+    pub has_no_cast: u8,
+    pub has_no_location: u8,
+    pub has_no_storyline: u8,
+    pub has_no_title: u8,
+    pub has_no_tagline: u8,
     pub title: String,
     pub tagline: Option<String>,
-    pub publishDate: Option<NaiveDateTime>,
-    pub isAccuratePublishDate: i8,
+    pub publish_date: Option<NaiveDateTime>,
+    pub is_accurate_publish_date: u8,
 }
 
 impl Comic {
@@ -27,7 +27,7 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT COUNT(*) FROM `comic`
+                SELECT COUNT(*) FROM `Comic`
             "#,
         )
         .fetch_one(executor)
@@ -47,10 +47,10 @@ impl Comic {
         sqlx::query_as!(
             Self,
             r#"
-                SELECT * FROM `comic`
-                WHERE (? is NULL OR `isGuestComic` = ?)
-                    AND (? is NULL OR `isNonCanon` = ?)
-                ORDER BY id ASC
+                SELECT * FROM `Comic`
+                WHERE (? is NULL OR `is_guest_comic` = ?)
+                    AND (? is NULL OR `is_non_canon` = ?)
+                ORDER BY `id` ASC
             "#,
             include_guest_comics,
             include_guest_comics,
@@ -72,8 +72,8 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                INSERT IGNORE INTO `comic`
-                    (id)
+                INSERT IGNORE INTO `Comic`
+                    (`id`)
                 VALUES
                     (?)
             "#,
@@ -89,9 +89,9 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT COUNT(1) FROM `comic`
+                SELECT COUNT(1) FROM `Comic`
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             id,
         )
@@ -107,7 +107,7 @@ impl Comic {
         sqlx::query_as!(
             Self,
             r#"
-                SELECT * FROM `comic`
+                SELECT * FROM `Comic`
                 WHERE `id` = ?
             "#,
             id
@@ -127,12 +127,12 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT id
-                FROM `comic`
-                WHERE id < ?
-                    AND (? is NULL OR `isGuestComic` = ?)
-                    AND (? is NULL OR `isNonCanon` = ?)
-                ORDER BY id DESC
+                SELECT `id`
+                FROM `Comic`
+                WHERE `id` < ?
+                    AND (? is NULL OR `is_guest_comic` = ?)
+                    AND (? is NULL OR `is_non_canon` = ?)
+                ORDER BY `id` DESC
             "#,
             id,
             include_guest_comics,
@@ -156,12 +156,12 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT id
-                FROM `comic`
-                WHERE id > ?
-                    AND (? is NULL OR `isGuestComic` = ?)
-                    AND (? is NULL OR `isNonCanon` = ?)
-                ORDER BY id ASC
+                SELECT `id`
+                FROM `Comic`
+                WHERE `id` > ?
+                    AND (? is NULL OR `is_guest_comic` = ?)
+                    AND (? is NULL OR `is_non_canon` = ?)
+                ORDER BY `id` ASC
             "#,
             id,
             include_guest_comics,
@@ -183,7 +183,7 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT publishDate FROM `comic` WHERE id = ?
+                SELECT `publish_date` FROM `Comic` WHERE `id` = ?
             "#,
             id
         )
@@ -202,12 +202,12 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                UPDATE `comic`
+                UPDATE `Comic`
                 SET
-                    publishDate = ?,
-                    isAccuratePublishDate = ?
+                    `publish_date` = ?,
+                    `is_accurate_publish_date` = ?
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             publish_date.naive_utc(),
             is_accurate_publish_date,
@@ -227,11 +227,11 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                UPDATE `comic`
+                UPDATE `Comic`
                 SET
-                    isGuestComic = ?
+                    `is_guest_comic` = ?
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             is_guest_comic,
             id,
@@ -250,11 +250,11 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                UPDATE `comic`
+                UPDATE `Comic`
                 SET
-                    isNonCanon = ?
+                    `is_non_canon` = ?
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             is_non_canon,
             id,
@@ -273,11 +273,11 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                UPDATE `comic`
+                UPDATE `Comic`
                 SET
-                    HasNoCast = ?
+                    `has_no_cast` = ?
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             has_no_cast,
             id,
@@ -296,11 +296,11 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                UPDATE `comic`
+                UPDATE `Comic`
                 SET
-                    HasNoLocation = ?
+                    `has_no_location` = ?
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             has_no_location,
             id,
@@ -319,11 +319,11 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                UPDATE `comic`
+                UPDATE `Comic`
                 SET
-                    HasNoStoryline = ?
+                    `has_no_storyline` = ?
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             has_no_storyline,
             id,
@@ -342,11 +342,11 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                UPDATE `comic`
+                UPDATE `Comic`
                 SET
-                    HasNoTitle = ?
+                    `has_no_title` = ?
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             has_no_title,
             id,
@@ -365,11 +365,11 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                UPDATE `comic`
+                UPDATE `Comic`
                 SET
-                    HasNoTagline = ?
+                    `has_no_tagline` = ?
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             has_no_tagline,
             id,
@@ -388,12 +388,12 @@ impl Comic {
             FirstLast,
             r#"
                 SELECT
-                    MIN(c.id) as first,
-                    MAX(c.id) as last
-                FROM comic c
-                WHERE (c.tagline IS NULL or NULLIF(c.tagline, '') IS NULL)
-                    AND NOT c.HasNoTagline
-                    AND c.id > 3132
+                    MIN(`c`.`id`) as `first`,
+                    MAX(`c`.`id`) as `last`
+                FROM `Comic` `c`
+                WHERE (`c`.`tagline` IS NULL or NULLIF(`c`.`tagline`, '') IS NULL)
+                    AND NOT `c`.`has_no_tagline`
+                    AND `c`.`id` > 3132
             "#
         )
         .fetch_optional(executor)
@@ -414,13 +414,13 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT c.id
-                FROM comic c
-                WHERE (c.tagline IS NULL OR NULLIF(c.tagline, '') IS NULL)
-                    AND NOT c.HasNoTagline
-                    AND c.id < ?
-                    AND c.id > 3132
-                ORDER BY c.id DESC
+                SELECT `c`.`id`
+                FROM `Comic` `c`
+                WHERE (`c`.`tagline` IS NULL OR NULLIF(`c`.`tagline`, '') IS NULL)
+                    AND NOT `c`.`has_no_tagline`
+                    AND `c`.`id` < ?
+                    AND `c`.`id` > 3132
+                ORDER BY `c`.`id` DESC
                 LIMIT 1
             "#,
             id
@@ -439,13 +439,13 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT c.id
-                FROM comic c
-                WHERE (c.tagline IS NULL OR NULLIF(c.tagline, '') IS NULL)
-                    AND NOT c.HasNoTagline
-                    AND c.id > ?
-                    AND c.id > 3132
-                ORDER BY c.id ASC
+                SELECT `c`.`id`
+                FROM `Comic` `c`
+                WHERE (`c`.`tagline` IS NULL OR NULLIF(c.`tagline`, '') IS NULL)
+                    AND NOT `c`.`has_no_tagline`
+                    AND `c`.`id` > ?
+                    AND `c`.`id` > 3132
+                ORDER BY `c`.`id` ASC
                 LIMIT 1
             "#,
             id
@@ -467,11 +467,11 @@ impl Comic {
             FirstLast,
             r#"
                 SELECT
-                    MIN(c.id) as first,
-                    MAX(c.id) as last
-                FROM comic c
-                WHERE (c.title IS NULL or NULLIF(c.title, '') IS NULL)
-                    AND NOT c.HasNoTitle
+                    MIN(`c`.`id`) as `first`,
+                    MAX(`c`.`id`) as `last`
+                FROM `Comic` `c`
+                WHERE (`c`.`title` IS NULL or NULLIF(`c`.`title`, '') IS NULL)
+                    AND NOT `c`.`has_no_title`
             "#
         )
         .fetch_optional(executor)
@@ -492,12 +492,12 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT c.id
-                FROM comic c
-                WHERE (c.title IS NULL OR NULLIF(c.title, '') IS NULL)
-                    AND NOT c.HasNoTitle
-                    AND c.id < ?
-                ORDER BY c.id DESC
+                SELECT `c`.`id`
+                FROM `Comic` `c`
+                WHERE (`c`.`title` IS NULL OR NULLIF(`c`.`title`, '') IS NULL)
+                    AND NOT `c`.`has_no_title`
+                    AND `c`.`id` < ?
+                ORDER BY `c`.`id` DESC
                 LIMIT 1
             "#,
             id
@@ -516,12 +516,12 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT c.id
-                FROM comic c
-                WHERE (c.title IS NULL OR NULLIF(c.title, '') IS NULL)
-                    AND NOT c.HasNoTitle
-                    AND c.id > ?
-                ORDER BY c.id ASC
+                SELECT `c`.`id`
+                FROM `Comic` `c`
+                WHERE (`c`.`title` IS NULL OR NULLIF(`c`.`title`, '') IS NULL)
+                    AND NOT `c`.`has_no_title`
+                    AND `c`.`id` > ?
+                ORDER BY `c`.`id` ASC
                 LIMIT 1
             "#,
             id
@@ -543,21 +543,21 @@ impl Comic {
         let r#type = r#type.as_str();
         sqlx::query_scalar!(
             r#"
-                SELECT c.id
-                FROM comic c
-                WHERE c.id NOT IN
+                SELECT `c`.`id`
+                FROM `Comic` `c`
+                WHERE `c`.`id` NOT IN
                     (
-                        SELECT o.comic_id
-                        FROM occurences o
-                        LEFT JOIN items i ON o.items_id = i.id
-                        WHERE i.type = ?
-                        AND o.comic_id = c.id
-                        GROUP BY o.comic_id
+                        SELECT `o`.`comic_id`
+                        FROM `Occurrence` `o`
+                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                        WHERE `i`.`type` = ?
+                        AND `o`.`comic_id` = `c`.`id`
+                        GROUP BY `o`.`comic_id`
                     )
-                    AND (? <> 'cast' OR NOT c.HasNoCast)
-                    AND (? <> 'location' OR NOT c.HasNoLocation)
-                    AND (? <> 'storyline' OR NOT c.HasNoStoryline)
-                ORDER BY c.id ASC
+                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
+                    AND (? <> 'location' OR NOT `c`.`has_no_location`)
+                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
+                ORDER BY `c`.`id` ASC
                 LIMIT 1
             "#,
             r#type,
@@ -581,21 +581,21 @@ impl Comic {
         let r#type = r#type.as_str();
         sqlx::query_scalar!(
             r#"
-                SELECT c.id
-                FROM comic c
-                WHERE c.id NOT IN
+                SELECT `c`.`id`
+                FROM `Comic` `c`
+                WHERE `c`.`id` NOT IN
                     (
-                        SELECT o.comic_id
-                        FROM occurences o
-                        LEFT JOIN items i ON o.items_id = i.id
-                        WHERE i.type = ?
-                        AND o.comic_id = c.id
-                        GROUP BY o.comic_id
+                        SELECT `o`.`comic_id`
+                        FROM `Occurrence` `o`
+                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                        WHERE `i`.`type` = ?
+                        AND `o`.`comic_id` = `c`.`id`
+                        GROUP BY `o`.`comic_id`
                     )
-                    AND c.id < ?
-                    AND (? <> 'cast' OR NOT c.HasNoCast)
-                    AND (? <> 'location' OR NOT c.HasNoLocation)
-                    AND (? <> 'storyline' OR NOT c.HasNoStoryline)
+                    AND `c`.`id` < ?
+                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
+                    AND (? <> 'location' OR NOT `c`.`has_no_location`)
+                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
                 ORDER BY c.id DESC
                 LIMIT 1
             "#,
@@ -621,22 +621,22 @@ impl Comic {
         let r#type = r#type.as_str();
         sqlx::query_scalar!(
             r#"
-                SELECT c.id
-                FROM comic c
-                WHERE c.id NOT IN
+                SELECT `c`.`id`
+                FROM `Comic` `c`
+                WHERE `c`.`id` NOT IN
                     (
-                        SELECT o.comic_id
-                        FROM occurences o
-                        LEFT JOIN items i ON o.items_id = i.id
-                        WHERE i.type = ?
-                        AND o.comic_id = c.id
-                        GROUP BY o.comic_id
+                        SELECT `o`.`comic_id`
+                        FROM `Occurrence` `o`
+                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                        WHERE `i`.`type` = ?
+                        AND `o`.`comic_id` = `c`.`id`
+                        GROUP BY `o`.`comic_id`
                     )
-                    AND c.id > ?
-                    AND (? <> 'cast' OR NOT c.HasNoCast)
-                    AND (? <> 'location' OR NOT c.HasNoLocation)
-                    AND (? <> 'storyline' OR NOT c.HasNoStoryline)
-                ORDER BY c.id ASC
+                    AND `c`.`id` > ?
+                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
+                    AND (? <> 'location' OR NOT `c`.`has_no_location`)
+                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
+                ORDER BY `c`.`id` ASC
                 LIMIT 1
             "#,
             r#type,
@@ -660,21 +660,21 @@ impl Comic {
         let r#type = r#type.as_str();
         sqlx::query_scalar!(
             r#"
-                SELECT c.id
-                FROM comic c
-                WHERE c.id NOT IN
+                SELECT `c`.`id`
+                FROM `Comic` `c`
+                WHERE `c`.`id` NOT IN
                     (
-                        SELECT o.comic_id
-                        FROM occurences o
-                        LEFT JOIN items i ON o.items_id = i.id
-                        WHERE i.type = ?
-                        AND o.comic_id = c.id
-                        GROUP BY o.comic_id
+                        SELECT `o`.`comic_id`
+                        FROM `Occurrence` `o`
+                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                        WHERE `i`.`type` = ?
+                        AND `o`.`comic_id` = `c`.`id`
+                        GROUP BY `o`.`comic_id`
                     )
-                    AND (? <> 'cast' OR NOT c.HasNoCast)
-                    AND (? <> 'location' OR NOT c.HasNoLocation)
-                    AND (? <> 'storyline' OR NOT c.HasNoStoryline)
-                ORDER BY c.id DESC
+                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
+                    AND (? <> 'location' OR NOT `c`.`has_no_location`)
+                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
+                ORDER BY `c`.`id` DESC
                 LIMIT 1
             "#,
             r#type,
@@ -693,7 +693,7 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT tagline FROM `comic` WHERE id = ?
+                SELECT `tagline` FROM `Comic` WHERE `id` = ?
             "#,
             id
         )
@@ -712,10 +712,10 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                UPDATE `comic`
-                SET tagline = ?
+                UPDATE `Comic`
+                SET `tagline` = ?
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             tagline,
             id
@@ -730,7 +730,7 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT title FROM `comic` WHERE id = ?
+                SELECT `title` FROM `Comic` WHERE `id` = ?
             "#,
             id
         )
@@ -748,10 +748,10 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                UPDATE `comic`
-                SET title = ?
+                UPDATE `Comic`
+                SET `title` = ?
                 WHERE
-                    id = ?
+                    `id` = ?
             "#,
             title,
             id
@@ -770,7 +770,10 @@ impl Comic {
         if let Some(needs) = sqlx::query_as!(
             NeedsQuery,
             r#"
-                SELECT title, ImageType FROM `comic`
+                SELECT
+                    `title`,
+                    `image_type`
+                FROM `Comic`
                 WHERE `id` = ?
             "#,
             id
@@ -778,7 +781,7 @@ impl Comic {
         .fetch_optional(executor)
         .await?
         {
-            Ok((needs.title.is_empty(), needs.ImageType == 0))
+            Ok((needs.title.is_empty(), needs.image_type == 0))
         } else {
             Ok((true, true))
         }
@@ -795,13 +798,13 @@ impl Comic {
     {
         sqlx::query!(
             r#"
-                INSERT INTO `comic`
-                    (id, title, imagetype)
+                INSERT INTO `Comic`
+                    (`id`, `title`, `image_type`)
                 VALUES
                     (?, ?, ?)
                 ON DUPLICATE KEY UPDATE
-                    title = ?,
-                    imagetype = ?
+                    `title` = ?,
+                    `image_type` = ?
             "#,
             id,
             title,
@@ -823,10 +826,10 @@ impl Comic {
     {
         sqlx::query_scalar!(
             r#"
-                UPDATE `comic`
+                UPDATE `Comic`
                 SET
-                    ImageType = ?
-                WHERE id = ?
+                    `image_type` = ?
+                WHERE `id` = ?
             "#,
             image_type,
             id
@@ -838,12 +841,12 @@ impl Comic {
 
 #[derive(Debug, sqlx::FromRow)]
 struct FirstLast {
-    first: Option<i16>,
-    last: Option<i16>,
+    first: Option<u16>,
+    last: Option<u16>,
 }
 
 #[derive(Debug, sqlx::FromRow)]
 struct NeedsQuery {
     title: String,
-    ImageType: i32,
+    image_type: i32,
 }

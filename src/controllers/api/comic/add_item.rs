@@ -55,7 +55,7 @@ pub(crate) async fn add_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-        let new_item_id = result.last_insert_id() as i16;
+        let new_item_id = result.last_insert_id() as u16;
 
         LogEntry::log_action(
             &mut *transaction,
@@ -71,11 +71,11 @@ pub(crate) async fn add_item(
         DatabaseItem {
             id: new_item_id,
             name: new_item_name.clone(),
-            shortName: new_item_name.clone(),
+            short_name: new_item_name.clone(),
             r#type: new_item_type.clone(),
-            Color_Blue: 127,
-            Color_Green: 127,
-            Color_Red: 127,
+            color_blue: 127,
+            color_green: 127,
+            color_red: 127,
         }
     } else {
         let item_id = request.item_id as u16;
@@ -101,9 +101,7 @@ pub(crate) async fn add_item(
         item
     };
 
-    let item_id = item.id as u16;
-
-    Occurrence::create(&mut *transaction, item_id, request.comic_id.into_inner())
+    Occurrence::create(&mut *transaction, item.id, request.comic_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 

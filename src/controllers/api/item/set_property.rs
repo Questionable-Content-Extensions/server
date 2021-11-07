@@ -68,7 +68,7 @@ pub(crate) async fn set_property(
             .await
             .map_err(error::ErrorInternalServerError)?;
 
-            if old_item.shortName.is_empty() {
+            if old_item.short_name.is_empty() {
                 LogEntry::log_action(
                     &mut *transaction,
                     request.token.to_string(),
@@ -85,7 +85,7 @@ pub(crate) async fn set_property(
                     request.token.to_string(),
                     format!(
                         "Changed shortName of {} #{} from \"{}\" to \"{}\"",
-                        old_item.r#type, request.item_id, old_item.shortName, request.value
+                        old_item.r#type, request.item_id, old_item.short_name, request.value
                     ),
                 )
                 .await
@@ -94,9 +94,9 @@ pub(crate) async fn set_property(
         }
         "color" => {
             let old_color = ItemColor(
-                old_item.Color_Red,
-                old_item.Color_Green,
-                old_item.Color_Blue,
+                old_item.color_red,
+                old_item.color_green,
+                old_item.color_blue,
             );
             let new_color: ItemColor = request.value.parse().map_err(error::ErrorBadRequest)?;
 

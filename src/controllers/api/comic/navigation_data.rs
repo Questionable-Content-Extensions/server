@@ -48,13 +48,13 @@ pub async fn fetch_all_item_navigation_data(
                     .transpose()
                     .expect("database has valid comicIds"),
                 previous: previous
-                    .get(&(flc.id as u16))
+                    .get(&flc.id)
                     .copied()
                     .map(TryInto::try_into)
                     .transpose()
                     .expect("database has valid comicIds"),
                 next: next
-                    .get(&(flc.id as u16))
+                    .get(&flc.id)
                     .copied()
                     .map(TryInto::try_into)
                     .transpose()
@@ -120,13 +120,13 @@ pub async fn fetch_comic_item_navigation_data(
                     .transpose()
                     .expect("database has valid comicIds"),
                 previous: previous
-                    .get(&(flc.id as u16))
+                    .get(&flc.id)
                     .copied()
                     .map(TryInto::try_into)
                     .transpose()
                     .expect("database has valid comicIds"),
                 next: next
-                    .get(&(flc.id as u16))
+                    .get(&flc.id)
                     .copied()
                     .map(TryInto::try_into)
                     .transpose()

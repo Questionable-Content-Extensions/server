@@ -92,7 +92,7 @@ impl NewsUpdater {
                                 "News text for comic #{} is the same. Increasing update factor.",
                                 comic_id
                             );
-                            let new_update_factor = news.updateFactor + 0.5;
+                            let new_update_factor = news.update_factor + 0.5;
                             News::update_last_updated_by_comic_id(
                                 &mut *transaction,
                                 comic_id.into_inner(),

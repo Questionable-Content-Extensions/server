@@ -34,8 +34,8 @@ impl From<DatabaseComic> for ComicList {
         Self {
             comic: ComicId::try_from(c.id).expect("database has valid comicIds"),
             title: c.title,
-            is_guest_comic: c.isGuestComic != 0,
-            is_non_canon: c.isNonCanon != 0,
+            is_guest_comic: c.is_guest_comic != 0,
+            is_non_canon: c.is_non_canon != 0,
         }
     }
 }
@@ -106,8 +106,8 @@ impl From<LogListEntry> for LogEntry {
     fn from(l: LogListEntry) -> Self {
         Self {
             identifier: l.identifier,
-            date_time: Utc.from_utc_datetime(&l.DateTime),
-            action: l.Action,
+            date_time: Utc.from_utc_datetime(&l.date_time),
+            action: l.action,
         }
     }
 }
@@ -126,7 +126,7 @@ pub struct RelatedItem {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ItemImageList {
-    pub id: i32,
+    pub id: u32,
     pub crc32c_hash: u32,
 }
 
@@ -134,8 +134,8 @@ impl From<ItemImageMetadata> for ItemImageList {
     #[inline]
     fn from(ii: ItemImageMetadata) -> Self {
         Self {
-            id: ii.Id,
-            crc32c_hash: ii.CRC32CHash,
+            id: ii.id,
+            crc32c_hash: ii.crc32c_hash,
         }
     }
 }

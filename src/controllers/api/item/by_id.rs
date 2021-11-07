@@ -38,10 +38,10 @@ pub(crate) async fn by_id(
 
     let item = Item {
         id: item_id,
-        short_name: item.shortName,
+        short_name: item.short_name,
         name: item.name,
         r#type: ItemType::try_from(&*item.r#type).map_err(error::ErrorInternalServerError)?,
-        color: ItemColor(item.Color_Red, item.Color_Green, item.Color_Blue),
+        color: ItemColor(item.color_red, item.color_green, item.color_blue),
         first: item_occurrence
             .first
             .map(TryInto::try_into)
