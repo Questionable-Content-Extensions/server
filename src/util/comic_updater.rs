@@ -55,7 +55,7 @@ impl ComicUpdater {
             );
 
             let comic_id = self.fetch_latest_comic_data(db_pool).await?;
-            news_updater.check_for(comic_id).await;
+            news_updater.check_for(comic_id);
 
             let delay = time_until_next_update(now);
             let hours = delay.num_hours();

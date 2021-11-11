@@ -58,7 +58,7 @@ pub(crate) async fn by_id(
     .map_err(error::ErrorInternalServerError)?;
 
     let news: Option<DatabaseNews> = if comic.is_some() {
-        news_updater.check_for(comic_id).await;
+        news_updater.check_for(comic_id);
 
         DatabaseNews::by_comic_id(&mut conn, comic_id.into_inner())
             .await

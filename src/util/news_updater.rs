@@ -35,7 +35,7 @@ impl NewsUpdater {
         }
     }
 
-    pub async fn check_for(&self, comic_id: ComicId) {
+    pub fn check_for(&self, comic_id: ComicId) {
         info!("Scheduling a news update check for comic {}", comic_id);
         let update_set = Arc::clone(&self.update_set);
         tokio::task::spawn(async move {
