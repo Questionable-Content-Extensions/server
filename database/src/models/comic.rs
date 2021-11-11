@@ -763,7 +763,7 @@ impl Comic {
     pub async fn needs_updating_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
-    ) -> sqlx::Result<(bool, bool)>
+    ) -> sqlx::Result<(bool, bool, bool)>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -772,7 +772,8 @@ impl Comic {
             r#"
                 SELECT
                     `title`,
-                    `image_type`
+                    `image_type`,
+                    `publish_date`
                 FROM `Comic`
                 WHERE `id` = ?
             "#,
@@ -781,17 +782,22 @@ impl Comic {
         .fetch_optional(executor)
         .await?
         {
-            Ok((needs.title.is_empty(), needs.image_type == 0))
+            Ok((
+                needs.title.is_empty(),
+                needs.image_type == 0,
+                needs.publish_date.is_none(),
+            ))
         } else {
-            Ok((true, true))
+            Ok((true, true, true))
         }
     }
 
-    pub async fn insert_or_update_title_and_imagetype_by_id<'e, 'c: 'e, E>(
+    pub async fn insert_or_update_title_imagetype_and_publish_date_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
         title: &str,
         image_type: i32,
+        publish_date: NaiveDateTime,
     ) -> sqlx::Result<crate::DatabaseResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -799,27 +805,31 @@ impl Comic {
         sqlx::query!(
             r#"
                 INSERT INTO `Comic`
-                    (`id`, `title`, `image_type`)
+                    (`id`, `title`, `image_type`, `publish_date`, `is_accurate_publish_date`)
                 VALUES
-                    (?, ?, ?)
+                    (?, ?, ?, ?, 1)
                 ON DUPLICATE KEY UPDATE
                     `title` = ?,
-                    `image_type` = ?
+                    `image_type` = ?,
+                    `publish_date` = ?
             "#,
             id,
             title,
             image_type,
+            publish_date,
             title,
             image_type,
+            publish_date,
         )
         .execute(executor)
         .await
     }
 
-    pub async fn update_image_type_by_id<'e, 'c: 'e, E>(
+    pub async fn update_image_type_and_publish_date_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
         image_type: i32,
+        publish_date: NaiveDateTime,
     ) -> sqlx::Result<crate::DatabaseResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -828,10 +838,13 @@ impl Comic {
             r#"
                 UPDATE `Comic`
                 SET
-                    `image_type` = ?
+                    `image_type` = ?,
+                    `publish_date` = ?,
+                    `is_accurate_publish_date` = 1
                 WHERE `id` = ?
             "#,
             image_type,
+            publish_date,
             id
         )
         .execute(executor)
@@ -849,4 +862,5 @@ struct FirstLast {
 struct NeedsQuery {
     title: String,
     image_type: i32,
+    publish_date: Option<NaiveDateTime>,
 }

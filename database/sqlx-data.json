@@ -1,5 +1,15 @@
 {
   "db": "MySQL",
+  "011b6702cab101eea1130f0d1bccc1e61f5e1148eaf5324b14e21d7146c85ad1": {
+    "query": "\n                UPDATE `Comic`\n                SET\n                    `image_type` = ?,\n                    `publish_date` = ?,\n                    `is_accurate_publish_date` = 1\n                WHERE `id` = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 3
+      },
+      "nullable": []
+    }
+  },
   "05764f174d03456037b1be29b77f99e5d6acc583b63e6d87950172ee4191feb8": {
     "query": "\n                SELECT\n                    `i`.`id` as `id`,\n                    MAX(`c`.`id`) as `comic`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                WHERE `c`.`id` < ?\n                    AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                    AND (? is NULL OR `c`.`is_non_canon` = ?)\n                GROUP BY `i`.`id`\n            ",
     "describe": {
@@ -656,16 +666,6 @@
       ]
     }
   },
-  "3926e878b28f7744070d6f8434050fcfb3c209f7a36bf4f722f8bc351bec3f6f": {
-    "query": "\n                UPDATE `Comic`\n                SET\n                    `image_type` = ?\n                WHERE `id` = ?\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 2
-      },
-      "nullable": []
-    }
-  },
   "3ddd4417916d6bf782ff9191d81c644f015bcd2602564d4150df26b20dc8d733": {
     "query": "\n                SELECT\n                    `i`.`id` as `id`,\n                    MIN(`c`.`id`) as `comic`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                WHERE `c`.`id` > ?\n                    AND `i`.`id` IN (\n                        SELECT `item_id` FROM `Occurrence` WHERE `comic_id` = ?\n                    )\n                    AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                    AND (? is NULL OR `c`.`is_non_canon` = ?)\n                GROUP BY `i`.`id`\n            ",
     "describe": {
@@ -850,16 +850,6 @@
       "nullable": [
         false
       ]
-    }
-  },
-  "4f839d6ab36521dca502cac58e32fc52ef13083616ba7cc6706ca91f99a7c8fc": {
-    "query": "\n                INSERT INTO `Comic`\n                    (`id`, `title`, `image_type`)\n                VALUES\n                    (?, ?, ?)\n                ON DUPLICATE KEY UPDATE\n                    `title` = ?,\n                    `image_type` = ?\n            ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Right": 5
-      },
-      "nullable": []
     }
   },
   "53ce08cbd9263d314f95605c7b1567d54934faf86ae2ebe4f4fa794cb85092d0": {
@@ -1512,6 +1502,57 @@
       ]
     }
   },
+  "cb7abb9b682fca854024aa26fb75ebd657ad3d9b25948a7b15de5214ae8ea28b": {
+    "query": "\n                SELECT\n                    `title`,\n                    `image_type`,\n                    `publish_date`\n                FROM `Comic`\n                WHERE `id` = ?\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "title",
+          "type_info": {
+            "type": "VarString",
+            "flags": {
+              "bits": 4105
+            },
+            "char_set": 224,
+            "max_size": 1020
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "image_type",
+          "type_info": {
+            "type": "Long",
+            "flags": {
+              "bits": 1
+            },
+            "char_set": 63,
+            "max_size": 11
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "publish_date",
+          "type_info": {
+            "type": "Datetime",
+            "flags": {
+              "bits": 128
+            },
+            "char_set": 63,
+            "max_size": 19
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        false,
+        true
+      ]
+    }
+  },
   "cbfba21ed4820cbff5bc3baae7786cb82bd80308301d22213bc942e4c7d21c41": {
     "query": "\n                SELECT `c`.`id`\n                FROM `Comic` `c`\n                WHERE `c`.`id` NOT IN\n                    (\n                        SELECT `o`.`comic_id`\n                        FROM `Occurrence` `o`\n                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                        WHERE `i`.`type` = ?\n                        AND `o`.`comic_id` = `c`.`id`\n                        GROUP BY `o`.`comic_id`\n                    )\n                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)\n                    AND (? <> 'location' OR NOT `c`.`has_no_location`)\n                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)\n                ORDER BY `c`.`id` ASC\n                LIMIT 1\n            ",
     "describe": {
@@ -1565,44 +1606,6 @@
         "Right": 2
       },
       "nullable": []
-    }
-  },
-  "d533c6c3d57d7a296ae0218635d00db5575ec9baf1ac4f5303095754de257d4e": {
-    "query": "\n                SELECT\n                    `title`,\n                    `image_type`\n                FROM `Comic`\n                WHERE `id` = ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "title",
-          "type_info": {
-            "type": "VarString",
-            "flags": {
-              "bits": 4105
-            },
-            "char_set": 224,
-            "max_size": 1020
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "image_type",
-          "type_info": {
-            "type": "Long",
-            "flags": {
-              "bits": 1
-            },
-            "char_set": 63,
-            "max_size": 11
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false,
-        false
-      ]
     }
   },
   "d55c4c74464d0d15787e73186ea77ce96db89813ffe7062792874182670ef305": {
@@ -2163,6 +2166,16 @@
       "nullable": [
         true
       ]
+    }
+  },
+  "fb720226ca224bbdeb08d470a574ce5dfadb85fda47371cc8d80108f52acb50f": {
+    "query": "\n                INSERT INTO `Comic`\n                    (`id`, `title`, `image_type`, `publish_date`, `is_accurate_publish_date`)\n                VALUES\n                    (?, ?, ?, ?, 1)\n                ON DUPLICATE KEY UPDATE\n                    `title` = ?,\n                    `image_type` = ?,\n                    `publish_date` = ?\n            ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Right": 7
+      },
+      "nullable": []
     }
   },
   "fb72ef2f19c5d5aa356ffe4a00ab1b1a7641d6d1b4a36df6cb3952de6975a9a5": {

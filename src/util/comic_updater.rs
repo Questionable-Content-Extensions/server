@@ -196,7 +196,7 @@ impl ComicUpdater {
 
         let mut transaction = db_pool.begin().await?;
 
-        let (needs_title, needs_image_type) =
+        let (needs_title, needs_image_type, needs_date) =
             DatabaseComic::needs_updating_by_id(&mut *transaction, comic_id).await?;
 
         info!(
@@ -245,6 +245,7 @@ impl ComicUpdater {
         } else {
             None
         };
+
         if let Some(title) = new_title {
             info!(
                 "Setting comic #{}'s title to '{}' and image type to '{:?}'",
@@ -253,11 +254,12 @@ impl ComicUpdater {
                 ImageType::from(image_type)
             );
 
-            DatabaseComic::insert_or_update_title_and_imagetype_by_id(
+            DatabaseComic::insert_or_update_title_imagetype_and_publish_date_by_id(
                 &mut *transaction,
                 comic_id,
                 &title,
                 image_type,
+                comic_date.naive_utc(),
             )
             .await?;
         } else if needs_image_type && image_type != 0 {
@@ -267,7 +269,16 @@ impl ComicUpdater {
                 ImageType::from(image_type)
             );
 
-            DatabaseComic::update_image_type_by_id(&mut *transaction, comic_id, image_type).await?;
+            DatabaseComic::update_image_type_and_publish_date_by_id(
+                &mut *transaction,
+                comic_id,
+                image_type,
+                comic_date.naive_utc(),
+            )
+            .await?;
+        } else if needs_date {
+            DatabaseComic::update_publish_date_by_id(&mut *transaction, comic_id, comic_date, true)
+                .await?;
         }
 
         info!("Saving any changes to the database.");
