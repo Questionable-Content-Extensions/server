@@ -75,6 +75,11 @@ pub(crate) async fn set_publish_date(
         .map_err(error::ErrorInternalServerError)?;
     }
 
+    transaction
+        .commit()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
     Ok(HttpResponse::Ok().finish())
 }
 
