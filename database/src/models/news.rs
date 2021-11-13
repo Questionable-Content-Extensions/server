@@ -35,7 +35,7 @@ impl News {
         comic_id: u16,
         update_factor: f64,
         last_updated: NaiveDate,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -62,7 +62,7 @@ impl News {
         news: &str,
         update_factor: f64,
         last_updated: NaiveDate,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -91,7 +91,7 @@ impl News {
         news: &str,
         update_factor: f64,
         last_updated: NaiveDate,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {

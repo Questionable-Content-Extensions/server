@@ -33,7 +33,7 @@ impl Occurrence {
         executor: E,
         item_id: u16,
         comic_id: u16,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -55,7 +55,7 @@ impl Occurrence {
         executor: E,
         item_id: u16,
         comic_id: u16,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {

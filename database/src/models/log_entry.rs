@@ -63,7 +63,7 @@ impl LogEntry {
         token: &str,
         date_time: NaiveDateTime,
         action: &str,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {

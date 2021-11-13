@@ -4,7 +4,7 @@ use std::ops::Deref;
 pub mod models;
 
 type DatabaseDriver = sqlx::MySql;
-type DatabaseResult = sqlx::mysql::MySqlQueryResult;
+type DatabaseQueryResult = sqlx::mysql::MySqlQueryResult;
 
 pub type DbPoolConnection = sqlx::pool::PoolConnection<DatabaseDriver>;
 

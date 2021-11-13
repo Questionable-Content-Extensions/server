@@ -66,7 +66,7 @@ impl Comic {
     pub async fn ensure_exists_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -196,7 +196,7 @@ impl Comic {
         id: u16,
         publish_date: DateTime<Utc>,
         is_accurate_publish_date: bool,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -221,7 +221,7 @@ impl Comic {
         executor: E,
         id: u16,
         is_guest_comic: bool,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -244,7 +244,7 @@ impl Comic {
         executor: E,
         id: u16,
         is_non_canon: bool,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -267,7 +267,7 @@ impl Comic {
         executor: E,
         id: u16,
         has_no_cast: bool,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -290,7 +290,7 @@ impl Comic {
         executor: E,
         id: u16,
         has_no_location: bool,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -313,7 +313,7 @@ impl Comic {
         executor: E,
         id: u16,
         has_no_storyline: bool,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -336,7 +336,7 @@ impl Comic {
         executor: E,
         id: u16,
         has_no_title: bool,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -359,7 +359,7 @@ impl Comic {
         executor: E,
         id: u16,
         has_no_tagline: bool,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -706,7 +706,7 @@ impl Comic {
         executor: E,
         id: u16,
         tagline: &str,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -742,7 +742,7 @@ impl Comic {
         executor: E,
         id: u16,
         title: &str,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -798,7 +798,7 @@ impl Comic {
         title: &str,
         image_type: i32,
         publish_date: NaiveDateTime,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -830,7 +830,7 @@ impl Comic {
         id: u16,
         image_type: i32,
         publish_date: NaiveDateTime,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {

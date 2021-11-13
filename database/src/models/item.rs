@@ -91,7 +91,7 @@ impl Item {
         name: &str,
         short_name: &str,
         r#type: ItemType,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -466,7 +466,7 @@ impl Item {
         item_id: u16,
         image: Vec<u8>,
         crc32c_hash: u32,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -489,7 +489,7 @@ impl Item {
         executor: E,
         id: u16,
         name: &str,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -510,7 +510,7 @@ impl Item {
         executor: E,
         id: u16,
         short_name: &str,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -533,7 +533,7 @@ impl Item {
         red: u8,
         green: u8,
         blue: u8,
-    ) -> sqlx::Result<crate::DatabaseResult>
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
