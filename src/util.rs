@@ -2,6 +2,7 @@ use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Datelike, NaiveDate, TimeZone, Timelike, Utc};
 use futures::Future;
+use ilyvion_util::chrono::days_from_month_in_year;
 use ilyvion_util::string_extensions::StrExtensions;
 use once_cell::sync::Lazy;
 use semval::{Invalidity, Validate};
@@ -44,7 +45,7 @@ pub struct Environment;
 lazy_environment!(PORT, port);
 lazy_environment!(DATABASE_URL, database_url);
 lazy_environment!(QC_TIMEZONE, qc_timezone);
-lazy_environment!(BACKGROUND_SERVICES, background_services);
+lazy_environment!(, BACKGROUND_SERVICES, background_services);
 
 impl Environment {
     pub fn init() {
@@ -173,7 +174,7 @@ impl AddMonths for DateTime<Utc> {
 
         // Check if the day we have is bigger than the biggest day of the resulting month
         // and if so, truncateca
-        let days_in_month = get_days_from_month(year, month) as u32;
+        let days_in_month = days_from_month_in_year(month, year) as u32;
         if day > days_in_month {
             day = days_in_month;
         }
@@ -181,22 +182,6 @@ impl AddMonths for DateTime<Utc> {
         Utc.ymd(year, month, day)
             .and_hms(self.hour(), self.minute(), self.second())
     }
-}
-
-fn get_days_from_month(year: i32, month: u32) -> i64 {
-    NaiveDate::from_ymd(
-        match month {
-            12 => year + 1,
-            _ => year,
-        },
-        match month {
-            12 => 1,
-            _ => month + 1,
-        },
-        1,
-    )
-    .signed_duration_since(NaiveDate::from_ymd(year, month, 1))
-    .num_days()
 }
 
 #[test]

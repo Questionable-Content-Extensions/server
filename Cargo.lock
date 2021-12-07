@@ -1105,10 +1105,11 @@ dependencies = [
 
 [[package]]
 name = "ilyvion-util"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e37a39179f9cf031109999289bd7fbde0c4ad1174b874dcfb32f21c99bfd2a1"
+checksum = "7035585a1dedb176e57aafeb8cb9a46f4b4d4f4247cc8198d25249ea68e1b837"
 dependencies = [
+ "chrono",
  "shrinkwraprs",
 ]
 
