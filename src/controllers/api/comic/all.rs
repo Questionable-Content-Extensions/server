@@ -26,9 +26,9 @@ pub(crate) async fn all(
 
 pub(crate) async fn excluded(
     pool: web::Data<DbPool>,
-    query: web::Query<AllQuery>,
+    query: web::Query<ExcludedQuery>,
 ) -> Result<HttpResponse> {
-    let (is_guest_comic, is_non_canon) = match query.exclude {
+    let (is_guest_comic, is_non_canon) = match query.exclusion {
         None => {
             return Err(error::ErrorBadRequest(
                 "exclude parameter must be set to either `guest` or `non-canon`",

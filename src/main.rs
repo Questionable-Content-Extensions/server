@@ -54,7 +54,7 @@
 // Warn (try not to do this)
 #![warn(clippy::must_use_candidate)]
 #![warn(clippy::enum_variant_names)]
-#![warn(clippy::shadow_unrelated)]
+//#![warn(clippy::shadow_unrelated)]
 #![warn(clippy::similar_names)]
 #![warn(clippy::too_many_lines)]
 // </editor-fold>

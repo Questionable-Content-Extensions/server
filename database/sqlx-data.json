@@ -459,70 +459,6 @@
       "nullable": []
     }
   },
-  "13d5c565c7c14d1ba739efd311e4a7cf9ec578109f95b56b10a2c89068ca53fc": {
-    "query": "\n                SELECT\n                    `item_id` AS `id`,\n                    MIN(`comic_id`) AS `first`,\n                    MAX(`comic_id`) AS `last`,\n                    COUNT(`comic_id`) AS `count`\n                FROM `Occurrence`\n                WHERE `item_id` = ?\n            ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": {
-            "type": "Short",
-            "flags": {
-              "bits": 4139
-            },
-            "char_set": 63,
-            "max_size": 6
-          }
-        },
-        {
-          "ordinal": 1,
-          "name": "first",
-          "type_info": {
-            "type": "Short",
-            "flags": {
-              "bits": 160
-            },
-            "char_set": 63,
-            "max_size": 6
-          }
-        },
-        {
-          "ordinal": 2,
-          "name": "last",
-          "type_info": {
-            "type": "Short",
-            "flags": {
-              "bits": 160
-            },
-            "char_set": 63,
-            "max_size": 6
-          }
-        },
-        {
-          "ordinal": 3,
-          "name": "count",
-          "type_info": {
-            "type": "LongLong",
-            "flags": {
-              "bits": 129
-            },
-            "char_set": 63,
-            "max_size": 21
-          }
-        }
-      ],
-      "parameters": {
-        "Right": 1
-      },
-      "nullable": [
-        false,
-        true,
-        true,
-        false
-      ]
-    }
-  },
   "1b5cd972500fdfed5f41fa9d48c232d45fc1043089147fb87513aef1006a3732": {
     "query": "\n                UPDATE `Comic`\n                SET\n                    `has_no_tagline` = ?\n                WHERE\n                    `id` = ?\n            ",
     "describe": {
@@ -2139,6 +2075,70 @@
         "Right": 1
       },
       "nullable": [
+        false
+      ]
+    }
+  },
+  "f95d8b69af9939012fd33a0fb2bc0f9865ea197736527470d82c16696bbbc33c": {
+    "query": "\n                SELECT\n                    `item_id` AS `id`,\n                    MIN(`comic_id`) AS `first`,\n                    MAX(`comic_id`) AS `last`,\n                    COUNT(`comic_id`) AS `count`\n                FROM `Occurrence`\n                WHERE `item_id` = ?\n                GROUP by `item_id`\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 4139
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 1,
+          "name": "first",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 160
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 2,
+          "name": "last",
+          "type_info": {
+            "type": "Short",
+            "flags": {
+              "bits": 160
+            },
+            "char_set": 63,
+            "max_size": 6
+          }
+        },
+        {
+          "ordinal": 3,
+          "name": "count",
+          "type_info": {
+            "type": "LongLong",
+            "flags": {
+              "bits": 129
+            },
+            "char_set": 63,
+            "max_size": 21
+          }
+        }
+      ],
+      "parameters": {
+        "Right": 1
+      },
+      "nullable": [
+        false,
+        true,
+        true,
         false
       ]
     }

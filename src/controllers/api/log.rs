@@ -45,6 +45,7 @@ async fn get(
 
 #[derive(Debug, Deserialize)]
 struct LogQuery {
+    #[allow(unused)]
     token: Token,
     page: u16,
 }

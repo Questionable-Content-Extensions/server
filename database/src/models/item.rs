@@ -127,6 +127,7 @@ impl Item {
                     COUNT(`comic_id`) AS `count`
                 FROM `Occurrence`
                 WHERE `item_id` = ?
+                GROUP by `item_id`
             "#,
             id
         )
