@@ -1,4 +1,4 @@
-use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions, MySqlSslMode};
+use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use std::ops::Deref;
 
 pub mod models;
@@ -16,8 +16,7 @@ impl DbPool {
     pub async fn create(database_url: &'static str) -> Self {
         let database_options = database_url
             .parse::<MySqlConnectOptions>()
-            .expect("failed to parse database URL")
-            .ssl_mode(MySqlSslMode::Disabled);
+            .expect("failed to parse database URL");
 
         Self(
             MySqlPoolOptions::new()
