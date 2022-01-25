@@ -67,8 +67,8 @@ impl Occurrence {
                 AND
                     `comic_id` = ?
             "#,
+            item_id,
             comic_id,
-            item_id
         )
         .execute(executor)
         .await
