@@ -41,13 +41,18 @@ pub(crate) async fn remove_item(
         .map_err(error::ErrorInternalServerError)?
         .ok_or_else(|| error::ErrorBadRequest(anyhow!("Item does not exist")))?;
 
-    DatabaseOccurrence::delete(
-        &mut *transaction,
-        request.item_id.into_inner(),
-        request.comic_id.into_inner(),
-    )
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    let item_id = request.item_id.into_inner();
+    let comic_id = request.comic_id.into_inner();
+    let result = DatabaseOccurrence::delete(&mut *transaction, item_id, comic_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    if result.rows_affected() != 1 {
+        return Err(error::ErrorNotFound(format!(
+            "Could not delete item {} from comic {}; the item is not in the comic",
+            item_id, comic_id
+        )));
+    }
 
     LogEntry::log_action(
         &mut *transaction,
