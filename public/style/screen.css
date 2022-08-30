@@ -1,0 +1,168 @@
+html, body {
+	margin: 0;
+	padding: 0;
+	background-color: #112b33;
+	font-family: "Lucida Sans", sans-serif;
+}
+
+a:link {
+	color: #ff6600;
+}
+a:visited {
+	color: #ff9600;
+}
+a:hover {
+	color: #00c6ff;
+}
+
+img {
+	border: none;
+}
+
+#header {
+	background-color: #555;
+	width: 100%;
+	min-width: 840px;
+}
+
+h1 {
+	font-size: 45px;
+	margin: 0;
+	height: 50px;
+	position: relative;
+}
+h1 a {
+	text-decoration: none;
+}
+h1 .style1 {
+	color: #ff6600;
+}
+h1 .style2 {
+	color: #00c6ff;
+}
+
+#menu {
+	width: 100%;
+	min-width: 840px;
+	background-color: #555;
+	min-height: 31px;
+	max-height: 31px;
+	font-size: 26px;
+}
+
+#menu ul {
+	list-style: none;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+#menu ul li {
+	float: left;
+	margin: 0;
+	padding: 0;
+	position: relative;
+}
+
+#menu ul li a {
+	display: block;
+	float: left;
+	margin: 0;
+	padding: 1px 12px;
+	text-decoration: none;
+}
+
+#content {
+	background-color: #555;
+	margin: 30px auto 0 auto;
+	width: 800px;
+	border: 3px solid #444;
+	padding: 5px 20px;
+}
+
+#footer {
+	margin: 30px auto 0 auto;
+	width: 800px;
+	padding: 0;
+	text-align: center;
+	background-color: #555;
+	border: 3px solid #444;
+}
+
+#footer > * {
+	font-size: smaller;
+}
+
+div.box {
+	margin: 30px auto;
+	width: 800px;
+	min-height: 74px;
+	padding: 5px 20px;
+}
+
+#content div.box {
+	width: 70%;
+}
+
+div.box > * {
+	margin-left: 60px;
+}
+
+.info.box {
+	background: #8cacce url(/graphics/info.png) no-repeat 5px center;
+	border: 1px solid #204a87;
+	color: #006;
+}
+
+.warning.box {
+	background: #fcff98 url(/graphics/warning.png) no-repeat 5px center;
+	border: 1px solid #acaf00;
+	color: #660;
+}
+
+.error.box {
+	background: #ffbbbb url(/graphics/error.png) no-repeat 5px center;
+	border: 1px solid #f00;
+	color: #f00;
+}
+
+#footnavigation a:first-child {
+	margin-left: 0;
+}
+
+#statistics
+{
+	width: 100%;
+	border: 1px solid black;
+	margin-bottom: 1em;
+	border-collapse: collapse;
+}
+
+#statistics thead th.comic
+{
+	 font-size: xx-small;
+	 vertical-align: top;
+	 line-height: 1em;
+}
+
+#statistics thead th.comic a
+{
+	text-decoration: none;
+}
+
+#statistics thead th.character
+{
+	width: 10%;
+}
+
+#statistics td, #statistics th
+{
+	border-left: 1px solid black;
+	border-right: 1px solid black;
+}
+
+#statistics td.participates
+{
+	border-left: none;
+	border-right: none;
+}
