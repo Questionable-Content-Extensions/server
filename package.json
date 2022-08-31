@@ -21,16 +21,12 @@
     },
     "scripts": {
         "start": "react-scripts start",
-        "build": "react-scripts build"
+        "build": "react-scripts build",
+        "docker:build": "docker build -t qcext-server ."
     },
     "proxy": {
         "/api": {
             "target": "http://localhost:5000"
         }
-    },
-    "heroku-run-build-script": true,
-    "engines": {
-        "node": "12.x",
-        "npm": "6.x"
     }
 }
