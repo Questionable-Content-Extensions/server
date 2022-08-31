@@ -22,11 +22,15 @@
     "scripts": {
         "start": "react-scripts start",
         "build": "react-scripts build",
-        "docker:build": "docker build -t qcext-server ."
+        "docker:build": "docker build -t qcext-server .",
+        "prepare": "husky install"
     },
     "proxy": {
         "/api": {
             "target": "http://localhost:5000"
         }
+    },
+    "devDependencies": {
+        "husky": "^8.0.1"
     }
 }
