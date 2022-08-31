@@ -81,7 +81,6 @@ use util::Environment;
 mod util;
 
 mod controllers;
-//mod database;
 mod models;
 
 #[actix_web::main]
@@ -114,6 +113,7 @@ async fn main() -> Result<()> {
                 .wrap(actix_web::middleware::Compress::default())
                 .wrap(actix_web::middleware::Logger::default())
                 .service(web::scope("/api").configure(controllers::api::configure))
+                .service(web::scope("/releases").configure(controllers::releases::configure))
                 .service(Files::new("/", "./build/").index_file("index.html"))
         })
         .disable_signals()

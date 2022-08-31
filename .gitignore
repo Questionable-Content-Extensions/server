@@ -203,6 +203,7 @@ set-prod-env\.ps1
 # Added by cargo
 
 /target
+/database/target
 
 # .env
 /.env

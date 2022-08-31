@@ -300,6 +300,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61604a8f862e1d5c3229fdd78f8b02c68dcf73a4c4b05fd636d12240aaa242c1"
 
 [[package]]
+name = "arc-swap"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "983cd8b9d4b02a6dc6ffa557262eb5858a27a0038ffffe21a0f133eaa819a164"
+
+[[package]]
 name = "askama_escape"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1781,6 +1787,7 @@ dependencies = [
  "actix-web",
  "actix-web-grants",
  "anyhow",
+ "arc-swap",
  "bitflags",
  "chrono",
  "chrono-tz",
@@ -1795,6 +1802,7 @@ dependencies = [
  "once_cell",
  "parse-display",
  "pretty_env_logger",
+ "rand 0.8.4",
  "regex",
  "reqwest",
  "scraper",
@@ -1971,6 +1979,7 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "serde",
+ "serde_json",
  "serde_urlencoded",
  "tokio",
  "tokio-native-tls",
