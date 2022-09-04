@@ -84,7 +84,7 @@ pub(crate) struct SetTitleBody {
 impl Validate for SetTitleBody {
     type Invalidity = SetTitleBodyInvalidity;
 
-    fn validate(&self) -> semval::Result<Self::Invalidity> {
+    fn validate(&self) -> semval::ValidationResult<Self::Invalidity> {
         ValidationContext::new()
             .validate_with(&self.comic_id, SetTitleBodyInvalidity::ComicId)
             .into()

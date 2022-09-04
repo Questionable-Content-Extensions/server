@@ -95,7 +95,7 @@ pub(crate) struct SetPublishDateBody {
 impl Validate for SetPublishDateBody {
     type Invalidity = SetPublishDateBodyInvalidity;
 
-    fn validate(&self) -> semval::Result<Self::Invalidity> {
+    fn validate(&self) -> semval::ValidationResult<Self::Invalidity> {
         ValidationContext::new()
             .validate_with(&self.comic_id, SetPublishDateBodyInvalidity::ComicId)
             .invalidate_if(

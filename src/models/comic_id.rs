@@ -1,5 +1,5 @@
 use parse_display::Display;
-use semval::{context::Context as ValidationContext, Result as ValidationResult, Validate};
+use semval::{context::Context as ValidationContext,  Validate};
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -48,7 +48,7 @@ impl TryFrom<i16> for ComicId {
 impl Validate for ComicId {
     type Invalidity = ComicIdInvalidity;
 
-    fn validate(&self) -> ValidationResult<Self::Invalidity> {
+    fn validate(&self) -> semval::ValidationResult<Self::Invalidity> {
         ValidationContext::new()
             .invalidate_if(self.0 < 1, ComicIdInvalidity::MinValue)
             .into()

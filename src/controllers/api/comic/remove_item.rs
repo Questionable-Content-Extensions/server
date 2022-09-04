@@ -8,7 +8,7 @@ use database::models::{
 };
 use database::DbPool;
 use parse_display::Display;
-use semval::{context::Context as ValidationContext, Result as ValidationResult, Validate};
+use semval::{context::Context as ValidationContext, Validate};
 use serde::Deserialize;
 use shared::token_permissions;
 
@@ -84,7 +84,7 @@ pub(crate) struct RemoveItemFromComicBody {
 impl Validate for RemoveItemFromComicBody {
     type Invalidity = RemoveItemFromComicBodyInvalidity;
 
-    fn validate(&self) -> ValidationResult<Self::Invalidity> {
+    fn validate(&self) -> semval::ValidationResult<Self::Invalidity> {
         ValidationContext::new()
             .validate_with(&self.comic_id, RemoveItemFromComicBodyInvalidity::ComicId)
             .validate_with(&self.item_id, RemoveItemFromComicBodyInvalidity::ItemId)

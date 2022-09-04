@@ -87,7 +87,7 @@ pub(crate) struct SetTaglineBody {
 impl Validate for SetTaglineBody {
     type Invalidity = SetTaglineBodyInvalidity;
 
-    fn validate(&self) -> semval::Result<Self::Invalidity> {
+    fn validate(&self) -> semval::ValidationResult<Self::Invalidity> {
         ValidationContext::new()
             .validate_with(&self.comic_id, SetTaglineBodyInvalidity::ComicId)
             .into()

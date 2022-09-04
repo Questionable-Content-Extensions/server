@@ -23,9 +23,7 @@ pub(crate) async fn image_upload(
     while let Some(item) = image_upload_form.next().await {
         let mut field = item.map_err(error::ErrorBadRequest)?;
 
-        let content_disposition = field.content_disposition().ok_or_else(|| {
-            error::ErrorBadRequest(anyhow!("Content-Disposition header was missing"))
-        })?;
+        let content_disposition = field.content_disposition();
         let name = content_disposition
             .get_name()
             .ok_or_else(|| error::ErrorBadRequest(anyhow!("A form field was missing a name")))?;

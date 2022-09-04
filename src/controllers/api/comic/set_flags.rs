@@ -220,7 +220,7 @@ pub(crate) struct SetFlagBody {
 impl Validate for SetFlagBody {
     type Invalidity = SetFlagBodyInvalidity;
 
-    fn validate(&self) -> semval::Result<Self::Invalidity> {
+    fn validate(&self) -> semval::ValidationResult<Self::Invalidity> {
         ValidationContext::new()
             .validate_with(&self.comic_id, SetFlagBodyInvalidity::ComicId)
             .into()

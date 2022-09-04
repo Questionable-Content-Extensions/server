@@ -171,6 +171,8 @@ async fn main() -> Result<()> {
     }
 
     let http_server = start_http_server()?;
+    let http_server_handle = http_server.handle();
+    tokio::spawn(http_server);
 
     let ctrl_c = tokio::signal::ctrl_c();
     if shutdown_futures.is_empty() {
@@ -195,7 +197,7 @@ async fn main() -> Result<()> {
     info!("Shutting down HTTP server!");
     let _ = shutdown_sender.send(());
 
-    shutdown_futures.push(Either::Left(http_server.stop(true)));
+    shutdown_futures.push(Either::Left(http_server_handle.stop(true)));
 
     while let Some(either) = shutdown_futures.next().await {
         if let Either::Right(result) = either {
@@ -226,7 +228,7 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<Vec<String>
 
             // Now that we've grabbed the payload, we need to restore the payload
             // for the rest of the Actix machinery to do its thing.
-            let mut payload = actix_http::h1::Payload::empty();
+            let (_, mut payload) = actix_http::h1::Payload::create(true);
             payload.unread_data(bytes);
             request.set_payload(payload.into());
 
@@ -253,9 +255,7 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<Vec<String>
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(
-        DatabaseToken::get_permissions_for_token(&mut conn, token.to_string())
-            .await
-            .map_err(error::ErrorInternalServerError)?,
-    )
+    DatabaseToken::get_permissions_for_token(&mut conn, token.to_string())
+        .await
+        .map_err(error::ErrorInternalServerError)
 }

@@ -56,9 +56,10 @@ FROM debian:bullseye-slim AS binary
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     ca-certificates
+RUN apt-get clean
 
 COPY --from=build /usr/src/qcext-server/target/release/qcext-server /usr/local/bin/
 COPY --from=build /usr/src/qcext-server/build /build
 
 ENV RUST_LOG=info
-CMD qcext-server
+CMD ["/usr/local/bin/qcext-server"]

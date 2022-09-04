@@ -6,7 +6,7 @@ use anyhow::anyhow;
 use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
 use database::DbPool;
 use parse_display::Display;
-use semval::{context::Context as ValidationContext, Result as ValidationResult, Validate};
+use semval::{context::Context as ValidationContext, Validate};
 use serde::Deserialize;
 use shared::token_permissions;
 
@@ -138,7 +138,7 @@ pub(crate) struct AddItemToComicBody {
 
 impl Validate for AddItemToComicBody {
     type Invalidity = AddItemToComicBodyInvalidity;
-    fn validate(&self) -> ValidationResult<Self::Invalidity> {
+    fn validate(&self) -> semval::ValidationResult<Self::Invalidity> {
         ValidationContext::new()
             .validate_with(&self.comic_id, AddItemToComicBodyInvalidity::ComicId)
             .invalidate_if(
