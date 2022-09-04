@@ -116,14 +116,14 @@ impl ComicUpdater {
 
             let (comic_image, comic_type): (u16, i32) = {
                 let (comic_image, comic_type) = comic_image_url
-                    .rsplit_once("/")
+                    .rsplit_once('/')
                     .ok_or_else(|| {
                         anyhow::anyhow!(
                             "Could not fetch front page, couldn't find '/' in comic image source"
                         )
                     })?
                     .1
-                    .split_once(".")
+                    .split_once('.')
                     .ok_or_else(|| {
                         anyhow::anyhow!(
                             "Could not fetch front page, couldn't find '.' in comic image source"
@@ -284,9 +284,9 @@ impl ComicUpdater {
         info!("Saving any changes to the database.");
         transaction.commit().await?;
 
-        Ok(comic_id
+        comic_id
             .try_into()
-            .map_err(|_| anyhow!("comic id extracted from front page is invalid"))?)
+            .map_err(|_| anyhow!("comic id extracted from front page is invalid"))
     }
 }
 
