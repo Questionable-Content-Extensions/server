@@ -2,7 +2,10 @@ use crate::controllers::api::comic::editor_data::fetch_editor_data_for_comic;
 use crate::controllers::api::comic::navigation_data::{
     fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
 };
-use crate::models::{Comic, ComicId, Exclusion, Inclusion, ItemColor, ItemType};
+use crate::models::{
+    Comic, ComicData, ComicId, Exclusion, False, Inclusion, ItemColor, ItemType, MissingComic,
+    PresentComic, True,
+};
 use crate::util::NewsUpdater;
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
@@ -129,60 +132,42 @@ pub(crate) async fn by_id(
     let comic = if let Some(comic) = comic {
         Comic {
             comic: comic_id,
-            has_data: true,
-            image_type: Some(comic.image_type.into()),
-            publish_date: comic.publish_date.map(|nd| Utc.from_utc_datetime(&nd)),
-            is_accurate_publish_date: comic.is_accurate_publish_date != 0,
-            title: Some(comic.title),
-            tagline: comic.tagline,
-            is_guest_comic: comic.is_guest_comic != 0,
-            is_non_canon: comic.is_non_canon != 0,
-            has_no_cast: comic.has_no_cast != 0,
-            has_no_location: comic.has_no_location != 0,
-            has_no_storyline: comic.has_no_storyline != 0,
-            has_no_title: comic.has_no_title != 0,
-            has_no_tagline: comic.has_no_tagline != 0,
-            news: news.map(|n| n.news),
-            previous: previous
-                .map(TryInto::try_into)
-                .transpose()
-                .expect("database has valid comicIds"),
-            next: next
-                .map(TryInto::try_into)
-                .transpose()
-                .expect("database has valid comicIds"),
             editor_data,
-            items: comic_navigation_items,
             all_items: all_navigation_items,
+            data: ComicData::PresentComic(PresentComic {
+                has_data: True::default(),
+                image_type: Some(comic.image_type.into()),
+                publish_date: comic.publish_date.map(|nd| Utc.from_utc_datetime(&nd)),
+                is_accurate_publish_date: comic.is_accurate_publish_date != 0,
+                title: Some(comic.title),
+                tagline: comic.tagline,
+                is_guest_comic: comic.is_guest_comic != 0,
+                is_non_canon: comic.is_non_canon != 0,
+                has_no_cast: comic.has_no_cast != 0,
+                has_no_location: comic.has_no_location != 0,
+                has_no_storyline: comic.has_no_storyline != 0,
+                has_no_title: comic.has_no_title != 0,
+                has_no_tagline: comic.has_no_tagline != 0,
+                news: news.map(|n| n.news),
+                previous: previous
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .expect("database has valid comicIds"),
+                next: next
+                    .map(TryInto::try_into)
+                    .transpose()
+                    .expect("database has valid comicIds"),
+                items: comic_navigation_items,
+            }),
         }
     } else {
         Comic {
             comic: comic_id,
-            has_data: false,
-            image_type: None,
-            publish_date: None,
-            is_accurate_publish_date: false,
-            title: None,
-            tagline: None,
-            is_guest_comic: false,
-            is_non_canon: false,
-            has_no_cast: false,
-            has_no_location: false,
-            has_no_storyline: false,
-            has_no_title: false,
-            has_no_tagline: false,
-            news: None,
-            previous: previous
-                .map(TryInto::try_into)
-                .transpose()
-                .expect("database has valid comicIds"),
-            next: next
-                .map(TryInto::try_into)
-                .transpose()
-                .expect("database has valid comicIds"),
             editor_data,
-            items: comic_navigation_items,
             all_items: all_navigation_items,
+            data: ComicData::Missing(MissingComic {
+                has_data: False::default(),
+            }),
         }
     };
 

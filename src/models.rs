@@ -11,6 +11,7 @@ mod image_type;
 mod item_color;
 mod item_id;
 mod item_type;
+mod set_boolean;
 mod token;
 
 pub use comic_id::*;
@@ -18,6 +19,7 @@ pub use image_type::ImageType;
 pub use item_color::ItemColor;
 pub use item_id::*;
 pub use item_type::ItemType;
+pub use set_boolean::*;
 pub use token::Token;
 
 #[derive(Debug, Serialize)]
@@ -44,8 +46,33 @@ impl From<DatabaseComic> for ComicList {
 #[serde(rename_all = "camelCase")]
 pub struct Comic {
     pub comic: ComicId,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub editor_data: Option<EditorData>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub all_items: Vec<ItemNavigationData>,
+    #[serde(flatten)]
+    pub data: ComicData,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+#[allow(variant_size_differences)]
+pub enum ComicData {
+    Missing(MissingComic),
+    PresentComic(PresentComic),
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MissingComic {
+    pub has_data: False,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PresentComic {
     pub image_type: Option<ImageType>,
-    pub has_data: bool,
+    pub has_data: True,
     pub publish_date: Option<DateTime<Utc>>,
     pub is_accurate_publish_date: bool,
     pub title: Option<String>,
@@ -60,11 +87,7 @@ pub struct Comic {
     pub news: Option<String>,
     pub previous: Option<ComicId>,
     pub next: Option<ComicId>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub editor_data: Option<EditorData>,
     pub items: Vec<ItemNavigationData>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub all_items: Vec<ItemNavigationData>,
 }
 
 #[derive(Debug, Serialize)]

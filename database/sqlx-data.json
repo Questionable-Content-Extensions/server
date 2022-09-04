@@ -168,7 +168,7 @@
           "type_info": {
             "type": "VarString",
             "flags": {
-              "bits": 4105
+              "bits": 4097
             },
             "char_set": 224,
             "max_size": 1020
@@ -180,7 +180,7 @@
           "type_info": {
             "type": "VarString",
             "flags": {
-              "bits": 8
+              "bits": 0
             },
             "char_set": 224,
             "max_size": 1020
@@ -1338,7 +1338,7 @@
           "type_info": {
             "type": "VarString",
             "flags": {
-              "bits": 8
+              "bits": 0
             },
             "char_set": 224,
             "max_size": 1020
@@ -1398,7 +1398,7 @@
           "type_info": {
             "type": "VarString",
             "flags": {
-              "bits": 4105
+              "bits": 4097
             },
             "char_set": 224,
             "max_size": 1020
@@ -1448,7 +1448,7 @@
           "type_info": {
             "type": "VarString",
             "flags": {
-              "bits": 4105
+              "bits": 4097
             },
             "char_set": 224,
             "max_size": 1020
@@ -1919,7 +1919,7 @@
           "type_info": {
             "type": "VarString",
             "flags": {
-              "bits": 4105
+              "bits": 4097
             },
             "char_set": 224,
             "max_size": 1020
@@ -1931,7 +1931,7 @@
           "type_info": {
             "type": "VarString",
             "flags": {
-              "bits": 8
+              "bits": 0
             },
             "char_set": 224,
             "max_size": 1020
