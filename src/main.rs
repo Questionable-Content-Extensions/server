@@ -106,13 +106,21 @@ async fn main() -> Result<()> {
     let start_http_server = move || -> Result<actix_web::dev::Server> {
         Ok(HttpServer::new(move || {
             let auth = GrantsMiddleware::with_extractor(extract_permissions);
-            App::new()
+            let a = App::new()
                 .app_data(web::Data::new(http_db_pool.clone()))
                 .app_data(http_news_updater.clone())
                 .wrap(auth)
-                .wrap(actix_web::middleware::Compress::default())
-                .wrap(actix_web::middleware::Logger::default())
-                .service(web::scope("/api").configure(controllers::api::configure))
+                .wrap(actix_web::middleware::Compress::default());
+
+            let a = if cfg!(debug_assertions) {
+                a.wrap(actix_web::middleware::Logger::default())
+            } else {
+                a.wrap(actix_web::middleware::Logger::new(
+                    r#"%{X-Forwarded-For}i (%{X-Real-IP}i) "%r" %s %b "%{Referer}i" "%{User-Agent}i" %T"#,
+                ))
+            };
+
+            a.service(web::scope("/api").configure(controllers::api::configure))
                 .service(web::scope("/releases").configure(controllers::releases::configure))
                 .service(Files::new("/", "./build/").index_file("index.html"))
         })
