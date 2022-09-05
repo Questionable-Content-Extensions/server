@@ -174,16 +174,41 @@ async fn main() -> Result<()> {
     let http_server_handle = http_server.handle();
     tokio::spawn(http_server);
 
-    let ctrl_c = tokio::signal::ctrl_c();
+    #[cfg(unix)]
+    let mut sig_term_signal_stream = {
+        use tokio::signal::unix::{signal, SignalKind};
+
+        signal(SignalKind::terminate())?
+    };
+    let sig_term = {
+        #[cfg(unix)]
+        {
+            sig_term_signal_stream.recv().fuse()
+        }
+        #[cfg(not(unix))]
+        {
+            use futures::future::pending;
+
+            // On non-Unix systems, just use a dummy never-ready future
+            // to make the compiler happy below.
+            pending::<Option<()>>()
+        }
+    };
+    pin_mut!(sig_term);
+
+    let ctrl_c = tokio::signal::ctrl_c().fuse();
+    pin_mut!(ctrl_c);
     if shutdown_futures.is_empty() {
-        ctrl_c.await.context("tokio::signal::ctrl_c failed")?;
+        futures::select! {
+            sigint = ctrl_c => sigint.context("tokio::signal::ctrl_c failed")?,
+            sigterm = sig_term => sigterm.context("tokio::signal::terminate failed")?,
+        }
     } else {
-        let ctrl_c = ctrl_c.fuse();
-        pin_mut!(ctrl_c);
         #[allow(clippy::mut_mut)]
         {
             futures::select! {
-                signal = ctrl_c => signal.context("tokio::signal::ctrl_c failed")?,
+                sigint = ctrl_c => sigint.context("tokio::signal::ctrl_c failed")?,
+                sigterm = sig_term => sigterm.context("tokio::signal::terminate failed")?,
                 either = shutdown_futures.next().fuse() => match either {
                     Some(Either::Right(result)) => result.context("Background service crashed")?,
                     _ => unreachable!()
@@ -192,8 +217,8 @@ async fn main() -> Result<()> {
         }
     }
 
-    // Receivers should be live at this point, although both services may have crashed,
-    // so let's not really assert anything about it.
+    // Receivers should be live at this point, although either or both of the
+    // services may have crashed, so let's not really assert anything about it.
     info!("Shutting down HTTP server!");
     let _ = shutdown_sender.send(());
 
