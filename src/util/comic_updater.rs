@@ -1,29 +1,23 @@
 use std::convert::TryInto;
 
 use crate::models::{ComicId, ImageType};
-use crate::util::{Environment, NewsUpdater};
+use crate::util::NewsUpdater;
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Datelike, Duration, NaiveTime, TimeZone, Timelike, Utc, Weekday};
-use chrono_tz::Tz;
 use const_format::concatcp;
 use database::models::Comic as DatabaseComic;
 use database::DbPool;
-use ego_tree::NodeRef;
 use futures::{select, FutureExt};
 use ilyvion_util::string_extensions::StrExtensions;
 use log::info;
-use once_cell::sync::Lazy;
 use reqwest::Client;
-use scraper::{ElementRef, Html, Node, Selector};
+use scraper::{Html, Selector};
 use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration as StdDuration};
 
 const FRONT_PAGE_URL: &str = "https://questionablecontent.net/";
 const ARCHIVE_URL: &str = concatcp!(FRONT_PAGE_URL, "archive.php");
 const STARTUP_DELAY_DURATION: StdDuration = StdDuration::from_secs(15);
-
-static TIME_ZONE: Lazy<Tz> =
-    Lazy::new(|| Environment::qc_timezone().parse().expect("valid timezone"));
 
 pub struct ComicUpdater {
     client: Client,
@@ -99,7 +93,7 @@ impl ComicUpdater {
             anyhow::bail!("Could not fetch front page, got empty response");
         }
 
-        let (comic_id, image_type, comic_date) = {
+        let (comic_id, image_type) = {
             let document = Html::parse_document(&qc_front_page);
 
             let comic_image_selector =
@@ -114,89 +108,45 @@ impl ComicUpdater {
                 anyhow!("Could not fetch front page, couldn't get comic image element source")
             })?;
 
-            let (comic_image, comic_type): (u16, i32) = {
-                let (comic_image, comic_type) = comic_image_url
-                    .rsplit_once('/')
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "Could not fetch front page, couldn't find '/' in comic image source"
-                        )
-                    })?
-                    .1
-                    .split_once('.')
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "Could not fetch front page, couldn't find '.' in comic image source"
-                        )
-                    })?;
-
-                let comic_image_type = match comic_type.to_ascii_lowercase_cow().as_ref() {
-                    "png" => 1,
-                    "gif" => 2,
-                    "jpg" | "jpeg" => 3,
-                    _ => 0,
-                };
-
-                let comic_image = comic_image.parse().context(
-                    "Could not fetch front page, couldn't parse comic id from comic image source",
-                )?;
-
-                (comic_image, comic_image_type)
-            };
-
-            let news_selector = Selector::parse("#newspost").expect("valid selector");
-            let news_element = document.select(&news_selector).next().ok_or_else(|| {
-                anyhow::anyhow!("Could not fetch front page, couldn't find news element")
-            })?;
-
-            let mut news_node = NodeRef::clone(&news_element);
-            let news_previous_sibling = ElementRef::wrap(
-                loop {
-                    let ps = news_node.prev_sibling();
-                    if let Some(prev_news_node) = ps {
-                        if let Node::Element(_) = prev_news_node.value() {
-                            break Some(prev_news_node);
-                        }
-                        news_node = prev_news_node;
-                    } else {
-                        break None;
-                    }
-                }
+            let (comic_image, comic_type) = comic_image_url
+                .rsplit_once('/')
                 .ok_or_else(|| {
                     anyhow::anyhow!(
-                        "Could not fetch front page, couldn't get news element previous sibling"
+                        "Could not fetch front page, couldn't find '/' in comic image source"
                     )
-                })?,
-            )
-            .expect("previous news sibling");
-
-            let date_selector = Selector::parse("b").expect("valid selector");
-            let date = news_previous_sibling
-                .select(&date_selector)
-                .next()
+                })?
+                .1
+                .split_once('.')
                 .ok_or_else(|| {
-                    anyhow::anyhow!("Could not fetch front page, couldn't find date element")
+                    anyhow::anyhow!(
+                        "Could not fetch front page, couldn't find '.' in comic image source"
+                    )
                 })?;
 
-            // "July 6, 2021 9:11pm"
-            let comic_date = TIME_ZONE
-                .datetime_from_str(&date.inner_html(), "%B %e, %Y %l:%M%P")
-                .context("Could not fetch front page, couldn't parse date")?
-                .with_timezone(&Utc);
+            let comic_image_type = match comic_type.to_ascii_lowercase_cow().as_ref() {
+                "png" => 1,
+                "gif" => 2,
+                "jpg" | "jpeg" => 3,
+                _ => 0,
+            };
 
-            (comic_image, comic_type, comic_date)
+            let comic_image = comic_image.parse().context(
+                "Could not fetch front page, couldn't parse comic id from comic image source",
+            )?;
+
+            (comic_image, comic_image_type)
         };
 
         info!(
-            "Comic on front page is #{} ({:?}), uploaded at {}",
+            "Comic on front page is #{} ({:?}), uploaded at approximately {}",
             comic_id,
             ImageType::from(image_type),
-            comic_date
+            Utc::now(),
         );
 
         let mut transaction = db_pool.begin().await?;
 
-        let (needs_title, needs_image_type, needs_date) =
+        let (needs_title, needs_image_type, current_comic_date) =
             DatabaseComic::needs_updating_by_id(&mut *transaction, comic_id).await?;
 
         info!(
@@ -246,6 +196,8 @@ impl ComicUpdater {
             None
         };
 
+        let comic_date = current_comic_date.map_or_else(Utc::now, |d| Utc.from_utc_datetime(&d));
+
         if let Some(title) = new_title {
             info!(
                 "Setting comic #{}'s title to '{}' and image type to '{:?}'",
@@ -276,9 +228,14 @@ impl ComicUpdater {
                 comic_date.naive_utc(),
             )
             .await?;
-        } else if needs_date {
-            DatabaseComic::update_publish_date_by_id(&mut *transaction, comic_id, comic_date, true)
-                .await?;
+        } else if current_comic_date.is_none() {
+            DatabaseComic::update_publish_date_by_id(
+                &mut *transaction,
+                comic_id,
+                comic_date,
+                false,
+            )
+            .await?;
         }
 
         info!("Saving any changes to the database.");
@@ -303,17 +260,7 @@ fn time_until_next_update(now: DateTime<Utc>) -> Duration {
             }
         }
         _ => {
-            if hour < 3 {
-                NaiveTime::from_hms(hour + 1, 0, 0) - time
-            } else if hour < 6 {
-                NaiveTime::from_hms(6, 0, 0) - time
-            } else if hour < 12 {
-                NaiveTime::from_hms(12, 0, 0) - time
-            } else if hour < 18 {
-                NaiveTime::from_hms(18, 0, 0) - time
-            } else if hour < 21 {
-                NaiveTime::from_hms(21, 0, 0) - time
-            } else if hour < 23 {
+            if hour < 23 {
                 NaiveTime::from_hms(hour + 1, 0, 0) - time
             } else {
                 NaiveTime::from_hms(23, 59, 59) - time + Duration::seconds(1)

@@ -178,10 +178,10 @@ impl NewsUpdater {
         }
 
         let document = Html::parse_document(&qc_page);
-        let news_selector = Selector::parse("#news").expect("valid selector");
+        let news_selector = Selector::parse("#news,#newspost").expect("valid selector");
         let news = document.select(&news_selector).next().ok_or_else(|| {
             anyhow::anyhow!(
-                "Could not fetch news for #{}, couldn't find #news element",
+                "Could not fetch news for #{}, couldn't find #news or #newspost element",
                 comic_id
             )
         })?;

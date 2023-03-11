@@ -763,7 +763,7 @@ impl Comic {
     pub async fn needs_updating_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
-    ) -> sqlx::Result<(bool, bool, bool)>
+    ) -> sqlx::Result<(bool, bool, Option<NaiveDateTime>)>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -785,10 +785,10 @@ impl Comic {
             Ok((
                 needs.title.is_empty(),
                 needs.image_type == 0,
-                needs.publish_date.is_none(),
+                needs.publish_date,
             ))
         } else {
-            Ok((true, true, true))
+            Ok((true, true, None))
         }
     }
 
@@ -840,7 +840,7 @@ impl Comic {
                 SET
                     `image_type` = ?,
                     `publish_date` = ?,
-                    `is_accurate_publish_date` = 1
+                    `is_accurate_publish_date` = 0
                 WHERE `id` = ?
             "#,
             image_type,
