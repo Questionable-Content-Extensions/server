@@ -142,7 +142,6 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|i| i.map(|i| i as u16))
     }
 
     pub async fn next_id<'e, 'c: 'e, E>(
@@ -171,7 +170,6 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|i| i.map(|i| i as u16))
     }
 
     pub async fn publish_date_by_id<'e, 'c: 'e, E>(
@@ -398,11 +396,7 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|ofl| {
-            ofl.map_or((None, None), |fl| {
-                (fl.first.map(|i| i as u16), fl.last.map(|i| i as u16))
-            })
-        })
+        .map(|ofl| ofl.map_or((None, None), |fl| (fl.first, fl.last)))
     }
 
     pub async fn previous_missing_tagline_by_id<'e, 'c: 'e, E>(
@@ -427,7 +421,6 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|i| i.map(|i| i as u16))
     }
 
     pub async fn next_missing_tagline_by_id<'e, 'c: 'e, E>(
@@ -452,7 +445,6 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|i| i.map(|i| i as u16))
     }
 
     // ---
@@ -476,11 +468,7 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|ofl| {
-            ofl.map_or((None, None), |fl| {
-                (fl.first.map(|i| i as u16), fl.last.map(|i| i as u16))
-            })
-        })
+        .map(|ofl| ofl.map_or((None, None), |fl| (fl.first, fl.last)))
     }
 
     pub async fn previous_missing_title_by_id<'e, 'c: 'e, E>(
@@ -504,7 +492,6 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|i| i.map(|i| i as u16))
     }
 
     pub async fn next_missing_title_by_id<'e, 'c: 'e, E>(
@@ -528,7 +515,6 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|i| i.map(|i| i as u16))
     }
 
     // ---
@@ -567,7 +553,6 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|i| i.map(|i| i as u16))
     }
 
     pub async fn previous_missing_items_by_id_and_type<'e, 'c: 'e, E>(
@@ -607,7 +592,6 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|i| i.map(|i| i as u16))
     }
 
     pub async fn next_missing_items_by_id_and_type<'e, 'c: 'e, E>(
@@ -647,7 +631,6 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|i| i.map(|i| i as u16))
     }
 
     pub async fn last_missing_items_by_type<'e, 'c: 'e, E>(
@@ -684,7 +667,6 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|i| i.map(|i| i as u16))
     }
 
     pub async fn tagline_by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<Option<String>>

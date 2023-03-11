@@ -116,7 +116,7 @@ pub(crate) async fn get_latest_script_file(file: web::Path<String>) -> Result<Ht
         // Cache wasn't expired, but we still had to fetch the asset
         // which means it was a cache miss, so add the missing asset
         // to the existing cache
-        let mut new_cache = (&**cache).clone();
+        let mut new_cache = (**cache).clone();
         if script_file == ScriptFile::User {
             new_cache.user = Some(asset.clone());
         } else {

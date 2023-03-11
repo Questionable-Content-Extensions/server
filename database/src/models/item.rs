@@ -34,7 +34,7 @@ impl Item {
             comic_id,
         )
         .fetch(executor)
-        .map_ok(|i| (i.id as u16, i))
+        .map_ok(|i| (i.id, i))
         .try_collect()
         .await
     }
@@ -66,7 +66,7 @@ impl Item {
             "#,
         )
         .fetch(executor)
-        .map_ok(|i| (i.id as u16, i))
+        .map_ok(|i| (i.id, i))
         .try_collect()
         .await
     }
@@ -200,7 +200,7 @@ impl Item {
         .fetch(executor)
         .try_filter_map(|pn| async move {
             if let Some(comic) = pn.comic {
-                Ok(Some((pn.id as u16, comic as u16)))
+                Ok(Some((pn.id, comic)))
             } else {
                 Ok(None)
             }
@@ -241,7 +241,7 @@ impl Item {
         .fetch(executor)
         .try_filter_map(|pn| async move {
             if let Some(comic) = pn.comic {
-                Ok(Some((pn.id as u16, comic as u16)))
+                Ok(Some((pn.id, comic)))
             } else {
                 Ok(None)
             }
@@ -326,7 +326,7 @@ impl Item {
         .fetch(executor)
         .try_filter_map(|pn| async move {
             if let Some(comic) = pn.comic {
-                Ok(Some((pn.id as u16, comic as u16)))
+                Ok(Some((pn.id, comic)))
             } else {
                 Ok(None)
             }
@@ -371,7 +371,7 @@ impl Item {
         .fetch(executor)
         .try_filter_map(|pn| async move {
             if let Some(comic) = pn.comic {
-                Ok(Some((pn.id as u16, comic as u16)))
+                Ok(Some((pn.id, comic)))
             } else {
                 Ok(None)
             }

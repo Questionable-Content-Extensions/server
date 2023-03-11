@@ -84,8 +84,8 @@ impl<A, B> Either<A, B> {
     fn project(self: Pin<&mut Self>) -> Either<Pin<&mut A>, Pin<&mut B>> {
         unsafe {
             match self.get_unchecked_mut() {
-                Either::Left(a) => Either::Left(Pin::new_unchecked(a)),
-                Either::Right(b) => Either::Right(Pin::new_unchecked(b)),
+                Self::Left(a) => Either::Left(Pin::new_unchecked(a)),
+                Self::Right(b) => Either::Right(Pin::new_unchecked(b)),
             }
         }
     }
