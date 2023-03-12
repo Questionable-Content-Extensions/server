@@ -23,6 +23,7 @@
         "start": "react-scripts start",
         "build": "react-scripts build",
         "docker:build": "docker build -t qcext-server .",
+        "docker:save": "docker save -o ./qcext-server.tar qcext-server",
         "prepare": "husky install"
     },
     "proxy": {
