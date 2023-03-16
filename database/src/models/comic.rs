@@ -789,7 +789,7 @@ impl Comic {
                 INSERT INTO `Comic`
                     (`id`, `title`, `image_type`, `publish_date`, `is_accurate_publish_date`)
                 VALUES
-                    (?, ?, ?, ?, 1)
+                    (?, ?, ?, ?, 0)
                 ON DUPLICATE KEY UPDATE
                     `title` = ?,
                     `image_type` = ?,

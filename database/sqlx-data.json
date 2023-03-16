@@ -449,6 +449,16 @@
     },
     "query": "\n                UPDATE `Comic`\n                SET `tagline` = ?\n                WHERE\n                    `id` = ?\n            "
   },
+  "171f43ee696d68b6e89cbb9aabb87e296e0d3679dc1e64bedec90b05e8cd3ed7": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 7
+      }
+    },
+    "query": "\n                INSERT INTO `Comic`\n                    (`id`, `title`, `image_type`, `publish_date`, `is_accurate_publish_date`)\n                VALUES\n                    (?, ?, ?, ?, 0)\n                ON DUPLICATE KEY UPDATE\n                    `title` = ?,\n                    `image_type` = ?,\n                    `publish_date` = ?\n            "
+  },
   "1b5cd972500fdfed5f41fa9d48c232d45fc1043089147fb87513aef1006a3732": {
     "describe": {
       "columns": [],
@@ -2167,16 +2177,6 @@
       }
     },
     "query": "\n                SELECT `publish_date` FROM `Comic` WHERE `id` = ?\n            "
-  },
-  "fb720226ca224bbdeb08d470a574ce5dfadb85fda47371cc8d80108f52acb50f": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 7
-      }
-    },
-    "query": "\n                INSERT INTO `Comic`\n                    (`id`, `title`, `image_type`, `publish_date`, `is_accurate_publish_date`)\n                VALUES\n                    (?, ?, ?, ?, 1)\n                ON DUPLICATE KEY UPDATE\n                    `title` = ?,\n                    `image_type` = ?,\n                    `publish_date` = ?\n            "
   },
   "fb72ef2f19c5d5aa356ffe4a00ab1b1a7641d6d1b4a36df6cb3952de6975a9a5": {
     "describe": {
