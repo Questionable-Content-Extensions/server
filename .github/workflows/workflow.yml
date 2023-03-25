@@ -1,11 +1,9 @@
 name: Build and Deploy
 
-on:
-    push:
-        branches: [main]
+on: [push, pull_request]
 
 jobs:
-    build-and-deploy:
+    build:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3
@@ -14,10 +12,32 @@ jobs:
               run: docker build -t qcext-server .
 
             - name: Save Docker image
+              if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
               run: docker save -o qcext-server.tar qcext-server
 
             - name: Compress Docker image
+              if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
               run: bzip2 -z qcext-server.tar
+
+            - name: Upload artifact
+              if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+              uses: actions/upload-artifact@v3
+              with:
+                  name: qcext-server-tar-bz2
+                  path: |
+                      qcext-server.tar.bz2
+                      docker-compose.yml
+                      deploy.sh
+
+    deploy:
+        runs-on: ubuntu-latest
+        needs: build
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        steps:
+            - name: Download artifact
+              uses: actions/download-artifact@v3
+              with:
+                  name: qcext-server-tar-bz2
 
             - name: Deploy
               run: docker-compose run deploy
@@ -25,3 +45,14 @@ jobs:
                   DEPLOY_KEY: ${{ secrets.deploy_key }}
                   DEPLOY_TARGET: ${{ secrets.deploy_target }}
                   DEPLOY_USER: ${{ secrets.deploy_user }}
+
+    cleanup_job:
+        needs: [deploy]
+        runs-on: ubuntu-latest
+        steps:
+            - name: Delete artifacts
+              env:
+                  FOR_WEBHOOKS_SECRET: ${{ secrets.FOR_WEBHOOKS_SECRET }}
+              run: |
+                  echo "::add-mask::$FOR_WEBHOOKS_SECRET"
+                  curl --verbose --fail --show-error --location --request POST "https://api.github.com/repos/$GITHUB_REPOSITORY/dispatches" --header "Authorization: token $FOR_WEBHOOKS_SECRET" --header 'Content-Type: application/json' --header 'Accept: application/vnd.github.everest-preview+json' --data-raw "{ \"event_type\": \"delete_all_artifacts\", \"client_payload\": {\"parent_runid\": \"$GITHUB_RUN_ID\", \"parent_repo\": \"$GITHUB_REPOSITORY\"} }"
