@@ -9,6 +9,9 @@ WORKDIR /usr/src/qcext-server
 # Run SQLX in offline mode
 ENV SQLX_OFFLINE=true
 
+# Use spare registry protocol
+ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+
 # Build the dependencies in a separate step to avoid rebuilding all of them
 # every time the source code changes. This takes advantage of Docker's layer
 # caching, and it works by doing a build using the Cargo.{toml,lock} files with
