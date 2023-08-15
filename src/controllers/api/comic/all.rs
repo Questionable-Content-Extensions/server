@@ -31,7 +31,7 @@ pub(crate) async fn excluded(
     let (is_guest_comic, is_non_canon) = match query.exclusion {
         None => {
             return Err(error::ErrorBadRequest(
-                "exclude parameter must be set to either `guest` or `non-canon`",
+                "exclusion parameter must be set to either `guest` or `non-canon`",
             ))
         }
         Some(Exclusion::Guest) => (Some(true), None),

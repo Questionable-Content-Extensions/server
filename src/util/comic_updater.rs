@@ -41,8 +41,8 @@ impl ComicUpdater {
         // unresolved startup panic.
         sleep(STARTUP_DELAY_DURATION).await;
 
+        let now = Utc::now();
         loop {
-            let now = Utc::now();
             info!(
                 "Fetching data for the comic on {}.",
                 now.format("%A, %d %B %Y")
@@ -150,8 +150,8 @@ impl ComicUpdater {
             DatabaseComic::needs_updating_by_id(&mut *transaction, comic_id).await?;
 
         info!(
-            "Comic #{} needs title: {}, needs image type: {}",
-            comic_id, needs_title, needs_image_type
+            "Comic #{} needs title: {}, needs image type: {}, current comic date: {:?}",
+            comic_id, needs_title, needs_image_type, current_comic_date
         );
 
         let new_title = if needs_title {
@@ -229,6 +229,11 @@ impl ComicUpdater {
             )
             .await?;
         } else if current_comic_date.is_none() {
+            info!(
+                "Setting comic #{}'s publish date to '{:?}'",
+                comic_id, comic_date
+            );
+
             DatabaseComic::update_publish_date_by_id(
                 &mut *transaction,
                 comic_id,
