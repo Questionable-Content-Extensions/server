@@ -46,8 +46,7 @@ impl From<DatabaseComic> for ComicList {
 #[serde(rename_all = "camelCase")]
 pub struct Comic {
     pub comic: ComicId,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub editor_data: Option<EditorData>,
+    pub editor_data: EditorData,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub all_items: Vec<ItemNavigationData>,
     #[serde(flatten)]
@@ -59,7 +58,7 @@ pub struct Comic {
 #[allow(variant_size_differences)]
 pub enum ComicData {
     Missing(MissingComic),
-    PresentComic(PresentComic),
+    Present(PresentComic),
 }
 
 #[derive(Debug, Serialize)]
@@ -163,9 +162,23 @@ impl From<ItemImageMetadata> for ItemImageList {
     }
 }
 
+#[derive(Debug, Default, Serialize)]
+pub struct MissingEditorData {
+    pub present: False,
+}
+
 #[derive(Debug, Serialize)]
-pub struct EditorData {
+pub struct PresentEditorData {
+    pub present: True,
     pub missing: MissingNavigationData,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+#[allow(variant_size_differences)]
+pub enum EditorData {
+    Missing(MissingEditorData),
+    Present(PresentEditorData),
 }
 
 #[derive(Debug, Serialize)]

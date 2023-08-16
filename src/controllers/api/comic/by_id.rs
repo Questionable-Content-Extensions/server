@@ -3,8 +3,8 @@ use crate::controllers::api::comic::navigation_data::{
     fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
 };
 use crate::models::{
-    Comic, ComicData, ComicId, Exclusion, False, Inclusion, ItemColor, ItemType, MissingComic,
-    PresentComic, True,
+    Comic, ComicData, ComicId, EditorData, Exclusion, False, Inclusion, ItemColor, ItemType,
+    MissingComic, MissingEditorData, PresentComic, True,
 };
 use crate::util::NewsUpdater;
 use actix_web::{error, web, HttpResponse, Result};
@@ -71,9 +71,9 @@ pub(crate) async fn by_id(
     };
 
     let editor_data = if auth.has_permission(token_permissions::HAS_VALID_TOKEN) {
-        Some(fetch_editor_data_for_comic(&mut conn, comic_id).await?)
+        EditorData::Present(fetch_editor_data_for_comic(&mut conn, comic_id).await?)
     } else {
-        None
+        EditorData::Missing(MissingEditorData::default())
     };
 
     let mut items =
@@ -134,7 +134,7 @@ pub(crate) async fn by_id(
             comic: comic_id,
             editor_data,
             all_items: all_navigation_items,
-            data: ComicData::PresentComic(PresentComic {
+            data: ComicData::Present(PresentComic {
                 has_data: True::default(),
                 image_type: Some(comic.image_type.into()),
                 publish_date: comic.publish_date.map(|nd| Utc.from_utc_datetime(&nd)),

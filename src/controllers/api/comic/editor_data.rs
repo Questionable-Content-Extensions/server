@@ -1,4 +1,6 @@
-use crate::models::{ComicId, EditorData, ItemType, MissingNavigationData, NavigationData};
+use crate::models::{
+    ComicId, ItemType, MissingNavigationData, NavigationData, PresentEditorData, True,
+};
 use actix_web::{error, Result};
 use database::models::Comic as DatabaseComic;
 use database::DbPoolConnection;
@@ -7,7 +9,7 @@ use std::convert::TryInto;
 pub async fn fetch_editor_data_for_comic(
     conn: &mut DbPoolConnection,
     comic_id: ComicId,
-) -> Result<EditorData> {
+) -> Result<PresentEditorData> {
     let cast = fetch_navigation_data_for_item(&mut *conn, comic_id, ItemType::Cast).await?;
     let location = fetch_navigation_data_for_item(&mut *conn, comic_id, ItemType::Location).await?;
     let storyline =
@@ -15,7 +17,8 @@ pub async fn fetch_editor_data_for_comic(
     let title = fetch_navigation_data_for_title(&mut *conn, comic_id).await?;
     let tagline = fetch_navigation_data_for_tagline(&mut *conn, comic_id).await?;
 
-    Ok(EditorData {
+    Ok(PresentEditorData {
+        present: True::default(),
         missing: MissingNavigationData {
             cast,
             location,
