@@ -1,4 +1,4 @@
-use crate::models::{ComicList, Exclusion};
+use crate::models::v1::{ComicList, Exclusion};
 use actix_web::{error, web, HttpResponse, Result};
 use database::models::Comic as DatabaseComic;
 use database::DbPool;

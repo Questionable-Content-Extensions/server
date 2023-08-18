@@ -1,5 +1,7 @@
-use crate::controllers::api::comic::navigation_data::fetch_all_item_navigation_data;
-use crate::models::{ComicId, ItemColor, ItemId, ItemList, ItemType, UnhydratedItemNavigationData};
+use crate::controllers::v1::api::comic::navigation_data::fetch_all_item_navigation_data;
+use crate::models::v1::{
+    ComicId, ItemColor, ItemId, ItemList, ItemType, UnhydratedItemNavigationData,
+};
 use actix_web::{error, web, HttpResponse, Result};
 use database::models::Item as DatabaseItem;
 use database::DbPool;

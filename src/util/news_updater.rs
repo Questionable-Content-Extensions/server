@@ -1,4 +1,4 @@
-use crate::models::ComicId;
+use crate::models::v1::ComicId;
 use anyhow::Result;
 use chrono::Utc;
 use database::models::{Comic, News};

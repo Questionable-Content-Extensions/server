@@ -1,4 +1,4 @@
-use crate::models::{ComicId, NavigationData, UnhydratedItemNavigationData};
+use crate::models::v1::{ComicId, NavigationData, UnhydratedItemNavigationData};
 use actix_web::{error, Result};
 use database::models::Item as DatabaseItem;
 use database::DbPoolConnection;

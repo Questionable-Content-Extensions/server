@@ -1,4 +1,4 @@
-use crate::models::{Item, ItemColor, ItemId, ItemImageList, ItemType, RelatedItem};
+use crate::models::v1::{Item, ItemColor, ItemId, ItemImageList, ItemType, RelatedItem};
 use actix_web::{error, web, HttpResponse, Result};
 use anyhow::anyhow;
 use database::models::{

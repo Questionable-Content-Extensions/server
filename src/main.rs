@@ -59,7 +59,7 @@
 #![warn(clippy::too_many_lines)]
 // </editor-fold>
 
-use crate::models::Token;
+use crate::models::v1::Token;
 use crate::util::{ComicUpdater, Either, NewsUpdater};
 use actix_files::Files;
 use actix_web::dev::ServiceRequest;
@@ -120,7 +120,9 @@ async fn main() -> Result<()> {
                 ))
             };
 
-            a.service(web::scope("/api").configure(controllers::api::configure))
+            // Because of legacy reasons, the old API needs to be directly at the root.
+            // Any newer APIs should be mounted *inside* v1's `configure`
+            a.service(web::scope("/api").configure(controllers::v1::api::configure))
                 .service(web::scope("/releases").configure(controllers::releases::configure))
                 .service(Files::new("/", "./build/").index_file("index.html"))
         })

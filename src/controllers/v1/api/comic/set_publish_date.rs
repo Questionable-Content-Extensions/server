@@ -1,4 +1,4 @@
-use crate::models::{ComicId, ComicIdInvalidity, Token};
+use crate::models::v1::{ComicId, ComicIdInvalidity, Token};
 use crate::util::{ensure_is_authorized, ensure_is_valid, AddMonths};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;

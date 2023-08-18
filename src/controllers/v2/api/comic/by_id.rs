@@ -1,10 +1,11 @@
-use crate::controllers::api::comic::editor_data::fetch_editor_data_for_comic;
-use crate::controllers::api::comic::navigation_data::{
+use crate::controllers::v1::api::comic::editor_data::fetch_editor_data_for_comic;
+use crate::controllers::v1::api::comic::navigation_data::{
     fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
 };
-use crate::models::{
+use crate::models::v2::{
     Comic, ComicData, ComicId, EditorData, Exclusion, False, Inclusion, ItemColor,
     ItemNavigationData, ItemType, MissingComic, MissingEditorData, PresentComic, True,
+    UnhydratedItemNavigationData,
 };
 use crate::util::NewsUpdater;
 use actix_web::{error, web, HttpResponse, Result};
@@ -71,7 +72,11 @@ pub(crate) async fn by_id(
     };
 
     let editor_data = if auth.has_permission(token_permissions::HAS_VALID_TOKEN) {
-        EditorData::Present(fetch_editor_data_for_comic(&mut conn, comic_id).await?)
+        EditorData::Present(
+            fetch_editor_data_for_comic(&mut conn, comic_id)
+                .await?
+                .into(),
+        )
     } else {
         EditorData::Missing(MissingEditorData::default())
     };
@@ -178,7 +183,7 @@ pub(crate) async fn by_id(
 }
 
 fn hydrate_navigation_item_with_item_data(
-    navigation_items: Vec<crate::models::UnhydratedItemNavigationData>,
+    navigation_items: Vec<UnhydratedItemNavigationData>,
     items: &mut BTreeMap<u16, DatabaseItem>,
 ) -> anyhow::Result<Vec<ItemNavigationData>> {
     navigation_items

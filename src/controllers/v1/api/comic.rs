@@ -1,16 +1,16 @@
 use actix_web::web;
 
-mod editor_data;
 pub(crate) mod navigation_data;
 
-mod add_item;
-mod all;
-mod by_id;
-mod remove_item;
-mod set_flags;
-mod set_publish_date;
-mod set_tagline;
-mod set_title;
+pub(in crate::controllers) mod add_item;
+pub(in crate::controllers) mod all;
+pub(in crate::controllers) mod by_id;
+pub(in crate::controllers) mod editor_data;
+pub(in crate::controllers) mod remove_item;
+pub(in crate::controllers) mod set_flags;
+pub(in crate::controllers) mod set_publish_date;
+pub(in crate::controllers) mod set_tagline;
+pub(in crate::controllers) mod set_title;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").route(web::get().to(all::all)))

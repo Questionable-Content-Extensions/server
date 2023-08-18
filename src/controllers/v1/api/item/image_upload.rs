@@ -1,4 +1,4 @@
-use crate::models::Token;
+use crate::models::v1::Token;
 use crate::util::ensure_is_authorized;
 use actix_multipart::Multipart;
 use actix_web::{error, web, HttpResponse, Result};

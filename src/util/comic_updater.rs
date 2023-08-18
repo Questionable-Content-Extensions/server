@@ -1,6 +1,6 @@
 use std::convert::TryInto;
 
-use crate::models::{ComicId, ImageType};
+use crate::models::v1::{ComicId, ImageType};
 use crate::util::NewsUpdater;
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Datelike, Duration, NaiveTime, TimeZone, Timelike, Utc, Weekday};

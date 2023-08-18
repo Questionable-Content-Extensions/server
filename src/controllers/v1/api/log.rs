@@ -1,4 +1,4 @@
-use crate::models::{LogEntry, Token};
+use crate::models::v1::{LogEntry, Token};
 use crate::util::ensure_is_authorized;
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
