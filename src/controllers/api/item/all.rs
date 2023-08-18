@@ -1,5 +1,5 @@
 use crate::controllers::api::comic::navigation_data::fetch_all_item_navigation_data;
-use crate::models::{ComicId, ItemColor, ItemId, ItemList, ItemNavigationData, ItemType};
+use crate::models::{ComicId, ItemColor, ItemId, ItemList, ItemType, UnhydratedItemNavigationData};
 use actix_web::{error, web, HttpResponse, Result};
 use database::models::Item as DatabaseItem;
 use database::DbPool;
@@ -22,7 +22,7 @@ pub(crate) async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             .await?
             .into_iter()
             .map(|i| (i.id, i))
-            .collect::<BTreeMap<ItemId, ItemNavigationData>>();
+            .collect::<BTreeMap<ItemId, UnhydratedItemNavigationData>>();
 
     let mut items = vec![];
     for item in all_items {

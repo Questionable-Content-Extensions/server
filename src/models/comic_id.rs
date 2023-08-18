@@ -1,6 +1,7 @@
 use parse_display::Display;
-use semval::{context::Context as ValidationContext,  Validate};
+use semval::{context::Context as ValidationContext, Validate};
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 #[derive(
     Copy,
@@ -15,8 +16,10 @@ use serde::{Deserialize, Serialize};
     PartialEq,
     PartialOrd,
     Serialize,
+    TS,
 )]
 #[serde(transparent)]
+#[ts(export)]
 pub struct ComicId(u16);
 
 impl ComicId {

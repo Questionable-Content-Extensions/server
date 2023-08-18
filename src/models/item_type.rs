@@ -2,9 +2,11 @@ use anyhow::bail;
 use database::models::ItemType as DatabaseItemType;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use ts_rs::TS;
 
-#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub enum ItemType {
     Cast,
     Location,

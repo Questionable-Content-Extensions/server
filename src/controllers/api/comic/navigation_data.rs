@@ -1,4 +1,4 @@
-use crate::models::{ComicId, ItemNavigationData, NavigationData};
+use crate::models::{ComicId, NavigationData, UnhydratedItemNavigationData};
 use actix_web::{error, Result};
 use database::models::Item as DatabaseItem;
 use database::DbPoolConnection;
@@ -10,7 +10,7 @@ pub async fn fetch_all_item_navigation_data(
     comic_id: ComicId,
     include_guest_comics: Option<bool>,
     include_non_canon_comics: Option<bool>,
-) -> Result<Vec<ItemNavigationData>> {
+) -> Result<Vec<UnhydratedItemNavigationData>> {
     let first_last_counts = DatabaseItem::first_and_last_apperances_and_count(
         &mut *conn,
         include_guest_comics,
@@ -39,7 +39,7 @@ pub async fn fetch_all_item_navigation_data(
 
     Ok(first_last_counts
         .into_iter()
-        .map(|flc| ItemNavigationData {
+        .map(|flc| UnhydratedItemNavigationData {
             id: flc.id.into(),
             navigation_data: NavigationData {
                 first: flc
@@ -66,10 +66,6 @@ pub async fn fetch_all_item_navigation_data(
                     .expect("database has valid comicIds"),
             },
             count: flc.count,
-            short_name: None,
-            name: None,
-            r#type: None,
-            color: None,
         })
         .collect())
 }
@@ -80,7 +76,7 @@ pub async fn fetch_comic_item_navigation_data(
     comic_id: ComicId,
     include_guest_comics: Option<bool>,
     include_non_canon_comics: Option<bool>,
-) -> Result<Vec<ItemNavigationData>> {
+) -> Result<Vec<UnhydratedItemNavigationData>> {
     let first_last_counts =
         DatabaseItem::first_and_last_apperances_and_count_of_items_in_comic_by_comic_id(
             &mut *conn,
@@ -111,7 +107,7 @@ pub async fn fetch_comic_item_navigation_data(
 
     Ok(first_last_counts
         .into_iter()
-        .map(|flc| ItemNavigationData {
+        .map(|flc| UnhydratedItemNavigationData {
             id: flc.id.into(),
             navigation_data: NavigationData {
                 first: flc
@@ -138,10 +134,6 @@ pub async fn fetch_comic_item_navigation_data(
                     .expect("database has valid comicIds"),
             },
             count: flc.count,
-            short_name: None,
-            name: None,
-            r#type: None,
-            color: None,
         })
         .collect())
 }

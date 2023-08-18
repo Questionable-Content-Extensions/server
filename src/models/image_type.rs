@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
-#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 #[repr(i32)]
 pub enum ImageType {
     Unknown = 0,

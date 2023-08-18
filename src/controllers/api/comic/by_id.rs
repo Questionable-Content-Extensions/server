@@ -3,8 +3,8 @@ use crate::controllers::api::comic::navigation_data::{
     fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
 };
 use crate::models::{
-    Comic, ComicData, ComicId, EditorData, Exclusion, False, Inclusion, ItemColor, ItemType,
-    MissingComic, MissingEditorData, PresentComic, True,
+    Comic, ComicData, ComicId, EditorData, Exclusion, False, Inclusion, ItemColor,
+    ItemNavigationData, ItemType, MissingComic, MissingEditorData, PresentComic, True,
 };
 use crate::util::NewsUpdater;
 use actix_web::{error, web, HttpResponse, Result};
@@ -108,14 +108,16 @@ pub(crate) async fn by_id(
                 }
             }
 
-            transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut all_items)
-                .map_err(error::ErrorInternalServerError)?;
-            transfer_item_data_to_navigation_item(&mut all_navigation_items, &mut all_items)
-                .map_err(error::ErrorInternalServerError)?;
+            let navigation_items_in_comic =
+                hydrate_navigation_item_with_item_data(navigation_items_in_comic, &mut all_items)
+                    .map_err(error::ErrorInternalServerError)?;
+            let all_navigation_items =
+                hydrate_navigation_item_with_item_data(all_navigation_items, &mut all_items)
+                    .map_err(error::ErrorInternalServerError)?;
 
             (navigation_items_in_comic, all_navigation_items)
         } else {
-            let mut navigation_items_in_comic = fetch_comic_item_navigation_data(
+            let navigation_items_in_comic = fetch_comic_item_navigation_data(
                 &mut conn,
                 comic_id,
                 include_guest_comics,
@@ -123,8 +125,9 @@ pub(crate) async fn by_id(
             )
             .await?;
 
-            transfer_item_data_to_navigation_item(&mut navigation_items_in_comic, &mut items)
-                .map_err(error::ErrorInternalServerError)?;
+            let navigation_items_in_comic =
+                hydrate_navigation_item_with_item_data(navigation_items_in_comic, &mut items)
+                    .map_err(error::ErrorInternalServerError)?;
 
             (navigation_items_in_comic, vec![])
         };
@@ -174,30 +177,34 @@ pub(crate) async fn by_id(
     Ok(HttpResponse::Ok().json(comic))
 }
 
-fn transfer_item_data_to_navigation_item(
-    navigation_items: &mut Vec<crate::models::ItemNavigationData>,
+fn hydrate_navigation_item_with_item_data(
+    navigation_items: Vec<crate::models::UnhydratedItemNavigationData>,
     items: &mut BTreeMap<u16, DatabaseItem>,
-) -> anyhow::Result<()> {
-    for navigation_item in navigation_items {
-        let DatabaseItem {
-            id: _,
-            short_name,
-            name,
-            r#type,
-            color_red,
-            color_green,
-            color_blue,
-        } = items
-            .remove(&navigation_item.id.into_inner())
-            .expect("item data for navigation item");
-        navigation_item.short_name = Some(short_name);
-        navigation_item.name = Some(name);
-        navigation_item.r#type = Some(ItemType::try_from(&*r#type)?);
+) -> anyhow::Result<Vec<ItemNavigationData>> {
+    navigation_items
+        .into_iter()
+        .map(|unhydrated| -> anyhow::Result<_> {
+            let DatabaseItem {
+                id: _,
+                short_name,
+                name,
+                r#type,
+                color_red,
+                color_green,
+                color_blue,
+            } = items
+                .remove(&unhydrated.id.into_inner())
+                .expect("item data for navigation item");
 
-        navigation_item.color = Some(ItemColor(color_red, color_green, color_blue));
-    }
-
-    Ok(())
+            Ok(ItemNavigationData::hydrate_from(
+                unhydrated,
+                name,
+                short_name,
+                ItemType::try_from(&*r#type)?,
+                ItemColor(color_red, color_green, color_blue),
+            ))
+        })
+        .collect::<Result<Vec<_>, _>>()
 }
 
 #[derive(Debug, Deserialize)]

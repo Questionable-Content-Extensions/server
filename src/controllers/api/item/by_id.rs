@@ -54,8 +54,8 @@ pub(crate) async fn by_id(
             .transpose()
             .expect("database has valid comicIds")
             .unwrap_or_default(),
-        appearances: item_occurrence.count,
-        total_comics,
+        appearances: i32::try_from(item_occurrence.count).unwrap(),
+        total_comics: i32::try_from(total_comics).unwrap(),
         presence: if total_comics == 0 {
             0.0
         } else {
@@ -141,7 +141,7 @@ async fn related_items(
                 name,
                 r#type: ItemType::try_from(&*r#type).expect("Item types in the database are valid"),
                 color: ItemColor(color_red, color_green, color_blue),
-                count,
+                count: i32::try_from(count).unwrap(),
             }
         },
     )
