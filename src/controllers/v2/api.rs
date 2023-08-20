@@ -1,8 +1,8 @@
 use actix_web::web;
 
-mod comic;
-mod item;
-mod log;
+pub(in crate::controllers) mod comic;
+pub(in crate::controllers) mod item;
+pub(in crate::controllers) mod log;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(web::scope("/comicdata").configure(comic::configure));

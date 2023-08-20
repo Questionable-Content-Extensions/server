@@ -11,6 +11,7 @@ use parse_display::Display;
 use semval::{context::Context as ValidationContext, Validate};
 use serde::Deserialize;
 use shared::token_permissions;
+use ts_rs::TS;
 
 pub(crate) async fn remove_item(
     pool: web::Data<DbPool>,
@@ -73,8 +74,9 @@ pub(crate) async fn remove_item(
     Ok(HttpResponse::Ok().body("Item removed from comic"))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub(crate) struct RemoveItemFromComicBody {
     token: Token,
     comic_id: ComicId,

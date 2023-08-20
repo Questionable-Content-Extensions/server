@@ -2730,8 +2730,7 @@ checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 [[package]]
 name = "ts-rs"
 version = "7.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1ff1f8c90369bc172200013ac17ae86e7b5def580687df4e6127883454ff2b0"
+source = "git+https://github.com/alexschrod/ts-rs?branch=flatten-untagged-hack#14031e4e3275d96ecf8d6705ad855093ef56fd98"
 dependencies = [
  "thiserror",
  "ts-rs-macros",
@@ -2740,8 +2739,7 @@ dependencies = [
 [[package]]
 name = "ts-rs-macros"
 version = "7.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6f41cc0aeb7a4a55730188e147d3795a7349b501f8334697fd37629b896cdc2"
+source = "git+https://github.com/alexschrod/ts-rs?branch=flatten-untagged-hack#14031e4e3275d96ecf8d6705ad855093ef56fd98"
 dependencies = [
  "Inflector",
  "proc-macro2",
