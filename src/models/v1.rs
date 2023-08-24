@@ -56,9 +56,8 @@ pub struct Comic {
     pub data: ComicData,
 }
 
-#[derive(Debug, Serialize, TS)]
+#[derive(Debug, Serialize)]
 #[serde(untagged)]
-#[ts(export)]
 #[allow(variant_size_differences)]
 pub enum ComicData {
     Missing(MissingComic),
@@ -72,13 +71,11 @@ pub struct MissingComic {
     pub has_data: False,
 }
 
-#[derive(Debug, Serialize, TS)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
 pub struct PresentComic {
     pub has_data: True,
     pub image_type: Option<ImageType>,
-    #[ts(type = "string | null")]
     pub publish_date: Option<DateTime<Utc>>,
     pub is_accurate_publish_date: bool,
     pub title: Option<String>,

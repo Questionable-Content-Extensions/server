@@ -1,6 +1,6 @@
 use actix_web::web;
 
-use crate::controllers::v2::api::comic::{remove_item, set_publish_date, set_tagline, set_title};
+use crate::controllers::v2::api::comic::remove_item;
 
 pub(crate) mod navigation_data;
 
@@ -9,6 +9,9 @@ pub(in crate::controllers) mod all;
 pub(in crate::controllers) mod by_id;
 pub(in crate::controllers) mod editor_data;
 pub(in crate::controllers) mod set_flags;
+pub(in crate::controllers) mod set_publish_date;
+pub(in crate::controllers) mod set_tagline;
+pub(in crate::controllers) mod set_title;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").route(web::get().to(all::all)))

@@ -147,7 +147,7 @@ pub(crate) async fn by_id(
                 image_type: Some(comic.image_type.into()),
                 publish_date: comic.publish_date.map(|nd| Utc.from_utc_datetime(&nd)),
                 is_accurate_publish_date: comic.is_accurate_publish_date != 0,
-                title: Some(comic.title),
+                title: comic.title,
                 tagline: comic.tagline,
                 is_guest_comic: comic.is_guest_comic != 0,
                 is_non_canon: comic.is_non_canon != 0,

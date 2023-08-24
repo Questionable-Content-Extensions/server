@@ -8,7 +8,6 @@ use parse_display::Display;
 use semval::{context::Context as ValidationContext, Validate};
 use serde::Deserialize;
 use shared::token_permissions;
-use ts_rs::TS;
 
 pub(crate) async fn set_tagline(
     pool: web::Data<DbPool>,
@@ -77,9 +76,8 @@ pub(crate) async fn set_tagline(
     Ok(HttpResponse::Ok().body("Tagline set or updated for comic"))
 }
 
-#[derive(Debug, Deserialize, TS)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
 pub(crate) struct SetTaglineBody {
     token: Token,
     comic_id: ComicId,

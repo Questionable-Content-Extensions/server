@@ -7,6 +7,7 @@ type DatabaseDriver = sqlx::MySql;
 type DatabaseQueryResult = sqlx::mysql::MySqlQueryResult;
 
 pub type DbPoolConnection = sqlx::pool::PoolConnection<DatabaseDriver>;
+pub type DbTransaction<'c> = sqlx::Transaction<'c, sqlx::MySql>;
 
 #[derive(Clone)]
 pub struct DbPool(sqlx::Pool<DatabaseDriver>);
