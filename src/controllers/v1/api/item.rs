@@ -1,9 +1,9 @@
 use actix_web::web;
 
-mod all;
-mod by_id;
-mod image_upload;
-mod set_property;
+pub(in crate::controllers) mod all;
+pub(in crate::controllers) mod by_id;
+pub(in crate::controllers) mod image_upload;
+pub(in crate::controllers) mod set_property;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(web::resource("/").route(web::get().to(all::all)))

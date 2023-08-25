@@ -556,6 +556,27 @@ impl Item {
         .await
     }
 
+    pub async fn update_type_by_id<'e, 'c: 'e, E>(
+        executor: E,
+        id: u16,
+        r#type: ItemType,
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_scalar!(
+            r#"
+                UPDATE `Item`
+                SET `type` = ?
+                WHERE `id` = ?
+            "#,
+            r#type,
+            id
+        )
+        .execute(executor)
+        .await
+    }
+
     pub async fn related_items_by_id_and_type_with_mapping<'e, 'c: 'e, E, T, F>(
         executor: E,
         id: u16,

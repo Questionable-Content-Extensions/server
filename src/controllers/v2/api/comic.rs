@@ -1,6 +1,6 @@
 use actix_web::web;
 
-pub use crate::controllers::v1::api::comic::*;
+pub(in crate::controllers) use crate::controllers::v1::api::comic::*;
 
 pub(in crate::controllers) mod add_item;
 pub(in crate::controllers) mod by_id;
