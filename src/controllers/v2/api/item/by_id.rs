@@ -1,4 +1,5 @@
-use crate::models::v1::{Item, ItemColor, ItemId, ItemImageList, ItemType, RelatedItem};
+use crate::models::v1::{ItemColor, ItemId, ItemType, RelatedItem};
+use crate::models::v2::Item;
 use actix_web::{error, web, HttpResponse, Result};
 use anyhow::anyhow;
 use database::models::{
@@ -22,6 +23,16 @@ pub(crate) async fn by_id(
         .await
         .map_err(error::ErrorInternalServerError)?
         .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {} exists", item_id)))?;
+
+    let primary_image = if let Some(primary_image) = item.primary_image {
+        Some(primary_image)
+    } else {
+        let image_metadatas = DatabaseItem::image_metadatas_by_id(&***pool, item_id.into_inner())
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+
+        image_metadatas.first().map(|first_image| first_image.id)
+    };
 
     let item_occurrence =
         DatabaseItem::first_and_last_apperance_and_count_by_id(&mut conn, item_id.into_inner())
@@ -62,6 +73,7 @@ pub(crate) async fn by_id(
             item_occurrence.count as f64 * 100.0 / total_comics as f64
         },
         has_image: image_count > 0,
+        primary_image,
     };
 
     Ok(HttpResponse::Ok().json(item))
@@ -83,32 +95,6 @@ pub(crate) async fn locations(
     let items = related_items(pool, *item_id, ItemType::Location, 5).await?;
 
     Ok(HttpResponse::Ok().json(items))
-}
-
-pub(crate) async fn images(
-    pool: web::Data<DbPool>,
-    item_id: web::Path<u16>,
-) -> Result<HttpResponse> {
-    let item_image_list =
-        DatabaseItem::image_metadatas_by_id_with_mapping(&***pool, *item_id, ItemImageList::from)
-            .await
-            .map_err(error::ErrorInternalServerError)?;
-
-    Ok(HttpResponse::Ok().json(item_image_list))
-}
-
-pub(crate) async fn image(
-    pool: web::Data<DbPool>,
-    image_id: web::Path<u32>,
-) -> Result<HttpResponse> {
-    let image = DatabaseItem::image_by_image_id(&***pool, *image_id)
-        .await
-        .map_err(error::ErrorInternalServerError)?
-        .ok_or_else(|| {
-            error::ErrorNotFound(anyhow!("No item image with id {} exists", *image_id))
-        })?;
-
-    Ok(HttpResponse::Ok().content_type("image/png").body(image))
 }
 
 async fn related_items(

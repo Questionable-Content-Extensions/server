@@ -1,5 +1,6 @@
 use parse_display::Display;
-use semval::{context::Context as ValidationContext, Validate};
+use semval::context::Context as ValidationContext;
+use semval::Validate;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -20,34 +21,34 @@ use ts_rs::TS;
 )]
 #[serde(transparent)]
 #[ts(export)]
-pub struct ItemId(u16);
+pub struct ImageId(u32);
 
-impl ItemId {
+impl ImageId {
     #[inline]
-    pub fn into_inner(self) -> u16 {
+    pub fn into_inner(self) -> u32 {
         self.0
     }
 }
 
-impl From<u16> for ItemId {
+impl From<u32> for ImageId {
     #[inline]
-    fn from(item_id: u16) -> Self {
-        Self(item_id)
+    fn from(image_id: u32) -> Self {
+        Self(image_id)
     }
 }
 
-impl Validate for ItemId {
-    type Invalidity = ItemIdInvalidity;
+impl Validate for ImageId {
+    type Invalidity = ImageIdInvalidity;
 
     fn validate(&self) -> semval::ValidationResult<Self::Invalidity> {
         ValidationContext::new()
-            .invalidate_if(self.0 < 1, ItemIdInvalidity::MinValue)
+            .invalidate_if(self.0 < 1, ImageIdInvalidity::MinValue)
             .into()
     }
 }
 
 #[derive(Copy, Clone, Debug, Display, Eq, PartialEq)]
-pub enum ItemIdInvalidity {
-    #[display("itemId cannot be 0")]
+pub enum ImageIdInvalidity {
+    #[display("imageId cannot be 0")]
     MinValue,
 }

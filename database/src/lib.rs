@@ -1,3 +1,4 @@
+use sqlx::migrate::MigrateError;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use std::ops::Deref;
 
@@ -34,4 +35,8 @@ impl Deref for DbPool {
     fn deref(&self) -> &Self::Target {
         &self.0
     }
+}
+
+pub async fn migrate(pool: &DbPool) -> Result<(), MigrateError> {
+    sqlx::migrate!("./migrations").run(&**pool).await
 }

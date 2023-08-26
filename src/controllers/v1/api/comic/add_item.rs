@@ -76,6 +76,7 @@ pub(crate) async fn add_item(
             color_blue: 127,
             color_green: 127,
             color_red: 127,
+            primary_image: None,
         }
     } else {
         let item_id = request.item_id as u16;

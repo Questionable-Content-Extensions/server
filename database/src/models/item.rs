@@ -13,6 +13,7 @@ pub struct Item {
     pub color_blue: u8,
     pub color_green: u8,
     pub color_red: u8,
+    pub primary_image: Option<u32>,
 }
 
 impl Item {
@@ -410,6 +411,7 @@ impl Item {
                     `crc32c_hash`
                 FROM `ItemImage`
                 WHERE `item_id` = ?
+                ORDER BY `id`
             "#,
             id
         )
@@ -434,6 +436,7 @@ impl Item {
                     `crc32c_hash`
                 FROM `ItemImage`
                 WHERE `item_id` = ?
+                ORDER BY `id`
             "#,
             id
         )
@@ -445,7 +448,7 @@ impl Item {
 
     pub async fn image_by_image_id<'e, 'c: 'e, E>(
         executor: E,
-        image_id: i32,
+        image_id: u32,
     ) -> sqlx::Result<Option<Vec<u8>>>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -481,6 +484,45 @@ impl Item {
             item_id,
             image,
             crc32c_hash,
+        )
+        .execute(executor)
+        .await
+    }
+
+    pub async fn delete_image<'e, 'c: 'e, E>(
+        executor: E,
+        image_id: u32,
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query!(
+            r#"
+                DELETE FROM `ItemImage`
+                WHERE `id` = ?
+            "#,
+            image_id
+        )
+        .execute(executor)
+        .await
+    }
+
+    pub async fn set_primary_image<'e, 'c: 'e, E>(
+        executor: E,
+        item_id: u16,
+        image_id: u32,
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query!(
+            r#"
+                UPDATE `Item`
+                SET `primary_image` = ?
+                WHERE `id` = ?
+            "#,
+            image_id,
+            item_id
         )
         .execute(executor)
         .await
@@ -592,7 +634,13 @@ impl Item {
             RelatedItem,
             r#"
                 SELECT
-                    `i2`.*,
+                    `i2`.`id`,
+                    `i2`.`short_name`,
+                    `i2`.`name`,
+                    `i2`.`type`,
+                    `i2`.`color_blue`,
+                    `i2`.`color_green`,
+                    `i2`.`color_red`,
                     COUNT(`i2`.`id`) as `count`
                 FROM `Item` `i`
                 JOIN `Occurrence` `o` ON `i`.`id` = `o`.`item_id`

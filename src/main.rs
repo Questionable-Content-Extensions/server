@@ -93,11 +93,14 @@ async fn main() -> Result<()> {
     }
     pretty_env_logger::init();
 
-    let bind_address = format!("0.0.0.0:{}", Environment::port());
-    info!("Starting server at: {}", &bind_address);
-
     let http_db_pool = DbPool::create(Environment::database_url()).await;
     let db_pool = http_db_pool.clone();
+
+    info!("Running any outstanding database migrations...");
+    database::migrate(&db_pool).await?;
+
+    let bind_address = format!("0.0.0.0:{}", Environment::port());
+    info!("Starting server at: {}", &bind_address);
 
     let http_news_updater: web::Data<NewsUpdater> = web::Data::new(NewsUpdater::new());
     let news_updater = Arc::clone(&http_news_updater);

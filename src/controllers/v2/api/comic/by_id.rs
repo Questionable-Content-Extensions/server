@@ -197,6 +197,7 @@ fn hydrate_navigation_item_with_item_data(
                 color_red,
                 color_green,
                 color_blue,
+                primary_image: _,
             } = items
                 .remove(&unhydrated.id.into_inner())
                 .expect("item data for navigation item");

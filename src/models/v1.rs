@@ -106,15 +106,13 @@ pub struct ItemList {
     pub count: i64,
 }
 
-#[derive(Debug, Serialize, TS)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
 pub struct Item {
     pub id: ItemId,
     pub short_name: String,
     pub name: String,
     pub r#type: ItemType,
-    #[ts(type = "string")]
     pub color: ItemColor,
     pub first: ComicId,
     pub last: ComicId,
@@ -157,15 +155,10 @@ pub struct RelatedItem {
     pub count: i32,
 }
 
-#[derive(Debug, Serialize, TS)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
 pub struct ItemImageList {
     pub id: u32,
-    // Needed because ts-rs transforms the name to `crc32CHash`, which
-    // differs from what serde does.
-    // <https://github.com/Aleph-Alpha/ts-rs/issues/165>
-    #[ts(rename = "crc32cHash")]
     pub crc32c_hash: u32,
 }
 
