@@ -97,3 +97,26 @@ impl From<ItemImageMetadata> for ItemImageList {
         }
     }
 }
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ItemNavigationData {
+    pub id: ItemId,
+    #[serde(flatten)]
+    pub navigation_data: NavigationData,
+}
+impl From<UnhydratedItemNavigationData> for ItemNavigationData {
+    #[inline]
+    fn from(unhydrated: UnhydratedItemNavigationData) -> Self {
+        let UnhydratedItemNavigationData {
+            id,
+            navigation_data,
+            count: _,
+        } = unhydrated;
+        Self {
+            id,
+            navigation_data,
+        }
+    }
+}

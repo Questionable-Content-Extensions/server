@@ -1,6 +1,6 @@
 use futures::TryStreamExt;
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
 use crate::models::ItemType;
 
@@ -36,6 +36,28 @@ impl Item {
         )
         .fetch(executor)
         .map_ok(|i| (i.id, i))
+        .try_collect()
+        .await
+    }
+
+    pub async fn occurrences_in_comic_by_id<'e, 'c: 'e, E>(
+        executor: E,
+        comic_id: u16,
+    ) -> sqlx::Result<HashSet<u16>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_scalar!(
+            r#"
+                SELECT `i`.id
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                WHERE `o`.`comic_id` = ?
+            "#,
+            comic_id,
+        )
+        .fetch(executor)
+        .map_ok(|i| i)
         .try_collect()
         .await
     }

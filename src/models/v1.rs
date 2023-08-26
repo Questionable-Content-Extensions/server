@@ -103,7 +103,7 @@ pub struct ItemList {
     pub r#type: ItemType,
     #[ts(type = "string")]
     pub color: ItemColor,
-    pub count: i64,
+    pub count: i32,
 }
 
 #[derive(Debug, Serialize)]
@@ -203,9 +203,8 @@ pub struct UnhydratedItemNavigationData {
     pub count: i64,
 }
 
-#[derive(Debug, Serialize, TS)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
 pub struct ItemNavigationData {
     // These fields come from UnhydratedItemNavigationData
     pub id: ItemId,
@@ -217,7 +216,6 @@ pub struct ItemNavigationData {
     pub short_name: String,
     pub name: String,
     pub r#type: ItemType,
-    #[ts(type = "string")]
     pub color: ItemColor,
 }
 impl ItemNavigationData {

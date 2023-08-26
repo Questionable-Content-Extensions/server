@@ -51,7 +51,7 @@ pub(crate) async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             name,
             r#type: ItemType::try_from(&*r#type).map_err(error::ErrorInternalServerError)?,
             color: ItemColor(color_red, color_green, color_blue),
-            count,
+            count: i32::try_from(count).unwrap(),
         })
     }
 

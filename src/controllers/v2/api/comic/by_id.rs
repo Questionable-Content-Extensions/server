@@ -1,11 +1,9 @@
 use crate::controllers::v1::api::comic::editor_data::fetch_editor_data_for_comic;
-use crate::controllers::v1::api::comic::navigation_data::{
-    fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
-};
+use crate::controllers::v1::api::comic::navigation_data::fetch_comic_item_navigation_data;
+use crate::controllers::v2::api::comic::navigation_data::fetch_all_item_navigation_data;
 use crate::models::v2::{
-    Comic, ComicData, ComicId, EditorData, Exclusion, False, Inclusion, ItemColor,
-    ItemNavigationData, ItemType, MissingComic, MissingEditorData, PresentComic, True,
-    UnhydratedItemNavigationData,
+    Comic, ComicData, ComicId, EditorData, Exclusion, False, Inclusion, ItemNavigationData,
+    MissingComic, MissingEditorData, PresentComic, Token, True,
 };
 use crate::util::NewsUpdater;
 use actix_web::{error, web, HttpResponse, Result};
@@ -15,8 +13,8 @@ use database::models::{Comic as DatabaseComic, Item as DatabaseItem, News as Dat
 use database::DbPool;
 use serde::Deserialize;
 use shared::token_permissions;
-use std::collections::BTreeMap;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
+use ts_rs::TS;
 
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn by_id(
@@ -81,61 +79,50 @@ pub(crate) async fn by_id(
         EditorData::Missing(MissingEditorData::default())
     };
 
-    let mut items =
-        DatabaseItem::occurrences_in_comic_mapped_by_id(&mut conn, comic_id.into_inner())
-            .await
-            .map_err(error::ErrorInternalServerError)?;
+    let (comic_navigation_items, all_navigation_items) = if let Some(Inclusion::All) = query.include
+    {
+        let mut all_navigation_items: Vec<ItemNavigationData> = fetch_all_item_navigation_data(
+            &mut conn,
+            comic_id,
+            include_guest_comics,
+            include_non_canon_comics,
+        )
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect();
 
-    let (comic_navigation_items, all_navigation_items) =
-        if items.is_empty() && !matches!(query.include, Some(Inclusion::All)) {
-            (vec![], vec![])
-        } else if let Some(Inclusion::All) = query.include {
-            let mut all_items = DatabaseItem::all_mapped_by_id(&mut conn)
+        let item_ids_in_comic =
+            DatabaseItem::occurrences_in_comic_by_id(&mut conn, comic_id.into_inner())
                 .await
                 .map_err(error::ErrorInternalServerError)?;
 
-            let mut all_navigation_items = fetch_all_item_navigation_data(
-                &mut conn,
-                comic_id,
-                include_guest_comics,
-                include_non_canon_comics,
-            )
-            .await?;
-            let mut navigation_items_in_comic = vec![];
-            let mut i = 0;
-            while i < all_navigation_items.len() {
-                let element = &mut all_navigation_items[i];
-                if items.get(&element.id.into_inner()).is_some() {
-                    let element = all_navigation_items.remove(i);
-                    navigation_items_in_comic.push(element);
-                } else {
-                    i += 1;
-                }
+        let mut comic_navigation_items = Vec::with_capacity(item_ids_in_comic.len());
+        let mut i = 0;
+        while i < all_navigation_items.len() {
+            let navigation_item = &mut all_navigation_items[i];
+            if item_ids_in_comic.contains(&navigation_item.id.into_inner()) {
+                let element = all_navigation_items.remove(i);
+                comic_navigation_items.push(element);
+            } else {
+                i += 1;
             }
+        }
+        (comic_navigation_items, all_navigation_items)
+    } else {
+        let comic_navigation_items = fetch_comic_item_navigation_data(
+            &mut conn,
+            comic_id,
+            include_guest_comics,
+            include_non_canon_comics,
+        )
+        .await?;
 
-            let navigation_items_in_comic =
-                hydrate_navigation_item_with_item_data(navigation_items_in_comic, &mut all_items)
-                    .map_err(error::ErrorInternalServerError)?;
-            let all_navigation_items =
-                hydrate_navigation_item_with_item_data(all_navigation_items, &mut all_items)
-                    .map_err(error::ErrorInternalServerError)?;
-
-            (navigation_items_in_comic, all_navigation_items)
-        } else {
-            let navigation_items_in_comic = fetch_comic_item_navigation_data(
-                &mut conn,
-                comic_id,
-                include_guest_comics,
-                include_non_canon_comics,
-            )
-            .await?;
-
-            let navigation_items_in_comic =
-                hydrate_navigation_item_with_item_data(navigation_items_in_comic, &mut items)
-                    .map_err(error::ErrorInternalServerError)?;
-
-            (navigation_items_in_comic, vec![])
-        };
+        (
+            comic_navigation_items.into_iter().map(Into::into).collect(),
+            Vec::new(),
+        )
+    };
 
     let comic = if let Some(comic) = comic {
         Comic {
@@ -182,39 +169,17 @@ pub(crate) async fn by_id(
     Ok(HttpResponse::Ok().json(comic))
 }
 
-fn hydrate_navigation_item_with_item_data(
-    navigation_items: Vec<UnhydratedItemNavigationData>,
-    items: &mut BTreeMap<u16, DatabaseItem>,
-) -> anyhow::Result<Vec<ItemNavigationData>> {
-    navigation_items
-        .into_iter()
-        .map(|unhydrated| -> anyhow::Result<_> {
-            let DatabaseItem {
-                id: _,
-                short_name,
-                name,
-                r#type,
-                color_red,
-                color_green,
-                color_blue,
-                primary_image: _,
-            } = items
-                .remove(&unhydrated.id.into_inner())
-                .expect("item data for navigation item");
-
-            Ok(ItemNavigationData::hydrate_from(
-                unhydrated,
-                name,
-                short_name,
-                ItemType::try_from(&*r#type)?,
-                ItemColor(color_red, color_green, color_blue),
-            ))
-        })
-        .collect::<Result<Vec<_>, _>>()
-}
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
 pub(crate) struct ByIdQuery {
+    // This is never read because it's used by the auth middleware only.
+    // We still include it here so it ends up in the TS binding.
+    #[allow(dead_code)]
+    #[ts(optional)]
+    pub token: Option<Token>,
+
+    #[ts(optional)]
     exclude: Option<Exclusion>,
+    #[ts(optional)]
     include: Option<Inclusion>,
 }
