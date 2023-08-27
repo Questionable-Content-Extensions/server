@@ -1,0 +1,4 @@
+ALTER TABLE `Item`
+  ALTER COLUMN `color_blue` SET DEFAULT 127,
+  ALTER COLUMN `color_green` SET DEFAULT 127,
+  ALTER COLUMN `color_red` SET DEFAULT 127;
