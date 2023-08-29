@@ -23,9 +23,8 @@ pub use item_type::ItemType;
 pub use set_boolean::*;
 pub use token::Token;
 
-#[derive(Debug, Serialize, TS)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
 pub struct ComicList {
     pub comic: ComicId,
     pub title: String,

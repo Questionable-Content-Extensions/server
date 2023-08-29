@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use database::models::ItemImageMetadata;
+use database::models::{Comic as DatabaseComic, ItemImageMetadata};
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -117,6 +117,30 @@ impl From<UnhydratedItemNavigationData> for ItemNavigationData {
         Self {
             id,
             navigation_data,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ComicList {
+    pub comic: ComicId,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tagline: Option<String>,
+    pub is_non_canon: bool,
+    pub is_guest_comic: bool,
+}
+
+impl From<DatabaseComic> for ComicList {
+    fn from(c: DatabaseComic) -> Self {
+        Self {
+            comic: ComicId::try_from(c.id).expect("database has valid comicIds"),
+            title: c.title,
+            tagline: c.tagline,
+            is_guest_comic: c.is_guest_comic != 0,
+            is_non_canon: c.is_non_canon != 0,
         }
     }
 }

@@ -3,6 +3,7 @@ use actix_web::web;
 pub(in crate::controllers) use crate::controllers::v1::api::comic::*;
 
 pub(in crate::controllers) mod add_item;
+pub(in crate::controllers) mod all;
 pub(in crate::controllers) mod by_id;
 pub(in crate::controllers) mod patch_comic;
 pub(in crate::controllers) mod remove_item;
