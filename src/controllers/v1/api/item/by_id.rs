@@ -111,6 +111,7 @@ pub(crate) async fn image(
     Ok(HttpResponse::Ok().content_type("image/png").body(image))
 }
 
+#[allow(deprecated)]
 async fn related_items(
     pool: web::Data<DbPool>,
     item_id: u16,

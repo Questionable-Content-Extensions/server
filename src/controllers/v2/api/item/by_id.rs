@@ -1,5 +1,5 @@
-use crate::models::v1::{ItemColor, ItemId, ItemType, RelatedItem};
-use crate::models::v2::Item;
+use crate::models::v1::{ItemColor, ItemId, ItemType};
+use crate::models::v2::{Item, RelatedItem};
 use actix_web::{error, web, HttpResponse, Result};
 use anyhow::anyhow;
 use database::models::{
@@ -109,24 +109,11 @@ async fn related_items(
         r#type.into(),
         amount,
         |ri| {
-            let RelatedDatabaseItem {
-                id,
-                short_name,
-                name,
-                r#type,
-                color_red,
-                color_green,
-                color_blue,
-                count,
-            } = ri;
+            let RelatedDatabaseItem { id, count, .. } = ri;
             let id = id.into();
 
             RelatedItem {
                 id,
-                short_name,
-                name,
-                r#type: ItemType::try_from(&*r#type).expect("Item types in the database are valid"),
-                color: ItemColor(color_red, color_green, color_blue),
                 count: i32::try_from(count).unwrap(),
             }
         },

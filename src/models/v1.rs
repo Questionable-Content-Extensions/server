@@ -141,15 +141,13 @@ impl From<LogListEntry> for LogEntry {
     }
 }
 
-#[derive(Debug, Serialize, TS)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export)]
 pub struct RelatedItem {
     pub id: ItemId,
     pub short_name: String,
     pub name: String,
     pub r#type: ItemType,
-    #[ts(type = "string")]
     pub color: ItemColor,
     pub count: i32,
 }

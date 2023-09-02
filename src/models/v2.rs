@@ -98,6 +98,8 @@ impl From<ItemImageMetadata> for ItemImageList {
     }
 }
 
+// TODO: Update RelatedItem to match new slimmer ItemNavigationData
+
 #[derive(Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
@@ -143,4 +145,12 @@ impl From<DatabaseComic> for ComicList {
             is_non_canon: c.is_non_canon != 0,
         }
     }
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct RelatedItem {
+    pub id: ItemId,
+    pub count: i32,
 }

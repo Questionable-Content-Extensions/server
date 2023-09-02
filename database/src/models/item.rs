@@ -641,6 +641,8 @@ impl Item {
         .await
     }
 
+    // Until v1 of API is gone
+    #[allow(deprecated)]
     pub async fn related_items_by_id_and_type_with_mapping<'e, 'c: 'e, E, T, F>(
         executor: E,
         id: u16,
@@ -705,14 +707,22 @@ struct PrevNext {
     comic: Option<u16>,
 }
 
+// Can't deprecate these fields because `sqlx::FromRow` causes them to be
+// used and trigger warnings.
 #[derive(Debug, sqlx::FromRow)]
 pub struct RelatedItem {
     pub id: u16,
+    //#[deprecated(note = "Only needed in v1 now")]
     pub short_name: String,
+    //#[deprecated(note = "Only needed in v1 now")]
     pub name: String,
+    //#[deprecated(note = "Only needed in v1 now")]
     pub r#type: String,
+    //#[deprecated(note = "Only needed in v1 now")]
     pub color_red: u8,
+    //#[deprecated(note = "Only needed in v1 now")]
     pub color_green: u8,
+    //#[deprecated(note = "Only needed in v1 now")]
     pub color_blue: u8,
     pub count: i64,
 }
