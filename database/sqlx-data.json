@@ -1,5 +1,43 @@
 {
   "db": "MySQL",
+  "02a1557e74eb81153999f7250dc99e12268224ea9688b74b3d6d421182ee282b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        },
+        {
+          "name": "crc32c_hash",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4129
+            },
+            "max_size": 10,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT\n                    `id`,\n                    `crc32c_hash`\n                FROM `ItemImage`\n                WHERE `item_id` = ?\n                ORDER BY `id`\n            "
+  },
   "05764f174d03456037b1be29b77f99e5d6acc583b63e6d87950172ee4191feb8": {
     "describe": {
       "columns": [
@@ -302,122 +340,6 @@
       }
     },
     "query": "\n                UPDATE `Comic`\n                SET\n                    `has_no_title` = ?\n                WHERE\n                    `id` = ?\n            "
-  },
-  "0d4d435ec7f5561f7c7deada0f56f16579547fa55b57075e9dfc34ef7eb9f755": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 547
-            },
-            "max_size": 6,
-            "type": "Short"
-          }
-        },
-        {
-          "name": "short_name",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 200,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "name",
-          "ordinal": 2,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "type",
-          "ordinal": 3,
-          "type_info": {
-            "char_set": 224,
-            "flags": {
-              "bits": 4097
-            },
-            "max_size": 1020,
-            "type": "VarString"
-          }
-        },
-        {
-          "name": "color_blue",
-          "ordinal": 4,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 33
-            },
-            "max_size": 3,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "color_green",
-          "ordinal": 5,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 33
-            },
-            "max_size": 3,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "color_red",
-          "ordinal": 6,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 33
-            },
-            "max_size": 3,
-            "type": "Tiny"
-          }
-        },
-        {
-          "name": "count",
-          "ordinal": 7,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 129
-            },
-            "max_size": 21,
-            "type": "LongLong"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 3
-      }
-    },
-    "query": "\n                SELECT\n                    `i2`.*,\n                    COUNT(`i2`.`id`) as `count`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `i`.`id` = `o`.`item_id`\n                JOIN `Occurrence` `o2` ON `o`.`comic_id` = `o2`.`comic_id`\n                JOIN Item `i2` ON `o2`.`item_id` = `i2`.`id`\n                WHERE `i`.`id` = ?\n                    AND `i2`.`id` <> `i`.`id`\n                    AND `i2`.`type` = ?\n                GROUP BY `i2`.`id`\n                ORDER BY `count` DESC\n                LIMIT ?\n            "
   },
   "106dc28e2e1871090af8e88d92e4ad282f23ab5ed899837a8b469ef39016daf1": {
     "describe": {
@@ -746,6 +668,18 @@
             "max_size": 3,
             "type": "Tiny"
           }
+        },
+        {
+          "name": "primary_image",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
         }
       ],
       "nullable": [
@@ -755,7 +689,8 @@
         false,
         false,
         false,
-        false
+        false,
+        true
       ],
       "parameters": {
         "Right": 0
@@ -787,6 +722,16 @@
       }
     },
     "query": "\n                SELECT `id`\n                FROM `Comic`\n                WHERE `id` > ?\n                    AND (? is NULL OR `is_guest_comic` = ?)\n                    AND (? is NULL OR `is_non_canon` = ?)\n                ORDER BY `id` ASC\n            "
+  },
+  "515031c8b75d00ff1d0a2cafca83b107eeedf788734bb40c9a20139c3565cd3d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                DELETE FROM `ItemImage`\n                WHERE `id` = ?\n            "
   },
   "53ce08cbd9263d314f95605c7b1567d54934faf86ae2ebe4f4fa794cb85092d0": {
     "describe": {
@@ -988,6 +933,16 @@
     },
     "query": "\n                SELECT `c`.`id`\n                FROM `Comic` `c`\n                WHERE `c`.`id` NOT IN\n                    (\n                        SELECT `o`.`comic_id`\n                        FROM `Occurrence` `o`\n                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                        WHERE `i`.`type` = ?\n                        AND `o`.`comic_id` = `c`.`id`\n                        GROUP BY `o`.`comic_id`\n                    )\n                    AND `c`.`id` < ?\n                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)\n                    AND (? <> 'location' OR NOT `c`.`has_no_location`)\n                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)\n                ORDER BY c.id DESC\n                LIMIT 1\n            "
   },
+  "676b6535484b5c3151c60b53f116e1143787c3bb6e085df70b0af5c4b008cb54": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                UPDATE `Item`\n                SET `type` = ?\n                WHERE `id` = ?\n            "
+  },
   "67a34b3808d2f88e68e643114e9d7c4081535a42206ceb367754ea8347489590": {
     "describe": {
       "columns": [],
@@ -998,6 +953,16 @@
     },
     "query": "\n                UPDATE `Comic`\n                SET `title` = ?\n                WHERE\n                    `id` = ?\n            "
   },
+  "67ed2a3793a91d48ff140239d41820717a9ac347cfe9728330bcc9afc4836bb0": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "\n                UPDATE `Item`\n                SET `primary_image` = ?\n                WHERE `id` = ?\n            "
+  },
   "6cf1a8a0fdb78b5ec0f808329ee8d40ea01f8fd0917c3eb56ef28176f983b92d": {
     "describe": {
       "columns": [],
@@ -1007,44 +972,6 @@
       }
     },
     "query": "\n                INSERT IGNORE INTO `Comic`\n                    (`id`)\n                VALUES\n                    (?)\n            "
-  },
-  "7a227a1caa0fbd32369cdac8a02314e70ae2494afb1bba7f69d8c7bdf42a5041": {
-    "describe": {
-      "columns": [
-        {
-          "name": "id",
-          "ordinal": 0,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 547
-            },
-            "max_size": 11,
-            "type": "Long"
-          }
-        },
-        {
-          "name": "crc32c_hash",
-          "ordinal": 1,
-          "type_info": {
-            "char_set": 63,
-            "flags": {
-              "bits": 4129
-            },
-            "max_size": 10,
-            "type": "Long"
-          }
-        }
-      ],
-      "nullable": [
-        false,
-        false
-      ],
-      "parameters": {
-        "Right": 1
-      }
-    },
-    "query": "\n                SELECT\n                    `id`,\n                    `crc32c_hash`\n                FROM `ItemImage`\n                WHERE `item_id` = ?\n            "
   },
   "82b946cd7e0a781f5cf4effe69701e6646c68faf99d2314539b29607c0ecba46": {
     "describe": {
@@ -1132,6 +1059,18 @@
             "max_size": 3,
             "type": "Tiny"
           }
+        },
+        {
+          "name": "primary_image",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
         }
       ],
       "nullable": [
@@ -1141,7 +1080,8 @@
         false,
         false,
         false,
-        false
+        false,
+        true
       ],
       "parameters": {
         "Right": 1
@@ -1841,6 +1781,18 @@
             "max_size": 3,
             "type": "Tiny"
           }
+        },
+        {
+          "name": "primary_image",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 40
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
         }
       ],
       "nullable": [
@@ -1850,7 +1802,8 @@
         false,
         false,
         false,
-        false
+        false,
+        true
       ],
       "parameters": {
         "Right": 1
@@ -2064,6 +2017,122 @@
     },
     "query": "\n                SELECT * FROM `Comic`\n                WHERE `id` = ?\n            "
   },
+  "f3d9b8cb6b20856e070c66a738505cefbaff42713ab0fe2697ecfbcc3d930585": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 6,
+            "type": "Short"
+          }
+        },
+        {
+          "name": "short_name",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 200,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "name",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "type",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "color_blue",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 3,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "color_green",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 3,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "color_red",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 3,
+            "type": "Tiny"
+          }
+        },
+        {
+          "name": "count",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "\n                SELECT\n                    `i2`.`id`,\n                    `i2`.`short_name`,\n                    `i2`.`name`,\n                    `i2`.`type`,\n                    `i2`.`color_blue`,\n                    `i2`.`color_green`,\n                    `i2`.`color_red`,\n                    COUNT(`i2`.`id`) as `count`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `i`.`id` = `o`.`item_id`\n                JOIN `Occurrence` `o2` ON `o`.`comic_id` = `o2`.`comic_id`\n                JOIN Item `i2` ON `o2`.`item_id` = `i2`.`id`\n                WHERE `i`.`id` = ?\n                    AND `i2`.`id` <> `i`.`id`\n                    AND `i2`.`type` = ?\n                GROUP BY `i2`.`id`\n                ORDER BY `count` DESC\n                LIMIT ?\n            "
+  },
   "f7a7e002d61f23b8416a15cb28be8269d1eace32b74940a8eb96f5b88635dff8": {
     "describe": {
       "columns": [
@@ -2254,5 +2323,30 @@
       }
     },
     "query": "\n\t\t\t\tSELECT * FROM `News`\n\t\t\t\tWHERE `comic_id` = ?\n\t\t\t"
+  },
+  "fed11b4b6f5d6fc5001911884e3667214d36cde3922b41c4018986b434404628": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 547
+            },
+            "max_size": 6,
+            "type": "Short"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT `i`.id\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                WHERE `o`.`comic_id` = ?\n            "
   }
 }

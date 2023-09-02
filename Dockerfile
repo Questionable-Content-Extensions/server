@@ -2,7 +2,7 @@
 #   Rust image   #
 ##################
 
-FROM rust:latest AS rust
+FROM rust:1-bookworm AS rust
 
 WORKDIR /usr/src/qcext-server
 
@@ -37,6 +37,7 @@ RUN rm -rf /usr/src/qcext-server/src /usr/src/qcext-server/database/src /usr/src
 COPY src /usr/src/qcext-server/src
 RUN rm -rf /usr/src/qcext-server/src/client
 COPY database/src /usr/src/qcext-server/database/src
+COPY database/migrations /usr/src/qcext-server/database/migrations
 COPY shared/src /usr/src/qcext-server/shared/src
 RUN find src -name "*.rs" -exec touch {} \; && \
     find database/src -name "*.rs" -exec touch {} \; && \
@@ -47,7 +48,7 @@ RUN find src -name "*.rs" -exec touch {} \; && \
 #  NodeJS image  #
 ##################
 
-FROM debian:bullseye AS nodejs
+FROM debian:bookworm AS nodejs
 
 WORKDIR /usr/src/qcext-server
 
@@ -77,11 +78,7 @@ RUN npm run build
 #  Output image  #
 ##################
 
-FROM debian:bullseye-slim AS binary
-
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    ca-certificates rsync
-RUN apt-get clean
+FROM gcr.io/distroless/cc-debian12
 
 COPY --from=rust /usr/src/qcext-server/target/release/qcext-server /usr/local/bin/
 COPY --from=nodejs /usr/src/qcext-server/build /build
