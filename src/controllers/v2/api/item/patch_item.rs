@@ -1,6 +1,6 @@
 use crate::models::v1::Token;
 use crate::models::v2::{ItemColor, ItemId, ItemType};
-use crate::util::ensure_is_authorized;
+use crate::util::{andify_comma_string, ensure_is_authorized};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
 use anyhow::anyhow;
@@ -42,8 +42,8 @@ pub(crate) async fn patch_item(
 
     let mut updated = Vec::with_capacity(3);
 
-    if let Some(name) = name {
-        DatabaseItem::update_name_by_id(&mut *transaction, item_id.into_inner(), &name)
+    if let Some(name) = &name {
+        DatabaseItem::update_name_by_id(&mut *transaction, item_id.into_inner(), name)
             .await
             .map_err(error::ErrorInternalServerError)?;
 
@@ -164,7 +164,15 @@ pub(crate) async fn patch_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body(format!("Updated {} for item", updated.join(", "))))
+    let mut changed = updated.join(", ");
+    andify_comma_string(&mut changed);
+
+    Ok(HttpResponse::Ok().body(format!(
+        "Updated {} for {} {item_id} ({})",
+        changed,
+        r#type.map_or(&*old_item.r#type, |t| t.as_str()),
+        name.as_deref().unwrap_or(&*old_item.name)
+    )))
 }
 
 #[derive(Debug, Deserialize, TS)]

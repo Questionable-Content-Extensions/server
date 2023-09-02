@@ -1,6 +1,6 @@
 use crate::controllers::v2::api::comic::set_flags::FlagType;
 use crate::models::v1::{ComicId, Token};
-use crate::util::ensure_is_authorized;
+use crate::util::{andify_comma_string, ensure_is_authorized};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
 use chrono::{DateTime, TimeZone, Utc};
@@ -171,7 +171,10 @@ pub(crate) async fn patch_comic(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body(format!("Updated {} for comic", updated.join(", "))))
+    let mut changed = updated.join(", ");
+    andify_comma_string(&mut changed);
+
+    Ok(HttpResponse::Ok().body(format!("Updated {} for comic {comic_id}", changed)))
 }
 
 async fn update_publish_date(

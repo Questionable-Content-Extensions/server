@@ -75,7 +75,7 @@ pub(crate) async fn delete(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body("Image deleted"))
+    Ok(HttpResponse::Ok().body(format!("Deleted image #{}", image_id)))
 }
 
 pub(crate) async fn set_primary(
@@ -122,7 +122,7 @@ pub(crate) async fn set_primary(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body("Primary image changed"))
+    Ok(HttpResponse::Ok().body(format!("Primary image changed for item {item_id}")))
 }
 
 #[derive(Debug, Deserialize, TS)]

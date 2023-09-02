@@ -1,4 +1,4 @@
-use crate::util::{ensure_is_authorized, ensure_is_valid};
+use crate::util::{andify_comma_string, ensure_is_authorized, ensure_is_valid};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
 use anyhow::anyhow;
@@ -9,6 +9,7 @@ use semval::context::Context as ValidationContext;
 use semval::Validate;
 use serde::Deserialize;
 use shared::token_permissions;
+use std::fmt::Write;
 use ts_rs::TS;
 
 use crate::models::v2::{ComicId, ComicIdInvalidity, False, ItemType, Token, True};
@@ -98,26 +99,23 @@ pub(crate) async fn add_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    LogEntry::log_action(
-        &mut *transaction,
-        request.token.to_string(),
-        format!(
-            "Added {} #{} ({}) to comic #{}",
-            r#type.as_str(),
-            id,
-            name,
-            request.comic_id
-        ),
-    )
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    let action = format!(
+        "Added {} #{} ({}) to comic #{}",
+        r#type.as_str(),
+        id,
+        name,
+        request.comic_id
+    );
+    LogEntry::log_action(&mut *transaction, request.token.to_string(), &action)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
 
     transaction
         .commit()
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body("Item added to comic"))
+    Ok(HttpResponse::Ok().body(action))
 }
 
 pub(crate) async fn add_items(
@@ -140,6 +138,7 @@ pub(crate) async fn add_items(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
+    let mut items_added = String::new();
     for item in request.items {
         let item = DatabaseItem::by_id(&mut *transaction, item.item_id)
             .await
@@ -180,14 +179,27 @@ pub(crate) async fn add_items(
         )
         .await
         .map_err(error::ErrorInternalServerError)?;
+
+        if !items_added.is_empty() {
+            items_added.push_str(", ");
+        }
+        write!(&mut items_added, "{} {}", item.r#type, item.name).unwrap();
     }
+    andify_comma_string(&mut items_added);
 
     transaction
         .commit()
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body("Items added to comic"))
+    Ok(HttpResponse::Ok().body(if items_added.is_empty() {
+        format!(
+            "No new items added to comic {}; they were all already added",
+            request.comic_id
+        )
+    } else {
+        format!("Items {} added to comic {}", items_added, request.comic_id)
+    }))
 }
 
 #[derive(Debug, Deserialize, TS)]

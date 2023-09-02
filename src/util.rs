@@ -197,3 +197,21 @@ fn test_add_month() {
     assert_eq!(result.month(), 2);
     assert_eq!(result.day(), 29);
 }
+
+/// Replaces the last comma in a string with `and` (if there's a single comma)
+/// or with `, and` if there's multiple.
+pub fn andify_comma_string(changed: &mut String) {
+    let last_index = changed.char_indices().rev().find(|&(_, c)| c == ',');
+    if let Some((last_comma_index, _)) = last_index {
+        // We can unwrap here because we already know there's at least
+        // one comma in this text.
+        let (first_comma_index, _) = changed.char_indices().find(|&(_, c)| c == ',').unwrap();
+        if first_comma_index == last_comma_index {
+            // Only a single comma. Replace with 'and'
+            changed.replace_range(last_comma_index..last_comma_index + 1, " and");
+        } else {
+            // Multiple commas. Replace with ', and'
+            changed.replace_range(last_comma_index..last_comma_index + 1, ", and");
+        }
+    }
+}

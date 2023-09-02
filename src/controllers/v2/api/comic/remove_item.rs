@@ -55,23 +55,20 @@ pub(crate) async fn remove_item(
         )));
     }
 
-    LogEntry::log_action(
-        &mut *transaction,
-        request.token.to_string(),
-        format!(
-            "Removed {} #{} ({}) from comic #{}",
-            item.r#type, item.id, item.name, request.comic_id
-        ),
-    )
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    let action = format!(
+        "Removed {} #{} ({}) from comic #{}",
+        item.r#type, item.id, item.name, request.comic_id
+    );
+    LogEntry::log_action(&mut *transaction, request.token.to_string(), &action)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
 
     transaction
         .commit()
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body("Item removed from comic"))
+    Ok(HttpResponse::Ok().body(action))
 }
 
 #[derive(Debug, Deserialize, TS)]
