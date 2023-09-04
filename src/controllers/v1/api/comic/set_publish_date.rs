@@ -56,6 +56,8 @@ pub(crate) async fn set_publish_date(
                     .publish_date
                     .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
             ),
+            Some(request.comic_id.into_inner()),
+            None,
         )
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -70,6 +72,8 @@ pub(crate) async fn set_publish_date(
                     .publish_date
                     .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
             ),
+            Some(request.comic_id.into_inner()),
+            None,
         )
         .await
         .map_err(error::ErrorInternalServerError)?;

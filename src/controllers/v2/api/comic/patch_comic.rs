@@ -208,6 +208,8 @@ async fn update_publish_date(
                     .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                 publish_date.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
             ),
+            Some(comic_id.into_inner()),
+            None,
         )
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -220,6 +222,8 @@ async fn update_publish_date(
                 comic_id,
                 publish_date.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
             ),
+            Some(comic_id.into_inner()),
+            None,
         )
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -247,6 +251,8 @@ async fn update_title(
             &mut **transaction,
             token.to_string(),
             format!("Set title on comic #{} to \"{}\"", comic_id, title),
+            Some(comic_id.into_inner()),
+            None,
         )
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -258,6 +264,8 @@ async fn update_title(
                 "Changed title on comic #{} from \"{}\" to \"{}\"",
                 comic_id, old_title, title
             ),
+            Some(comic_id.into_inner()),
+            None,
         )
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -288,6 +296,8 @@ async fn update_tagline(
                     "Changed tagline on comic #{} from \"{}\" to \"{}\"",
                     comic_id, old_tagline, tagline
                 ),
+                Some(comic_id.into_inner()),
+                None,
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
@@ -297,6 +307,8 @@ async fn update_tagline(
                 &mut **transaction,
                 token.to_string(),
                 format!("Set tagline on comic #{} to \"{}\"", comic_id, tagline),
+                Some(comic_id.into_inner()),
+                None,
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
@@ -400,6 +412,8 @@ async fn update_flag(
                 false_value_log_text
             }
         ),
+        Some(comic_id.into_inner()),
+        None,
     )
     .await
     .map_err(error::ErrorInternalServerError)?;

@@ -57,6 +57,8 @@ pub(crate) async fn add_item(
                     new_item_id,
                     new.new_item_name
                 ),
+                None,
+                Some(new_item_id),
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
@@ -106,9 +108,15 @@ pub(crate) async fn add_item(
         name,
         request.comic_id
     );
-    LogEntry::log_action(&mut *transaction, request.token.to_string(), &action)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+    LogEntry::log_action(
+        &mut *transaction,
+        request.token.to_string(),
+        &action,
+        Some(request.comic_id.into_inner()),
+        Some(id),
+    )
+    .await
+    .map_err(error::ErrorInternalServerError)?;
 
     transaction
         .commit()
@@ -176,6 +184,8 @@ pub(crate) async fn add_items(
                 item.name,
                 request.comic_id
             ),
+            Some(request.comic_id.into_inner()),
+            Some(item.id),
         )
         .await
         .map_err(error::ErrorInternalServerError)?;

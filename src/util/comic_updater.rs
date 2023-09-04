@@ -41,8 +41,8 @@ impl ComicUpdater {
         // unresolved startup panic.
         sleep(STARTUP_DELAY_DURATION).await;
 
-        let now = Utc::now();
         loop {
+            let now = Utc::now();
             info!(
                 "Fetching data for the comic on {}.",
                 now.format("%A, %d %B %Y")

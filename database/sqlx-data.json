@@ -38,6 +38,31 @@
     },
     "query": "\n                SELECT\n                    `id`,\n                    `crc32c_hash`\n                FROM `ItemImage`\n                WHERE `item_id` = ?\n                ORDER BY `id`\n            "
   },
+  "055b39119e3702a7341097e5c785f18e053b2d0e936614c806cf53df932f8eca": {
+    "describe": {
+      "columns": [
+        {
+          "name": "COUNT(*)",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT COUNT(*) FROM `LogEntry`\n                WHERE `item_involved` = ?\n            "
+  },
   "05764f174d03456037b1be29b77f99e5d6acc583b63e6d87950172ee4191feb8": {
     "describe": {
       "columns": [
@@ -426,6 +451,108 @@
     },
     "query": "\n                UPDATE `Item`\n                SET `name` = ?\n                WHERE `id` = ?\n            "
   },
+  "28ee385a3268a93b89a2ec52ed27623863bb9a76bd4b967448a690b1d2c96626": {
+    "describe": {
+      "columns": [
+        {
+          "name": "identifier",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 200,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "date_time",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4225
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        },
+        {
+          "name": "action",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4113
+            },
+            "max_size": 4294967295,
+            "type": "Blob"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "\n                SELECT\n                    `t`.`identifier`,\n                    `l`.`date_time`,\n                    `l`.`action`\n                FROM `LogEntry` `l`\n                JOIN `Token` `t` ON `t`.`id` = `l`.`user_token`\n                WHERE `l`.`comic_involved` = ?\n                ORDER BY `date_time` DESC\n                LIMIT ?, ?\n            "
+  },
+  "2c9ed7de00eb3e475c0727af50998db91b5b109678f688b2cd8264e4bbf7ac38": {
+    "describe": {
+      "columns": [
+        {
+          "name": "identifier",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 200,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "date_time",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4225
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        },
+        {
+          "name": "action",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4113
+            },
+            "max_size": 4294967295,
+            "type": "Blob"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 3
+      }
+    },
+    "query": "\n                SELECT\n                    `t`.`identifier`,\n                    `l`.`date_time`,\n                    `l`.`action`\n                FROM `LogEntry` `l`\n                JOIN `Token` `t` ON `t`.`id` = `l`.`user_token`\n                WHERE `l`.`item_involved` = ?\n                ORDER BY `date_time` DESC\n                LIMIT ?, ?\n            "
+  },
   "2ed9909d8fcc0ea9392db5ed9cdf22621592a32b5591d3a41e6b82d257442a0d": {
     "describe": {
       "columns": [
@@ -723,6 +850,31 @@
     },
     "query": "\n                SELECT `id`\n                FROM `Comic`\n                WHERE `id` > ?\n                    AND (? is NULL OR `is_guest_comic` = ?)\n                    AND (? is NULL OR `is_non_canon` = ?)\n                ORDER BY `id` ASC\n            "
   },
+  "4d758c53727446c2a170934cceebce0749727032c2a104b7fd588ccab5073692": {
+    "describe": {
+      "columns": [
+        {
+          "name": "item_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4137
+            },
+            "max_size": 6,
+            "type": "Short"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT `item_id`\n                FROM `ItemImage`\n                WHERE `id` = ?\n            "
+  },
   "515031c8b75d00ff1d0a2cafca83b107eeedf788734bb40c9a20139c3565cd3d": {
     "describe": {
       "columns": [],
@@ -973,6 +1125,16 @@
     },
     "query": "\n                INSERT IGNORE INTO `Comic`\n                    (`id`)\n                VALUES\n                    (?)\n            "
   },
+  "6e6020b1ca7066dc202e3d99a9f9265120c21dab6efd7d3a8121d9209b461d4c": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 5
+      }
+    },
+    "query": "\n                INSERT INTO `LogEntry`\n                    (`user_token`, `date_time`, `action`, `comic_involved`, `item_involved`)\n                VALUES\n                    (?, ?, ?, ?, ?)\n            "
+  },
   "82b946cd7e0a781f5cf4effe69701e6646c68faf99d2314539b29607c0ecba46": {
     "describe": {
       "columns": [
@@ -1222,16 +1384,6 @@
       }
     },
     "query": "\n                UPDATE `News`\n                SET\n                    `update_factor` = ?,\n                    `last_updated` = ?\n                WHERE\n                    `comic_id` = ?\n            "
-  },
-  "9b20ade5c5466b2007c7384236c3c622feceb2febf4cba3ce6250529631ad905": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Right": 3
-      }
-    },
-    "query": "\n                INSERT INTO `LogEntry`\n                    (`user_token`, `date_time`, `action`)\n                VALUES\n                    (?, ?, ?)\n            "
   },
   "a0453cbede96a583d2b33ca6e2552092a9c4d8dda2c02ff26f19190a12ff4a7f": {
     "describe": {
@@ -2246,6 +2398,31 @@
       }
     },
     "query": "\n                SELECT `publish_date` FROM `Comic` WHERE `id` = ?\n            "
+  },
+  "faaac454e8a8a0f6a9350fdeafcda5146e514dc3c3c92d6bbdf86ae9047e4457": {
+    "describe": {
+      "columns": [
+        {
+          "name": "COUNT(*)",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 129
+            },
+            "max_size": 21,
+            "type": "LongLong"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT COUNT(*) FROM `LogEntry`\n                WHERE `comic_involved` = ?\n            "
   },
   "fb72ef2f19c5d5aa356ffe4a00ab1b1a7641d6d1b4a36df6cb3952de6975a9a5": {
     "describe": {

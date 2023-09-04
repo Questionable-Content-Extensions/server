@@ -187,6 +187,8 @@ async fn set_flag(
                 false_value_log_text
             }
         ),
+        Some(request.comic_id.into_inner()),
+        None,
     )
     .await
     .map_err(error::ErrorInternalServerError)?;

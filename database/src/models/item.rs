@@ -487,6 +487,25 @@ impl Item {
         .await
     }
 
+    pub async fn item_id_by_image_id<'e, 'c: 'e, E>(
+        executor: E,
+        image_id: u32,
+    ) -> sqlx::Result<Option<u16>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_scalar!(
+            r#"
+                SELECT `item_id`
+                FROM `ItemImage`
+                WHERE `id` = ?
+            "#,
+            image_id
+        )
+        .fetch_optional(executor)
+        .await
+    }
+
     pub async fn create_image<'e, 'c: 'e, E>(
         executor: E,
         item_id: u16,

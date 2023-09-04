@@ -91,7 +91,7 @@ async fn main() -> Result<()> {
     if std::env::var("RUST_LOG").is_err() {
         std::env::set_var("RUST_LOG", "actix_web=info,qcext_server=info");
     }
-    pretty_env_logger::init();
+    pretty_env_logger::init_timed();
 
     let http_db_pool = DbPool::create(Environment::database_url()).await;
     let db_pool = http_db_pool.clone();

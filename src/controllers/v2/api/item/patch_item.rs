@@ -20,14 +20,14 @@ pub(crate) async fn patch_item(
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_ITEM_DATA)
         .map_err(error::ErrorForbidden)?;
 
-    let item_id = item_id.into_inner();
+    let item_id = item_id.into_inner().into_inner();
 
     let mut transaction = pool
         .begin()
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let old_item = DatabaseItem::by_id(&mut *transaction, item_id.into_inner())
+    let old_item = DatabaseItem::by_id(&mut *transaction, item_id)
         .await
         .map_err(error::ErrorInternalServerError)?
         .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {} exists", item_id)))?;
@@ -43,7 +43,7 @@ pub(crate) async fn patch_item(
     let mut updated = Vec::with_capacity(3);
 
     if let Some(name) = &name {
-        DatabaseItem::update_name_by_id(&mut *transaction, item_id.into_inner(), name)
+        DatabaseItem::update_name_by_id(&mut *transaction, item_id, name)
             .await
             .map_err(error::ErrorInternalServerError)?;
 
@@ -55,6 +55,8 @@ pub(crate) async fn patch_item(
                     "Set name of {} #{} to \"{}\"",
                     old_item.r#type, item_id, name
                 ),
+                None,
+                Some(item_id),
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
@@ -66,6 +68,8 @@ pub(crate) async fn patch_item(
                     "Changed name of {} #{} from \"{}\" to \"{}\"",
                     old_item.r#type, item_id, old_item.name, name
                 ),
+                None,
+                Some(item_id),
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
@@ -75,7 +79,7 @@ pub(crate) async fn patch_item(
     }
 
     if let Some(short_name) = short_name {
-        DatabaseItem::update_short_name_by_id(&mut *transaction, item_id.into_inner(), &short_name)
+        DatabaseItem::update_short_name_by_id(&mut *transaction, item_id, &short_name)
             .await
             .map_err(error::ErrorInternalServerError)?;
 
@@ -87,6 +91,8 @@ pub(crate) async fn patch_item(
                     "Set shortName of {} #{} to \"{}\"",
                     old_item.r#type, item_id, short_name
                 ),
+                None,
+                Some(item_id),
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
@@ -98,6 +104,8 @@ pub(crate) async fn patch_item(
                     "Changed shortName of {} #{} from \"{}\" to \"{}\"",
                     old_item.r#type, item_id, old_item.short_name, short_name
                 ),
+                None,
+                Some(item_id),
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
@@ -116,7 +124,7 @@ pub(crate) async fn patch_item(
 
         DatabaseItem::update_color_by_id(
             &mut *transaction,
-            item_id.into_inner(),
+            item_id,
             new_color.0,
             new_color.1,
             new_color.2,
@@ -131,6 +139,8 @@ pub(crate) async fn patch_item(
                 "Changed color of {} #{} from \"{}\" to \"{}\"",
                 old_item.r#type, item_id, old_color, new_color
             ),
+            None,
+            Some(item_id),
         )
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -139,7 +149,7 @@ pub(crate) async fn patch_item(
     }
 
     if let Some(r#type) = r#type {
-        DatabaseItem::update_type_by_id(&mut *transaction, item_id.into_inner(), r#type.into())
+        DatabaseItem::update_type_by_id(&mut *transaction, item_id, r#type.into())
             .await
             .map_err(error::ErrorInternalServerError)?;
 
@@ -152,6 +162,8 @@ pub(crate) async fn patch_item(
                 old_item.r#type,
                 r#type.as_str()
             ),
+            None,
+            Some(item_id),
         )
         .await
         .map_err(error::ErrorInternalServerError)?;

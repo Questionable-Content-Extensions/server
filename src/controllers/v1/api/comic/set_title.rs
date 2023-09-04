@@ -49,6 +49,8 @@ pub(crate) async fn set_title(
                 "Set title on comic #{} to \"{}\"",
                 request.comic_id, request.title
             ),
+            Some(request.comic_id.into_inner()),
+            None,
         )
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -60,6 +62,8 @@ pub(crate) async fn set_title(
                 "Changed title on comic #{} from \"{}\" to \"{}\"",
                 request.comic_id, old_title, request.title
             ),
+            Some(request.comic_id.into_inner()),
+            None,
         )
         .await
         .map_err(error::ErrorInternalServerError)?;

@@ -59,9 +59,15 @@ pub(crate) async fn remove_item(
         "Removed {} #{} ({}) from comic #{}",
         item.r#type, item.id, item.name, request.comic_id
     );
-    LogEntry::log_action(&mut *transaction, request.token.to_string(), &action)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+    LogEntry::log_action(
+        &mut *transaction,
+        request.token.to_string(),
+        &action,
+        Some(comic_id),
+        Some(item_id),
+    )
+    .await
+    .map_err(error::ErrorInternalServerError)?;
 
     transaction
         .commit()

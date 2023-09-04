@@ -64,6 +64,8 @@ pub(crate) async fn add_item(
                 "Created {} #{} ({})",
                 new_item_type, new_item_id, new_item_name
             ),
+            None,
+            Some(new_item_id),
         )
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -115,6 +117,8 @@ pub(crate) async fn add_item(
             "Added {} #{} ({}) to comic #{}",
             item.r#type, item.id, item.name, request.comic_id
         ),
+        Some(request.comic_id.into_inner()),
+        Some(item.id),
     )
     .await
     .map_err(error::ErrorInternalServerError)?;

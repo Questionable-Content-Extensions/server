@@ -112,6 +112,8 @@ pub(crate) async fn image_upload(
             "Uploaded image #{} for item #{}",
             new_item_image_id, item_id
         ),
+        None,
+        Some(item_id),
     )
     .await
     .map_err(error::ErrorInternalServerError)?;

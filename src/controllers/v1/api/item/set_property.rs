@@ -1,4 +1,5 @@
 use crate::models::v1::{ItemColor, Token};
+use crate::models::v2::ItemId;
 use crate::util::ensure_is_authorized;
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
@@ -22,7 +23,9 @@ pub(crate) async fn set_property(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let old_item = DatabaseItem::by_id(&mut *transaction, request.item_id)
+    let item_id = request.item_id.into_inner();
+
+    let old_item = DatabaseItem::by_id(&mut *transaction, item_id)
         .await
         .map_err(error::ErrorInternalServerError)?
         .ok_or_else(|| {
@@ -31,7 +34,7 @@ pub(crate) async fn set_property(
 
     match &*request.property {
         "name" => {
-            DatabaseItem::update_name_by_id(&mut *transaction, request.item_id, &request.value)
+            DatabaseItem::update_name_by_id(&mut *transaction, item_id, &request.value)
                 .await
                 .map_err(error::ErrorInternalServerError)?;
 
@@ -43,6 +46,8 @@ pub(crate) async fn set_property(
                         "Set name of {} #{} to \"{}\"",
                         old_item.r#type, request.item_id, request.value
                     ),
+                    None,
+                    Some(item_id),
                 )
                 .await
                 .map_err(error::ErrorInternalServerError)?;
@@ -54,19 +59,17 @@ pub(crate) async fn set_property(
                         "Changed name of {} #{} from \"{}\" to \"{}\"",
                         old_item.r#type, request.item_id, old_item.name, request.value
                     ),
+                    None,
+                    Some(item_id),
                 )
                 .await
                 .map_err(error::ErrorInternalServerError)?;
             }
         }
         "shortName" => {
-            DatabaseItem::update_short_name_by_id(
-                &mut *transaction,
-                request.item_id,
-                &request.value,
-            )
-            .await
-            .map_err(error::ErrorInternalServerError)?;
+            DatabaseItem::update_short_name_by_id(&mut *transaction, item_id, &request.value)
+                .await
+                .map_err(error::ErrorInternalServerError)?;
 
             if old_item.short_name.is_empty() {
                 LogEntry::log_action(
@@ -74,8 +77,10 @@ pub(crate) async fn set_property(
                     request.token.to_string(),
                     format!(
                         "Set shortName of {} #{} to \"{}\"",
-                        old_item.r#type, request.item_id, request.value
+                        old_item.r#type, item_id, request.value
                     ),
+                    None,
+                    Some(item_id),
                 )
                 .await
                 .map_err(error::ErrorInternalServerError)?;
@@ -87,6 +92,8 @@ pub(crate) async fn set_property(
                         "Changed shortName of {} #{} from \"{}\" to \"{}\"",
                         old_item.r#type, request.item_id, old_item.short_name, request.value
                     ),
+                    None,
+                    Some(item_id),
                 )
                 .await
                 .map_err(error::ErrorInternalServerError)?;
@@ -102,7 +109,7 @@ pub(crate) async fn set_property(
 
             DatabaseItem::update_color_by_id(
                 &mut *transaction,
-                request.item_id,
+                item_id,
                 new_color.0,
                 new_color.1,
                 new_color.2,
@@ -115,8 +122,10 @@ pub(crate) async fn set_property(
                 request.token.to_string(),
                 format!(
                     "Changed color of {} #{} from \"{}\" to \"{}\"",
-                    old_item.r#type, request.item_id, old_color, new_color
+                    old_item.r#type, item_id, old_color, new_color
                 ),
+                None,
+                Some(item_id),
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
@@ -145,7 +154,7 @@ pub(crate) async fn set_property(
 pub(crate) struct SetItemPropertyBody {
     token: Token,
     #[serde(rename = "item")]
-    item_id: u16,
+    item_id: ItemId,
     property: String,
     value: String,
 }

@@ -51,6 +51,13 @@ pub(crate) async fn delete(
 
     let image_id = image_id.into_inner();
 
+    let item_id = DatabaseItem::item_id_by_image_id(&mut *transaction, image_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?
+        .ok_or_else(|| {
+            error::ErrorNotFound(anyhow!("No item image with id {} exists", image_id))
+        })?;
+
     let result = DatabaseItem::delete_image(&mut *transaction, image_id)
         .await
         .map_err(error::ErrorInternalServerError)?;
@@ -66,6 +73,8 @@ pub(crate) async fn delete(
         &mut *transaction,
         request.token.to_string(),
         format!("Deleted image #{}", image_id),
+        None,
+        Some(item_id),
     )
     .await
     .map_err(error::ErrorInternalServerError)?;
@@ -113,6 +122,8 @@ pub(crate) async fn set_primary(
             "Set image #{} as primary for item #{}",
             request.image_id, item_id
         ),
+        None,
+        Some(item_id),
     )
     .await
     .map_err(error::ErrorInternalServerError)?;

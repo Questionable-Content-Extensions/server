@@ -50,6 +50,8 @@ pub(crate) async fn set_tagline(
                     "Changed tagline on comic #{} from \"{}\" to \"{}\"",
                     request.comic_id, old_tagline, request.tagline
                 ),
+                Some(request.comic_id.into_inner()),
+                None,
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
@@ -62,6 +64,8 @@ pub(crate) async fn set_tagline(
                     "Set tagline on comic #{} to \"{}\"",
                     request.comic_id, request.tagline
                 ),
+                Some(request.comic_id.into_inner()),
+                None,
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
