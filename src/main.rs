@@ -63,6 +63,7 @@ use crate::models::v1::Token;
 use crate::util::{ComicUpdater, Either, NewsUpdater};
 use actix_files::Files;
 use actix_web::dev::ServiceRequest;
+use actix_web::web::PayloadConfig;
 use actix_web::{error, web, App, Error, FromRequest, HttpServer};
 use actix_web_grants::GrantsMiddleware;
 use anyhow::{anyhow, Context as _, Result};
@@ -112,6 +113,7 @@ async fn main() -> Result<()> {
             let a = App::new()
                 .app_data(web::Data::new(http_db_pool.clone()))
                 .app_data(http_news_updater.clone())
+                .app_data(PayloadConfig::new(1048576))
                 .wrap(auth)
                 .wrap(actix_web::middleware::Compress::default());
 
