@@ -1,0 +1,3 @@
+ALTER TABLE `Item` DROP FOREIGN KEY `Item_ibfk_1`;
+
+ALTER TABLE `Item` ADD FOREIGN KEY (`primary_image`) REFERENCES `ItemImage` (`id`) ON DELETE SET NULL;
