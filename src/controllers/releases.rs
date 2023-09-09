@@ -152,7 +152,7 @@ struct ScriptCache {
 
 static SCRIPT_CACHE: Lazy<ArcSwap<ScriptCache>> = Lazy::new(|| {
     ArcSwap::from_pointee(ScriptCache {
-        expiration: Utc::now() - Duration::days(1),
+        expiration: Utc::now() - Duration::hours(1),
         user: None,
         meta: None,
     })
