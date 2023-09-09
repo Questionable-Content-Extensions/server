@@ -139,7 +139,7 @@ impl AddMonths for DateTime<Utc> {
 
         // Check if the day we have is bigger than the biggest day of the resulting month
         // and if so, truncateca
-        let days_in_month = days_from_month_in_year(month, year) as u32;
+        let days_in_month = days_from_month_in_year(month, year).unwrap() as u32;
         if day > days_in_month {
             day = days_in_month;
         }

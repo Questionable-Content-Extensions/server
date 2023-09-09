@@ -1238,9 +1238,9 @@ dependencies = [
 
 [[package]]
 name = "ilyvion-util"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0cfa0a286281307c6b59841b160a46ec825060090ec04bac2a6b4c3368ff504d"
+checksum = "8156883d1d5af8b22b94c1397eca6f19c28514baf50fd2646b8a30f99acbbdb2"
 dependencies = [
  "chrono",
  "dotenvy",
