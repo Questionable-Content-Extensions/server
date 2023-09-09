@@ -3,8 +3,6 @@ use anyhow::{anyhow, Result};
 use chrono::{DateTime, Datelike, TimeZone, Timelike, Utc};
 use futures::Future;
 use ilyvion_util::chrono::days_from_month_in_year;
-use ilyvion_util::string_extensions::StrExtensions;
-use once_cell::sync::Lazy;
 use semval::{Invalidity, Validate};
 use std::cell::RefCell;
 use std::fmt::Display;
@@ -17,48 +15,15 @@ pub use news_updater::*;
 mod comic_updater;
 mod news_updater;
 
-macro_rules! lazy_environment {
-    ($static_name:ident, $name:ident) => {
-        lazy_environment!(pub, $static_name, $name);
-    };
-    ($vis:vis, $static_name:ident, $name:ident) => {
-        #[allow(dead_code)]
-        static $static_name: Lazy<String> = Lazy::new(|| {
-            std::env::var(stringify!($static_name)).expect(concat!(
-                "Tried reading environment variable '",
-                stringify!($static_name),
-                "'"
-            ))
-        });
+pub mod environment {
+    use ilyvion_util::environment::define_environment;
 
-        impl Environment {
-            #[allow(dead_code)]
-            $vis fn $name() -> &'static str {
-                &*$static_name
-            }
-        }
-    };
-}
-
-pub struct Environment;
-
-lazy_environment!(PORT, port);
-lazy_environment!(DATABASE_URL, database_url);
-lazy_environment!(QC_TIMEZONE, qc_timezone);
-lazy_environment!(, BACKGROUND_SERVICES, background_services);
-
-impl Environment {
-    pub fn init() {
-        dotenv::dotenv().ok();
-    }
-
-    pub fn background_services_enabled() -> bool {
-        !matches!(
-            Self::background_services()
-                .to_ascii_lowercase_cow()
-                .as_ref(),
-            "off" | "false" | "no" | "0"
-        )
+    define_environment! {
+        pub port(): u16;
+        pub database_url();
+        pub qc_timezone();
+        pub background_services(): bool;
+        pub honeycomb_key();
     }
 }
 

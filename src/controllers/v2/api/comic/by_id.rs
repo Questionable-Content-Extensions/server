@@ -1,6 +1,7 @@
 use crate::controllers::v1::api::comic::editor_data::fetch_editor_data_for_comic;
-use crate::controllers::v1::api::comic::navigation_data::fetch_comic_item_navigation_data;
-use crate::controllers::v2::api::comic::navigation_data::fetch_all_item_navigation_data;
+use crate::controllers::v1::api::comic::navigation_data::{
+    fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
+};
 use crate::models::v2::{
     Comic, ComicData, ComicId, EditorData, Exclusion, False, Inclusion, ItemNavigationData,
     MissingComic, MissingEditorData, PresentComic, Token, True,
@@ -14,8 +15,10 @@ use database::DbPool;
 use serde::Deserialize;
 use shared::token_permissions;
 use std::convert::TryInto;
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
+#[tracing::instrument(skip(pool, news_updater, auth), fields(permissions = ?auth.permissions))]
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn by_id(
     pool: web::Data<DbPool>,
@@ -28,6 +31,7 @@ pub(crate) async fn by_id(
 
     let mut conn = pool
         .acquire()
+        .instrument(info_span!("Pool::acquire"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 

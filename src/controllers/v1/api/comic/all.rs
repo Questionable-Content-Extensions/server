@@ -2,8 +2,8 @@ use crate::models::v1::{ComicList, Exclusion};
 use actix_web::{error, web, HttpResponse, Result};
 use database::models::Comic as DatabaseComic;
 use database::DbPool;
-use log::info;
 use serde::Deserialize;
+use tracing::info;
 
 pub(crate) async fn all(
     pool: web::Data<DbPool>,

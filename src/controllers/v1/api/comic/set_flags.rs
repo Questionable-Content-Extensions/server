@@ -201,6 +201,7 @@ async fn set_flag(
     Ok(())
 }
 
+#[derive(Debug)]
 pub enum FlagType {
     IsGuestComic,
     IsNonCanon,

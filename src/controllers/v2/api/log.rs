@@ -16,6 +16,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
 const PAGE_SIZE: u16 = 10;
 
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
 async fn get(
     pool: web::Data<DbPool>,
     query: web::Query<LogQuery>,
@@ -46,6 +47,7 @@ async fn get(
     }))
 }
 
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
 async fn get_by_comic(
     pool: web::Data<DbPool>,
     query: web::Query<LogByIdQuery>,
@@ -80,6 +82,7 @@ async fn get_by_comic(
     }))
 }
 
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
 async fn get_by_item(
     pool: web::Data<DbPool>,
     query: web::Query<LogByIdQuery>,

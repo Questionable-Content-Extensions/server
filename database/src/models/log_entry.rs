@@ -15,6 +15,7 @@ pub struct LogEntry {
 }
 
 impl LogEntry {
+    #[tracing::instrument(skip(executor))]
     pub async fn count<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<i64>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -28,6 +29,7 @@ impl LogEntry {
         .await
     }
 
+    #[tracing::instrument(skip(executor, map))]
     pub async fn by_page_number_with_mapping<'e, 'c: 'e, E, T, F>(
         executor: E,
         page: u16,
@@ -60,6 +62,7 @@ impl LogEntry {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn count_including_comic<'e, 'c: 'e, E>(executor: E, comic: u16) -> sqlx::Result<i64>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -75,6 +78,7 @@ impl LogEntry {
         .await
     }
 
+    #[tracing::instrument(skip(executor, map))]
     pub async fn including_comic_by_page_number_with_mapping<'e, 'c: 'e, E, T, F>(
         executor: E,
         comic: u16,
@@ -110,6 +114,7 @@ impl LogEntry {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn count_including_item<'e, 'c: 'e, E>(executor: E, item: u16) -> sqlx::Result<i64>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -125,6 +130,7 @@ impl LogEntry {
         .await
     }
 
+    #[tracing::instrument(skip(executor, map))]
     pub async fn including_item_by_page_number_with_mapping<'e, 'c: 'e, E, T, F>(
         executor: E,
         item: u16,
@@ -160,6 +166,7 @@ impl LogEntry {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn create<'e, 'c: 'e, E>(
         executor: E,
         token: &str,
@@ -188,6 +195,7 @@ impl LogEntry {
         .await
     }
 
+    #[tracing::instrument(skip(executor, token, action), fields(token = token.as_ref(), action = action.as_ref()))]
     pub async fn log_action<'e, 'c: 'e, E>(
         executor: E,
         token: impl AsRef<str>,

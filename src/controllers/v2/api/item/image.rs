@@ -7,8 +7,10 @@ use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;
 use serde::Deserialize;
 use shared::token_permissions;
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
+#[tracing::instrument(skip(pool))]
 pub(crate) async fn images(
     pool: web::Data<DbPool>,
     item_id: web::Path<u16>,
@@ -21,6 +23,7 @@ pub(crate) async fn images(
     Ok(HttpResponse::Ok().json(item_image_list))
 }
 
+#[tracing::instrument(skip(pool))]
 pub(crate) async fn image(
     pool: web::Data<DbPool>,
     image_id: web::Path<u32>,
@@ -35,6 +38,7 @@ pub(crate) async fn image(
     Ok(HttpResponse::Ok().content_type("image/png").body(image))
 }
 
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
 pub(crate) async fn delete(
     pool: web::Data<DbPool>,
     image_id: web::Path<u32>,
@@ -46,6 +50,7 @@ pub(crate) async fn delete(
 
     let mut transaction = pool
         .begin()
+        .instrument(info_span!("Pool::begin"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -81,6 +86,7 @@ pub(crate) async fn delete(
 
     transaction
         .commit()
+        .instrument(info_span!("Transaction::commit"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 

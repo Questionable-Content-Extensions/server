@@ -4,6 +4,7 @@ use database::models::Item as DatabaseItem;
 use database::DbPoolConnection;
 use std::convert::TryInto;
 
+#[tracing::instrument(skip(conn))]
 #[allow(clippy::too_many_lines)]
 pub async fn fetch_all_item_navigation_data(
     conn: &mut DbPoolConnection,
@@ -70,6 +71,7 @@ pub async fn fetch_all_item_navigation_data(
         .collect())
 }
 
+#[tracing::instrument(skip(conn))]
 #[allow(clippy::too_many_lines)]
 pub async fn fetch_comic_item_navigation_data(
     conn: &mut DbPoolConnection,

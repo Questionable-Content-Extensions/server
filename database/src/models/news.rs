@@ -11,6 +11,7 @@ pub struct News {
 }
 
 impl News {
+    #[tracing::instrument(skip(executor))]
     pub async fn by_comic_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -30,6 +31,7 @@ impl News {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_last_updated_by_comic_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -56,6 +58,7 @@ impl News {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_by_comic_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -85,6 +88,7 @@ impl News {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn create_for_comic_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,

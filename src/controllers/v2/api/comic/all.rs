@@ -3,9 +3,10 @@ use crate::models::v2::ComicList;
 use actix_web::{error, web, HttpResponse, Result};
 use database::models::Comic as DatabaseComic;
 use database::DbPool;
-use log::info;
 use serde::Deserialize;
+use tracing::info;
 
+#[tracing::instrument(skip(pool))]
 pub(crate) async fn all(
     pool: web::Data<DbPool>,
     query: web::Query<AllQuery>,
@@ -25,6 +26,7 @@ pub(crate) async fn all(
     Ok(HttpResponse::Ok().json(fetch_comic_list(&pool, is_guest_comic, is_non_canon).await?))
 }
 
+#[tracing::instrument(skip(pool))]
 pub(crate) async fn excluded(
     pool: web::Data<DbPool>,
     query: web::Query<ExcludedQuery>,
@@ -51,6 +53,7 @@ pub(crate) async fn excluded(
     Ok(HttpResponse::Ok().json(fetch_comic_list(&pool, is_guest_comic, is_non_canon).await?))
 }
 
+#[tracing::instrument(skip(pool))]
 async fn fetch_comic_list(
     pool: &DbPool,
     is_guest_comic: Option<bool>,

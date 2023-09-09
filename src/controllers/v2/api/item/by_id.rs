@@ -7,7 +7,9 @@ use database::models::{
 };
 use database::DbPool;
 use std::convert::{TryFrom, TryInto};
+use tracing::{info_span, Instrument};
 
+#[tracing::instrument(skip(pool))]
 pub(crate) async fn by_id(
     pool: web::Data<DbPool>,
     item_id: web::Path<ItemId>,
@@ -16,6 +18,7 @@ pub(crate) async fn by_id(
 
     let mut conn = pool
         .acquire()
+        .instrument(info_span!("Pool::acquire"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -79,6 +82,7 @@ pub(crate) async fn by_id(
     Ok(HttpResponse::Ok().json(item))
 }
 
+#[tracing::instrument(skip(pool))]
 pub(crate) async fn friends(
     pool: web::Data<DbPool>,
     item_id: web::Path<u16>,
@@ -88,6 +92,7 @@ pub(crate) async fn friends(
     Ok(HttpResponse::Ok().json(items))
 }
 
+#[tracing::instrument(skip(pool))]
 pub(crate) async fn locations(
     pool: web::Data<DbPool>,
     item_id: web::Path<u16>,
@@ -97,6 +102,7 @@ pub(crate) async fn locations(
     Ok(HttpResponse::Ok().json(items))
 }
 
+#[tracing::instrument(skip(pool))]
 async fn related_items(
     pool: web::Data<DbPool>,
     item_id: u16,

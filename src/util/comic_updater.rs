@@ -9,16 +9,17 @@ use database::models::Comic as DatabaseComic;
 use database::DbPool;
 use futures::{select, FutureExt};
 use ilyvion_util::string_extensions::StrExtensions;
-use log::info;
 use reqwest::Client;
 use scraper::{Html, Selector};
 use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration as StdDuration};
+use tracing::{info, info_span, Instrument};
 
 const FRONT_PAGE_URL: &str = "https://questionablecontent.net/";
 const ARCHIVE_URL: &str = concatcp!(FRONT_PAGE_URL, "archive.php");
 const STARTUP_DELAY_DURATION: StdDuration = StdDuration::from_secs(15);
 
+#[derive(Debug)]
 pub struct ComicUpdater {
     client: Client,
 }
@@ -74,10 +75,16 @@ impl ComicUpdater {
         Ok(())
     }
 
+    #[tracing::instrument(skip(db_pool))]
     #[allow(clippy::too_many_lines)]
     async fn fetch_latest_comic_data(&self, db_pool: &DbPool) -> Result<ComicId> {
         info!("Fetching QC front page");
-        let response = self.client.get(FRONT_PAGE_URL).send().await;
+        let response = self
+            .client
+            .get(FRONT_PAGE_URL)
+            .send()
+            .instrument(info_span!("fetch_qc_front_page"))
+            .await;
         let qc_front_page = match response {
             Err(e) => {
                 anyhow::bail!(
@@ -86,14 +93,19 @@ impl ComicUpdater {
                         .map_or_else(|| String::from("(Unknown)"), |s| s.to_string())
                 );
             }
-            Ok(r) => r.text().await?,
+            Ok(r) => {
+                r.text()
+                    .instrument(info_span!("fetch_qc_front_page_text"))
+                    .await?
+            }
         };
 
         if qc_front_page.trim().is_empty() {
             anyhow::bail!("Could not fetch front page, got empty response");
         }
 
-        let (comic_id, image_type) = {
+        let parse_document_span = info_span!("parse_front_page_document");
+        let (comic_id, image_type) = parse_document_span.in_scope(|| -> Result<(u16, i32)> {
             let document = Html::parse_document(&qc_front_page);
 
             let comic_image_selector =
@@ -134,8 +146,8 @@ impl ComicUpdater {
                 "Could not fetch front page, couldn't parse comic id from comic image source",
             )?;
 
-            (comic_image, comic_image_type)
-        };
+            Ok((comic_image, comic_image_type))
+        })?;
 
         info!(
             "Comic on front page is #{} ({:?}), uploaded at approximately {}",
@@ -144,7 +156,10 @@ impl ComicUpdater {
             Utc::now(),
         );
 
-        let mut transaction = db_pool.begin().await?;
+        let mut transaction = db_pool
+            .begin()
+            .instrument(info_span!("Pool::begin"))
+            .await?;
 
         let (needs_title, needs_image_type, current_comic_date) =
             DatabaseComic::needs_updating_by_id(&mut *transaction, comic_id).await?;
@@ -156,7 +171,12 @@ impl ComicUpdater {
 
         let new_title = if needs_title {
             info!("Fetching QC archive page");
-            let response = self.client.get(ARCHIVE_URL).send().await;
+            let response = self
+                .client
+                .get(ARCHIVE_URL)
+                .send()
+                .instrument(info_span!("fetch_qc_archive_page"))
+                .await;
             let qc_archive_page = match response {
                 Err(e) => {
                     anyhow::bail!(
@@ -165,33 +185,42 @@ impl ComicUpdater {
                             .map_or_else(|| String::from("(Unknown)"), |s| s.to_string())
                     );
                 }
-                Ok(r) => r.text().await?,
+                Ok(r) => {
+                    r.text()
+                        .instrument(info_span!("fetch_qc_archive_page_text"))
+                        .await?
+                }
             };
 
-            let document = Html::parse_document(&qc_archive_page);
-            let comic_title_selector = format!("a[href*=\"comic={}\"]", comic_id);
-            let comic_title_selector =
-                Selector::parse(&comic_title_selector).expect("valid comic title selector");
-            let comic_title = document
-                .select(&comic_title_selector)
-                .next()
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "Could not fetch archive page, couldn't find comic title element",
-                    )
-                })?;
-            let comic_title = comic_title.inner_html();
-            let comic_title = comic_title
-                .split_once(':')
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "Could not fetch archive page, couldn't find ':' in comic title",
-                    )
-                })?
-                .1
-                .trim();
+            let parse_document_span = info_span!("parse_archive_document");
+            let comic_title = parse_document_span.in_scope(|| -> Result<String> {
+                let document = Html::parse_document(&qc_archive_page);
+                let comic_title_selector = format!("a[href*=\"comic={}\"]", comic_id);
+                let comic_title_selector =
+                    Selector::parse(&comic_title_selector).expect("valid comic title selector");
+                let comic_title =
+                    document
+                        .select(&comic_title_selector)
+                        .next()
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "Could not fetch archive page, couldn't find comic title element",
+                            )
+                        })?;
+                let comic_title = comic_title.inner_html();
+                let comic_title = comic_title
+                    .split_once(':')
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "Could not fetch archive page, couldn't find ':' in comic title",
+                        )
+                    })?
+                    .1
+                    .trim();
 
-            Some(String::from(comic_title))
+                Ok(String::from(comic_title))
+            })?;
+            Some(comic_title)
         } else {
             None
         };
@@ -244,7 +273,10 @@ impl ComicUpdater {
         }
 
         info!("Saving any changes to the database.");
-        transaction.commit().await?;
+        transaction
+            .commit()
+            .instrument(info_span!("Transaction::commit"))
+            .await?;
 
         comic_id
             .try_into()

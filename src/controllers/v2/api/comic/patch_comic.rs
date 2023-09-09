@@ -1,4 +1,4 @@
-use crate::controllers::v2::api::comic::set_flags::FlagType;
+use crate::controllers::v1::api::comic::set_flags::FlagType;
 use crate::models::v1::{ComicId, Token};
 use crate::util::{andify_comma_string, ensure_is_authorized};
 use actix_web::{error, web, HttpResponse, Result};
@@ -8,8 +8,10 @@ use database::models::{Comic as DatabaseComic, LogEntry};
 use database::{DbPool, DbTransaction};
 use serde::Deserialize;
 use shared::token_permissions;
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn patch_comic(
     pool: web::Data<DbPool>,
@@ -22,6 +24,7 @@ pub(crate) async fn patch_comic(
 
     let mut transaction = pool
         .begin()
+        .instrument(info_span!("Pool::begin"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -168,6 +171,7 @@ pub(crate) async fn patch_comic(
 
     transaction
         .commit()
+        .instrument(info_span!("Transaction::commit"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -177,6 +181,7 @@ pub(crate) async fn patch_comic(
     Ok(HttpResponse::Ok().body(format!("Updated {} for comic {comic_id}", changed)))
 }
 
+#[tracing::instrument(skip(transaction))]
 async fn update_publish_date(
     transaction: &mut DbTransaction<'_>,
     comic_id: ComicId,
@@ -232,6 +237,7 @@ async fn update_publish_date(
     Ok(())
 }
 
+#[tracing::instrument(skip(transaction))]
 async fn update_title(
     transaction: &mut DbTransaction<'_>,
     comic_id: ComicId,
@@ -274,6 +280,7 @@ async fn update_title(
     Ok(())
 }
 
+#[tracing::instrument(skip(transaction))]
 async fn update_tagline(
     transaction: &mut DbTransaction<'_>,
     comic_id: ComicId,
@@ -318,6 +325,7 @@ async fn update_tagline(
     Ok(())
 }
 
+#[tracing::instrument(skip(transaction))]
 async fn update_flag(
     flag_type: FlagType,
     flag_value: bool,

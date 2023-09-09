@@ -4,6 +4,7 @@ use database::models::Comic as DatabaseComic;
 use database::DbPoolConnection;
 use std::convert::TryInto;
 
+#[tracing::instrument(skip(conn))]
 pub async fn fetch_editor_data_for_comic(
     conn: &mut DbPoolConnection,
     comic_id: ComicId,
@@ -26,6 +27,7 @@ pub async fn fetch_editor_data_for_comic(
     })
 }
 
+#[tracing::instrument(skip(conn))]
 async fn fetch_navigation_data_for_tagline(
     conn: &mut DbPoolConnection,
     comic_id: ComicId,
@@ -62,6 +64,7 @@ async fn fetch_navigation_data_for_tagline(
     })
 }
 
+#[tracing::instrument(skip(conn))]
 async fn fetch_navigation_data_for_title(
     conn: &mut DbPoolConnection,
     comic_id: ComicId,
@@ -98,6 +101,7 @@ async fn fetch_navigation_data_for_title(
     })
 }
 
+#[tracing::instrument(skip(conn))]
 async fn fetch_navigation_data_for_item(
     conn: &mut DbPoolConnection,
     comic_id: ComicId,
@@ -116,6 +120,7 @@ async fn fetch_navigation_data_for_item(
     })
 }
 
+#[tracing::instrument(skip(conn))]
 async fn fetch_first_for_item(
     conn: &mut DbPoolConnection,
     item: ItemType,
@@ -134,6 +139,7 @@ async fn fetch_first_for_item(
         .expect("database has valid comicIds"))
 }
 
+#[tracing::instrument(skip(conn))]
 async fn fetch_previous_for_item(
     conn: &mut DbPoolConnection,
     item: ItemType,
@@ -154,6 +160,7 @@ async fn fetch_previous_for_item(
         .expect("database has valid comicIds"))
 }
 
+#[tracing::instrument(skip(conn))]
 async fn fetch_next_for_item(
     conn: &mut DbPoolConnection,
     item: ItemType,
@@ -174,6 +181,7 @@ async fn fetch_next_for_item(
         .expect("database has valid comicIds"))
 }
 
+#[tracing::instrument(skip(conn))]
 async fn fetch_last_for_item(
     conn: &mut DbPoolConnection,
     item: ItemType,

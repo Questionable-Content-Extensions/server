@@ -5,6 +5,7 @@ pub struct Occurrence {
 }
 
 impl Occurrence {
+    #[tracing::instrument(skip(executor))]
     pub async fn occurrence_by_item_id_and_comic_id<'e, 'c: 'e, E>(
         executor: E,
         item_id: u16,
@@ -29,6 +30,7 @@ impl Occurrence {
         .map(|c| c == 1)
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn create<'e, 'c: 'e, E>(
         executor: E,
         item_id: u16,
@@ -51,6 +53,7 @@ impl Occurrence {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn delete<'e, 'c: 'e, E>(
         executor: E,
         item_id: u16,

@@ -10,7 +10,9 @@ use database::DbPool;
 use futures::StreamExt;
 use shared::token_permissions;
 use std::str::FromStr;
+use tracing::{info_span, Instrument};
 
+#[tracing::instrument(skip(pool, image_upload_form),fields(token,image.size,image.crc32c,permissions))]
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn image_upload(
     pool: web::Data<DbPool>,
@@ -19,12 +21,18 @@ pub(crate) async fn image_upload(
 ) -> Result<HttpResponse> {
     let FormData { token, image } = get_form_data(image_upload_form).await?;
 
+    tracing::Span::current()
+        .record("token", token.to_string())
+        .record("image.size", image.0.len())
+        .record("image.crc32c", image.1);
+
     let token = Token::from(token);
     let item_id = item_id.into_inner();
     let (image, crc32c_hash) = image;
 
     let mut transaction = pool
         .begin()
+        .instrument(info_span!("Pool::begin"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -33,6 +41,8 @@ pub(crate) async fn image_upload(
             .await
             .map_err(error::ErrorInternalServerError)?;
     let auth = AuthDetails::new(permissions);
+
+    tracing::Span::current().record("permissions", format!("{:?}", auth.permissions));
 
     ensure_is_authorized(&auth, token_permissions::CAN_ADD_IMAGE_TO_ITEM)
         .map_err(error::ErrorForbidden)?;
@@ -59,6 +69,7 @@ pub(crate) async fn image_upload(
 
     transaction
         .commit()
+        .instrument(info_span!("Transaction::commit"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 

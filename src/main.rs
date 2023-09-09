@@ -62,7 +62,8 @@
 use crate::models::v1::Token;
 use crate::util::{ComicUpdater, Either, NewsUpdater};
 use actix_files::Files;
-use actix_web::dev::ServiceRequest;
+use actix_http::body::MessageBody;
+use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::web::PayloadConfig;
 use actix_web::{error, web, App, Error, FromRequest, HttpServer};
 use actix_web_grants::GrantsMiddleware;
@@ -71,12 +72,20 @@ use database::models::Token as DatabaseToken;
 use database::DbPool;
 use futures::stream::{FuturesUnordered, StreamExt};
 use futures::{pin_mut, FutureExt};
-use log::{error, info};
+use opentelemetry::sdk::trace::Tracer;
+use opentelemetry::sdk::Resource;
+use opentelemetry::trace::TraceError;
+use opentelemetry::KeyValue;
+use opentelemetry_otlp::WithExportConfig;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
-use util::Environment;
+use tracing::{error, info, Level, Span};
+use tracing_actix_web::{DefaultRootSpanBuilder, RootSpanBuilder, TracingLogger};
+use tracing_subscriber::layer::SubscriberExt;
+use util::environment;
 
 #[macro_use]
 mod util;
@@ -86,21 +95,29 @@ mod models;
 
 #[actix_web::main]
 async fn main() -> Result<()> {
-    Environment::init();
+    environment::init_dotenv();
 
-    // Initialize logging
-    if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "actix_web=info,qcext_server=info");
-    }
-    pretty_env_logger::init_timed();
+    let filter = tracing_subscriber::filter::Targets::new()
+        .with_target("hyper", Level::INFO)
+        .with_target("actix_http", Level::DEBUG)
+        .with_target("actix_server", Level::DEBUG)
+        .with_default(Level::TRACE);
 
-    let http_db_pool = DbPool::create(Environment::database_url()).await;
+    let tracer = init_tracer().unwrap();
+    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    let subscriber = tracing_subscriber::Registry::default()
+        .with(filter)
+        .with(tracing_subscriber::fmt::Layer::default())
+        .with(telemetry);
+    tracing::subscriber::set_global_default(subscriber).unwrap();
+
+    let http_db_pool = DbPool::create(environment::database_url()).await;
     let db_pool = http_db_pool.clone();
 
     info!("Running any outstanding database migrations...");
     database::migrate(&db_pool).await?;
 
-    let bind_address = format!("0.0.0.0:{}", Environment::port());
+    let bind_address = format!("0.0.0.0:{}", environment::port_u16());
     info!("Starting server at: {}", &bind_address);
 
     let http_news_updater: web::Data<NewsUpdater> = web::Data::new(NewsUpdater::new());
@@ -115,15 +132,10 @@ async fn main() -> Result<()> {
                 .app_data(http_news_updater.clone())
                 .app_data(PayloadConfig::new(1048576))
                 .wrap(auth)
-                .wrap(actix_web::middleware::Compress::default());
-
-            let a = if cfg!(debug_assertions) {
-                a.wrap(actix_web::middleware::Logger::default())
-            } else {
-                a.wrap(actix_web::middleware::Logger::new(
-                    r#"%{X-Forwarded-For}i (%{X-Real-IP}i) "%r" %s %b "%{Referer}i" "%{User-Agent}i" %T"#,
+                .wrap(actix_web::middleware::Compress::default()).wrap(actix_web::middleware::Logger::new(
+                    r#"%{X-Forwarded-For}i (%{X-Real-IP}i) (QCExt version %{X-QCExt-Version}i) "%r" %s %b "%{Referer}i" "%{User-Agent}i" %T"#,
                 ))
-            };
+                .wrap(TracingLogger::<DomainRootSpanBuilder>::new());
 
             // Because of legacy reasons, the old API needs to be directly at the root.
             // Any newer APIs should be mounted *inside* v1's `configure`
@@ -138,7 +150,7 @@ async fn main() -> Result<()> {
 
     let (shutdown_sender, mut background_news_updater_shutdown_receiver) = broadcast::channel(1);
     let mut shutdown_futures = FuturesUnordered::new();
-    if Environment::background_services_enabled() {
+    if environment::background_services_bool() {
         let background_news_updater_db_pool = db_pool.clone();
         let background_comic_updater_db_pool = db_pool;
 
@@ -298,4 +310,46 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<Vec<String>
     DatabaseToken::get_permissions_for_token(&mut conn, token.to_string())
         .await
         .map_err(error::ErrorInternalServerError)
+}
+
+fn init_tracer() -> Result<Tracer, TraceError> {
+    opentelemetry_otlp::new_pipeline()
+        .tracing()
+        .with_trace_config(
+            opentelemetry::sdk::trace::config().with_resource(Resource::new(vec![KeyValue::new(
+                "service.name",
+                "qcext-server",
+            )])),
+        )
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .http()
+                .with_endpoint("https://api.honeycomb.io/v1/traces")
+                .with_http_client(reqwest::Client::default())
+                .with_headers(HashMap::from([
+                    ("x-honeycomb-dataset".into(), "qcext-server-dataset".into()),
+                    (
+                        "x-honeycomb-team".into(),
+                        environment::honeycomb_key().into(),
+                    ),
+                ]))
+                .with_timeout(Duration::from_secs(2)),
+        ) // Replace with runtime::Tokio if using async main
+        .install_batch(opentelemetry::runtime::Tokio)
+}
+
+struct DomainRootSpanBuilder;
+
+impl RootSpanBuilder for DomainRootSpanBuilder {
+    fn on_request_start(request: &ServiceRequest) -> Span {
+        let qcext_version = request
+            .headers()
+            .get("X-QCExt-Version")
+            .map(|h| String::from_utf8_lossy(h.as_ref()).into_owned());
+        tracing_actix_web::root_span!(request, qcext.version = qcext_version)
+    }
+
+    fn on_request_end<B: MessageBody>(span: Span, outcome: &Result<ServiceResponse<B>, Error>) {
+        DefaultRootSpanBuilder::on_request_end(span, outcome);
+    }
 }

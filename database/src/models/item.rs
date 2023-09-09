@@ -17,6 +17,7 @@ pub struct Item {
 }
 
 impl Item {
+    #[tracing::instrument(skip(executor))]
     pub async fn occurrences_in_comic_mapped_by_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -40,6 +41,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn occurrences_in_comic_by_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -62,6 +64,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -77,6 +80,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn all_mapped_by_id<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<BTreeMap<u16, Self>>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -94,6 +98,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<Option<Self>>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -109,6 +114,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn create<'e, 'c: 'e, E>(
         executor: E,
         name: &str,
@@ -133,6 +139,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_apperance_and_count_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -158,6 +165,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_apperances_and_count<'e, 'c: 'e, E>(
         executor: E,
         include_guest_comics: Option<bool>,
@@ -191,6 +199,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn previous_apperances_by_comic_id_mapped_by_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -232,6 +241,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn next_apperances_by_comic_id_mapped_by_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -275,6 +285,7 @@ impl Item {
 
     // ---
 
+    #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_apperances_and_count_of_items_in_comic_by_comic_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -313,6 +324,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn previous_apperances_of_items_in_comic_by_comic_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -358,6 +370,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn next_apperances_of_items_in_comic_by_comic_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -403,6 +416,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn image_count_by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<i64>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -418,6 +432,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn image_metadatas_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -441,6 +456,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor, map))]
     pub async fn image_metadatas_by_id_with_mapping<'e, 'c: 'e, E, T, F>(
         executor: E,
         id: u16,
@@ -468,6 +484,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn image_by_image_id<'e, 'c: 'e, E>(
         executor: E,
         image_id: u32,
@@ -487,6 +504,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn item_id_by_image_id<'e, 'c: 'e, E>(
         executor: E,
         image_id: u32,
@@ -506,6 +524,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor,image), fields(image.size = image.len()))]
     pub async fn create_image<'e, 'c: 'e, E>(
         executor: E,
         item_id: u16,
@@ -530,6 +549,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn delete_image<'e, 'c: 'e, E>(
         executor: E,
         image_id: u32,
@@ -548,6 +568,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn set_primary_image<'e, 'c: 'e, E>(
         executor: E,
         item_id: u16,
@@ -569,6 +590,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_name_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -590,6 +612,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_short_name_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -611,6 +634,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_color_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -639,6 +663,7 @@ impl Item {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_type_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,

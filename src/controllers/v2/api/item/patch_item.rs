@@ -8,8 +8,10 @@ use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;
 use serde::Deserialize;
 use shared::token_permissions;
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn patch_item(
     pool: web::Data<DbPool>,
@@ -24,6 +26,7 @@ pub(crate) async fn patch_item(
 
     let mut transaction = pool
         .begin()
+        .instrument(info_span!("Pool::begin"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -173,6 +176,7 @@ pub(crate) async fn patch_item(
 
     transaction
         .commit()
+        .instrument(info_span!("Transaction::commit"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 

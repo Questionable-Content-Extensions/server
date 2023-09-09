@@ -21,6 +21,7 @@ pub struct Comic {
 }
 
 impl Comic {
+    #[tracing::instrument(skip(executor))]
     pub async fn count<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<i64>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -34,6 +35,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor, map))]
     pub async fn all_with_mapping<'e, 'c: 'e, E, T, F>(
         executor: E,
         include_guest_comics: Option<bool>,
@@ -63,6 +65,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn ensure_exists_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -83,6 +86,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn exists_by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<bool>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -100,6 +104,7 @@ impl Comic {
         .map(|c| c == 1)
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<Option<Self>>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -116,6 +121,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn previous_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -144,6 +150,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn next_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -172,6 +179,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn publish_date_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -189,6 +197,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_publish_date_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -215,6 +224,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_is_guest_comic_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -238,6 +248,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_is_non_canon_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -261,6 +272,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_has_no_cast_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -284,6 +296,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_has_no_location_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -307,6 +320,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_has_no_storyline_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -330,6 +344,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_has_no_title_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -353,6 +368,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_has_no_tagline_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -376,6 +392,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_missing_tagline<'e, 'c: 'e, E>(
         executor: E,
     ) -> sqlx::Result<(Option<u16>, Option<u16>)>
@@ -399,6 +416,7 @@ impl Comic {
         .map(|ofl| ofl.map_or((None, None), |fl| (fl.first, fl.last)))
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn previous_missing_tagline_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -423,6 +441,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn next_missing_tagline_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -449,6 +468,7 @@ impl Comic {
 
     // ---
 
+    #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_missing_title<'e, 'c: 'e, E>(
         executor: E,
     ) -> sqlx::Result<(Option<u16>, Option<u16>)>
@@ -471,6 +491,7 @@ impl Comic {
         .map(|ofl| ofl.map_or((None, None), |fl| (fl.first, fl.last)))
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn previous_missing_title_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -494,6 +515,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn next_missing_title_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -519,6 +541,7 @@ impl Comic {
 
     // ---
 
+    #[tracing::instrument(skip(executor))]
     pub async fn first_missing_items_by_type<'e, 'c: 'e, E>(
         executor: E,
         r#type: ItemType,
@@ -555,6 +578,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn previous_missing_items_by_id_and_type<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -594,6 +618,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn next_missing_items_by_id_and_type<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -633,6 +658,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn last_missing_items_by_type<'e, 'c: 'e, E>(
         executor: E,
         r#type: ItemType,
@@ -669,6 +695,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn tagline_by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<Option<String>>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -684,6 +711,7 @@ impl Comic {
         .map(|o| o.flatten())
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_tagline_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -706,6 +734,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn title_by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<Option<String>>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -720,6 +749,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_title_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -742,6 +772,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn needs_updating_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -774,6 +805,7 @@ impl Comic {
         }
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn insert_or_update_title_imagetype_and_publish_date_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
@@ -807,6 +839,7 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor))]
     pub async fn update_image_type_and_publish_date_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,

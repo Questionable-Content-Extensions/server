@@ -13,6 +13,7 @@ pub struct Token {
 }
 
 impl Token {
+    #[tracing::instrument(skip(executor, token), fields(token = token.as_ref()))]
     pub async fn get_permissions_for_token<'e, 'c: 'e, E>(
         executor: E,
         token: impl AsRef<str>,

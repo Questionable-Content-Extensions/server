@@ -1,7 +1,6 @@
 use actix_web::web;
 
-pub(in crate::controllers) use crate::controllers::v1::api::item::*;
-
+pub(in crate::controllers) mod all;
 pub(in crate::controllers) mod by_id;
 pub(in crate::controllers) mod image;
 pub(in crate::controllers) mod image_upload;

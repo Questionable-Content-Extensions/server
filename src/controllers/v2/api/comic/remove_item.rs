@@ -11,8 +11,10 @@ use parse_display::Display;
 use semval::{context::Context as ValidationContext, Validate};
 use serde::Deserialize;
 use shared::token_permissions;
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
 pub(crate) async fn remove_item(
     pool: web::Data<DbPool>,
     request: web::Json<RemoveItemFromComicBody>,
@@ -25,6 +27,7 @@ pub(crate) async fn remove_item(
 
     let mut transaction = pool
         .begin()
+        .instrument(info_span!("Pool::begin"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -71,6 +74,7 @@ pub(crate) async fn remove_item(
 
     transaction
         .commit()
+        .instrument(info_span!("Transaction::commit"))
         .await
         .map_err(error::ErrorInternalServerError)?;
 
