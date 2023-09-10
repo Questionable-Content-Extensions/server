@@ -1,13 +1,16 @@
 use crate::models::v1::{ItemColor, ItemId, ItemType};
-use crate::models::v2::{ComicList, Item, RelatedItem};
+use crate::models::v2::{ComicList, Exclusion, Item, RelatedItem};
 use actix_web::{error, web, HttpResponse, Result};
 use anyhow::anyhow;
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, RelatedItem as RelatedDatabaseItem,
 };
 use database::DbPool;
+use rand::seq::SliceRandom;
+use serde::Deserialize;
 use std::convert::{TryFrom, TryInto};
 use tracing::{info_span, Instrument};
+use ts_rs::TS;
 
 #[tracing::instrument(skip(pool))]
 pub(crate) async fn by_id(
@@ -141,4 +144,55 @@ pub(crate) async fn comics(
             .map_err(error::ErrorInternalServerError)?;
 
     Ok(HttpResponse::Ok().json(comics))
+}
+
+#[tracing::instrument(skip(pool))]
+pub(crate) async fn random_comic(
+    pool: web::Data<DbPool>,
+    item_id: web::Path<u16>,
+    query: web::Query<RandomItemComicQuery>,
+) -> Result<HttpResponse> {
+    let item_id = item_id.into_inner();
+
+    let (include_guest_comics, include_non_canon_comics) = match query.exclude {
+        None => (None, None),
+        Some(Exclusion::Guest) => (Some(false), None),
+        Some(Exclusion::NonCanon) => (None, Some(false)),
+    };
+
+    let comics: Vec<ComicList> =
+        DatabaseComic::all_with_item_id_mapped(&***pool, item_id, From::from)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+
+    if comics.len() < 2 {
+        return Ok(HttpResponse::Ok().json(()));
+    }
+
+    let mut thread_rng = rand::thread_rng();
+    let comic = loop {
+        let comic = comics.choose(&mut thread_rng).unwrap();
+        if !include_guest_comics.unwrap_or(true) && comic.is_guest_comic {
+            continue;
+        }
+        if !include_non_canon_comics.unwrap_or(true) && comic.is_non_canon {
+            continue;
+        }
+        if comic.comic.into_inner() == query.current_comic {
+            continue;
+        }
+        break comic;
+    };
+
+    Ok(HttpResponse::Ok().json(comic.comic))
+}
+
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
+pub(crate) struct RandomItemComicQuery {
+    #[ts(optional)]
+    exclude: Option<Exclusion>,
+    #[serde(rename = "current-comic")]
+    #[ts(type = "string")]
+    pub current_comic: u16,
 }
