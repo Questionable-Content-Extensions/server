@@ -326,7 +326,7 @@ async fn update_tagline(
 }
 
 #[tracing::instrument(skip(transaction))]
-async fn update_flag(
+pub(super) async fn update_flag(
     flag_type: FlagType,
     flag_value: bool,
     comic_id: ComicId,

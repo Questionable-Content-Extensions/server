@@ -98,8 +98,6 @@ impl From<ItemImageMetadata> for ItemImageList {
     }
 }
 
-// TODO: Update RelatedItem to match new slimmer ItemNavigationData
-
 #[derive(Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]

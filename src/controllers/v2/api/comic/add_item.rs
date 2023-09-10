@@ -1,3 +1,5 @@
+use crate::controllers::v1::api::comic::set_flags::FlagType;
+use crate::controllers::v2::api::comic::patch_comic::update_flag;
 use crate::util::{andify_comma_string, ensure_is_authorized, ensure_is_valid};
 use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::permissions::AuthDetails;
@@ -34,8 +36,14 @@ pub(crate) async fn add_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    DatabaseComic::ensure_exists_by_id(&mut *transaction, request.comic_id.into_inner())
+    let comic_id = request.comic_id.into_inner();
+    DatabaseComic::ensure_exists_by_id(&mut *transaction, comic_id)
         .await
+        .map_err(error::ErrorInternalServerError)?;
+    let comic = DatabaseComic::by_id(&mut *transaction, comic_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?
+        .ok_or_else(|| anyhow!("Comic does not exist despite being ensured to exist!"))
         .map_err(error::ErrorInternalServerError)?;
 
     let (id, name, r#type) = match request.item {
@@ -77,7 +85,7 @@ pub(crate) async fn add_item(
             let occurrence_exists = Occurrence::occurrence_by_item_id_and_comic_id(
                 &mut *transaction,
                 existing.item_id,
-                request.comic_id.into_inner(),
+                comic_id,
             )
             .await
             .map_err(error::ErrorInternalServerError)?;
@@ -98,9 +106,23 @@ pub(crate) async fn add_item(
         }
     };
 
-    // TODO: Turn off hasNoCast / hasNoLocation / hasNoStoryline flag if enabled
+    let (flagtype, flag_needs_update) = match r#type {
+        ItemType::Cast => (FlagType::HasNoCast, comic.has_no_cast != 0),
+        ItemType::Location => (FlagType::HasNoLocation, comic.has_no_location != 0),
+        ItemType::Storyline => (FlagType::HasNoStoryline, comic.has_no_storyline != 0),
+    };
+    if flag_needs_update {
+        update_flag(
+            flagtype,
+            false,
+            request.comic_id,
+            request.token,
+            &mut transaction,
+        )
+        .await?;
+    }
 
-    Occurrence::create(&mut *transaction, id, request.comic_id.into_inner())
+    Occurrence::create(&mut *transaction, id, comic_id)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -115,7 +137,7 @@ pub(crate) async fn add_item(
         &mut *transaction,
         request.token.to_string(),
         &action,
-        Some(request.comic_id.into_inner()),
+        Some(comic_id),
         Some(id),
     )
     .await
@@ -146,8 +168,14 @@ pub(crate) async fn add_items(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    DatabaseComic::ensure_exists_by_id(&mut *transaction, request.comic_id.into_inner())
+    let comic_id = request.comic_id.into_inner();
+    DatabaseComic::ensure_exists_by_id(&mut *transaction, comic_id)
         .await
+        .map_err(error::ErrorInternalServerError)?;
+    let mut comic = DatabaseComic::by_id(&mut *transaction, comic_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?
+        .ok_or_else(|| anyhow!("Comic does not exist despite being ensured to exist!"))
         .map_err(error::ErrorInternalServerError)?;
 
     let mut items_added = String::new();
@@ -159,22 +187,47 @@ pub(crate) async fn add_items(
                 error::ErrorBadRequest(anyhow!("Item #{} does not exist", item.item_id))
             })?;
 
-        let occurrence_exists = Occurrence::occurrence_by_item_id_and_comic_id(
-            &mut *transaction,
-            item.id,
-            request.comic_id.into_inner(),
-        )
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+        let occurrence_exists =
+            Occurrence::occurrence_by_item_id_and_comic_id(&mut *transaction, item.id, comic_id)
+                .await
+                .map_err(error::ErrorInternalServerError)?;
 
         if occurrence_exists {
             // In this multi-item-add scenario, we'll ignore existing items
             continue;
         }
 
-        // TODO: Turn off hasNoCast / hasNoLocation / hasNoStoryline flag if enabled
+        let (flagtype, flag_needs_update, flag) =
+            match ItemType::try_from(&*item.r#type).map_err(error::ErrorInternalServerError)? {
+                ItemType::Cast => (
+                    FlagType::HasNoCast,
+                    comic.has_no_cast != 0,
+                    &mut comic.has_no_cast,
+                ),
+                ItemType::Location => (
+                    FlagType::HasNoLocation,
+                    comic.has_no_location != 0,
+                    &mut comic.has_no_location,
+                ),
+                ItemType::Storyline => (
+                    FlagType::HasNoStoryline,
+                    comic.has_no_storyline != 0,
+                    &mut comic.has_no_storyline,
+                ),
+            };
+        if flag_needs_update {
+            update_flag(
+                flagtype,
+                false,
+                request.comic_id,
+                request.token,
+                &mut transaction,
+            )
+            .await?;
+            *flag = 0
+        }
 
-        Occurrence::create(&mut *transaction, item.id, request.comic_id.into_inner())
+        Occurrence::create(&mut *transaction, item.id, comic_id)
             .await
             .map_err(error::ErrorInternalServerError)?;
 
@@ -188,7 +241,7 @@ pub(crate) async fn add_items(
                 item.name,
                 request.comic_id
             ),
-            Some(request.comic_id.into_inner()),
+            Some(comic_id),
             Some(item.id),
         )
         .await
