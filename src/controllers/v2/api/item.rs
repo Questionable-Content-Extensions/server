@@ -18,6 +18,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
                 .route(web::get().to(by_id::by_id))
                 .route(web::patch().to(patch_item::patch_item)),
         )
+        .service(web::resource("{itemId}/comics").route(web::get().to(by_id::comics)))
         .service(web::resource("{itemId}/friends").route(web::get().to(by_id::friends)))
         .service(web::resource("{itemId}/locations").route(web::get().to(by_id::locations)))
         .service(

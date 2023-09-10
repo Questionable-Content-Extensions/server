@@ -121,6 +121,32 @@ impl Comic {
         .await
     }
 
+    #[tracing::instrument(skip(executor, map))]
+    pub async fn all_with_item_id_mapped<'e, 'c: 'e, E, T, F>(
+        executor: E,
+        item_id: u16,
+        map: F,
+    ) -> sqlx::Result<Vec<T>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+        F: FnMut(Self) -> T,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT c.* FROM `Comic` c
+                JOIN `Occurrence` o on o.`comic_id` = c.`id`
+                WHERE o.`item_id` = ?
+                ORDER BY c.`id` ASC
+            "#,
+            item_id
+        )
+        .fetch(executor)
+        .map_ok(map)
+        .try_collect()
+        .await
+    }
+
     #[tracing::instrument(skip(executor))]
     pub async fn previous_id<'e, 'c: 'e, E>(
         executor: E,

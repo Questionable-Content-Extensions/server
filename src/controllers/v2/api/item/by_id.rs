@@ -1,5 +1,5 @@
 use crate::models::v1::{ItemColor, ItemId, ItemType};
-use crate::models::v2::{Item, RelatedItem};
+use crate::models::v2::{ComicList, Item, RelatedItem};
 use actix_web::{error, web, HttpResponse, Result};
 use anyhow::anyhow;
 use database::models::{
@@ -126,4 +126,19 @@ async fn related_items(
     )
     .await
     .map_err(error::ErrorInternalServerError)
+}
+
+#[tracing::instrument(skip(pool))]
+pub(crate) async fn comics(
+    pool: web::Data<DbPool>,
+    item_id: web::Path<u16>,
+) -> Result<HttpResponse> {
+    let item_id = item_id.into_inner();
+
+    let comics: Vec<ComicList> =
+        DatabaseComic::all_with_item_id_mapped(&***pool, item_id, From::from)
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(comics))
 }

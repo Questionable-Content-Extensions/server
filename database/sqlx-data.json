@@ -1385,6 +1385,187 @@
     },
     "query": "\n                UPDATE `News`\n                SET\n                    `update_factor` = ?,\n                    `last_updated` = ?\n                WHERE\n                    `comic_id` = ?\n            "
   },
+  "915da40398a3521ec7f324e2e65753b6b68a65b0d1b94964e0c6f439777b47ea": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4131
+            },
+            "max_size": 6,
+            "type": "Short"
+          }
+        },
+        {
+          "name": "is_guest_comic",
+          "ordinal": 1,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 1,
+            "type": "Bit"
+          }
+        },
+        {
+          "name": "is_non_canon",
+          "ordinal": 2,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 1,
+            "type": "Bit"
+          }
+        },
+        {
+          "name": "title",
+          "ordinal": 3,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 4097
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "tagline",
+          "ordinal": 4,
+          "type_info": {
+            "char_set": 224,
+            "flags": {
+              "bits": 0
+            },
+            "max_size": 1020,
+            "type": "VarString"
+          }
+        },
+        {
+          "name": "publish_date",
+          "ordinal": 5,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 128
+            },
+            "max_size": 19,
+            "type": "Datetime"
+          }
+        },
+        {
+          "name": "is_accurate_publish_date",
+          "ordinal": 6,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 1,
+            "type": "Bit"
+          }
+        },
+        {
+          "name": "has_no_cast",
+          "ordinal": 7,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 1,
+            "type": "Bit"
+          }
+        },
+        {
+          "name": "has_no_location",
+          "ordinal": 8,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 1,
+            "type": "Bit"
+          }
+        },
+        {
+          "name": "has_no_storyline",
+          "ordinal": 9,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 1,
+            "type": "Bit"
+          }
+        },
+        {
+          "name": "has_no_tagline",
+          "ordinal": 10,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 1,
+            "type": "Bit"
+          }
+        },
+        {
+          "name": "has_no_title",
+          "ordinal": 11,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 33
+            },
+            "max_size": 1,
+            "type": "Bit"
+          }
+        },
+        {
+          "name": "image_type",
+          "ordinal": 12,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 1
+            },
+            "max_size": 11,
+            "type": "Long"
+          }
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT c.* FROM `Comic` c\n                JOIN `Occurrence` o on o.`comic_id` = c.`id`\n                WHERE o.`item_id` = ?\n                ORDER BY c.`id` ASC\n            "
+  },
   "a0453cbede96a583d2b33ca6e2552092a9c4d8dda2c02ff26f19190a12ff4a7f": {
     "describe": {
       "columns": [
