@@ -346,7 +346,12 @@ impl RootSpanBuilder for DomainRootSpanBuilder {
             .headers()
             .get("X-QCExt-Version")
             .map(|h| String::from_utf8_lossy(h.as_ref()).into_owned());
-        tracing_actix_web::root_span!(request, qcext.version = qcext_version)
+        let headers: Vec<_> = request.headers().iter().collect();
+        tracing_actix_web::root_span!(
+            request,
+            qcext.version = qcext_version,
+            http.headers = ?headers
+        )
     }
 
     fn on_request_end<B: MessageBody>(span: Span, outcome: &Result<ServiceResponse<B>, Error>) {
