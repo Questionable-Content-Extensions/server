@@ -1,0 +1,7 @@
+bindings
+build
+node_modules
+target
+Dockerfile
+.dockerignore
+.env

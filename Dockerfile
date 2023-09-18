@@ -2,47 +2,25 @@
 #   Rust image   #
 ##################
 
-FROM rust:1-bookworm AS rust
-
+FROM rust:1-bookworm AS chef 
 WORKDIR /usr/src/qcext-server
+RUN cargo install cargo-chef 
 
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS rust
 # Run SQLX in offline mode
 ENV SQLX_OFFLINE=true
 
-# Use spare registry protocol
-ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
+# Build dependencies - this is the caching Docker layer!
+COPY --from=planner /usr/src/qcext-server/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
 
-# Build the dependencies in a separate step to avoid rebuilding all of them
-# every time the source code changes. This takes advantage of Docker's layer
-# caching, and it works by doing a build using the Cargo.{toml,lock} files with
-# dummy source code.
-COPY Cargo.lock Cargo.toml /usr/src/qcext-server/
-RUN mkdir -p /usr/src/qcext-server/database
-COPY database/Cargo.toml database/sqlx-data.json /usr/src/qcext-server/database/
-RUN mkdir -p /usr/src/qcext-server/shared
-COPY shared/Cargo.toml /usr/src/qcext-server/shared/
-RUN mkdir -p /usr/src/qcext-server/src && \
-    echo "fn main() {}" > /usr/src/qcext-server/src/main.rs
-RUN mkdir -p /usr/src/qcext-server/database/src && \
-    touch /usr/src/qcext-server/database/src/lib.rs
-RUN mkdir -p /usr/src/qcext-server/shared/src && \
-    touch /usr/src/qcext-server/shared/src/lib.rs
-RUN cargo fetch
+# Dependencies are now cached, build for real.
+COPY . .
 RUN cargo build --release
-
-# Dependencies are now cached, copy the actual source code and do another full
-# build. The touch on all the .rs files is needed, otherwise cargo assumes the
-# source code didn't change thanks to mtime weirdness.
-RUN rm -rf /usr/src/qcext-server/src /usr/src/qcext-server/database/src /usr/src/qcext-server/shared/src
-COPY src /usr/src/qcext-server/src
-RUN rm -rf /usr/src/qcext-server/src/client
-COPY database/src /usr/src/qcext-server/database/src
-COPY database/migrations /usr/src/qcext-server/database/migrations
-COPY shared/src /usr/src/qcext-server/shared/src
-RUN find src -name "*.rs" -exec touch {} \; && \
-    find database/src -name "*.rs" -exec touch {} \; && \
-    find shared/src -name "*.rs" -exec touch {} \; && \
-    cargo build --release
 
 ##################
 #  NodeJS image  #
@@ -52,13 +30,22 @@ FROM debian:bookworm AS nodejs
 
 WORKDIR /usr/src/qcext-server
 
+# Download and import the Nodesource GPG key
+RUN apt-get update && \
+    apt-get install -y ca-certificates curl gnupg && \
+    apt-get clean
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | \
+    gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+
 # Make sure we have npm and nodejs
-RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y curl
-RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
-RUN node --version
-RUN npm --version
+ENV NODE_MAJOR=18
+RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
+RUN DEBIAN_FRONTEND=noninteractive \
+    apt-get update && \
+    apt-get install nodejs -y && \
+    apt-get clean
+
 
 # Next, let's run npm install
 COPY package.json package-lock.json /usr/src/qcext-server/
