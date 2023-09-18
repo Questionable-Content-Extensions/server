@@ -1,7 +1,10 @@
+use std::collections::HashSet;
+
 use crate::models::v1::Exclusion;
-use crate::models::v2::ComicList;
+use crate::models::v2::{ComicList, ItemId};
 use actix_web::{error, web, HttpResponse, Result};
-use database::models::Comic as DatabaseComic;
+use actix_web_lab::extract::Query;
+use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence};
 use database::DbPool;
 use serde::Deserialize;
 use tracing::info;
@@ -54,6 +57,40 @@ pub(crate) async fn excluded(
 }
 
 #[tracing::instrument(skip(pool))]
+pub(crate) async fn containing_items(
+    pool: web::Data<DbPool>,
+    query: Query<FilteredQuery>,
+) -> Result<HttpResponse> {
+    if query.item_ids.is_empty() {
+        return Ok(HttpResponse::Ok().json([(); 0]));
+    }
+
+    let mut appearances = Vec::new();
+    for item_id in query.item_ids.iter().copied().map(ItemId::into_inner) {
+        appearances.push(HashSet::<u16>::from_iter(
+            DatabaseOccurrence::comic_id_occurrence_by_item_id(&***pool, item_id)
+                .await
+                .map_err(error::ErrorInternalServerError)?,
+        ));
+    }
+
+    // Repeatedly whittle down the largest set until we have the intersection of all of them
+    appearances.sort_by_key(HashSet::len);
+    let (intersection, others) = appearances.split_at_mut(1);
+    let intersection = &mut intersection[0];
+    for other in others {
+        intersection.retain(|e| other.contains(e));
+
+        // If we end up with no overlap, we might as well bail out early.
+        if intersection.is_empty() {
+            break;
+        }
+    }
+
+    Ok(HttpResponse::Ok().json(appearances.remove(0)))
+}
+
+#[tracing::instrument(skip(pool))]
 async fn fetch_comic_list(
     pool: &DbPool,
     is_guest_comic: Option<bool>,
@@ -75,4 +112,10 @@ pub(crate) struct AllQuery {
 #[derive(Debug, Deserialize)]
 pub(crate) struct ExcludedQuery {
     exclusion: Option<Exclusion>,
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct FilteredQuery {
+    #[serde(default, rename = "item-id")]
+    item_ids: Vec<ItemId>,
 }

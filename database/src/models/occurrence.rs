@@ -31,6 +31,26 @@ impl Occurrence {
     }
 
     #[tracing::instrument(skip(executor))]
+    pub async fn comic_id_occurrence_by_item_id<'e, 'c: 'e, E>(
+        executor: E,
+        item_id: u16,
+    ) -> sqlx::Result<Vec<u16>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_scalar!(
+            r#"
+                SELECT `comic_id` FROM `Occurrence`
+                WHERE
+                    `item_id` = ?
+            "#,
+            item_id,
+        )
+        .fetch_all(executor)
+        .await
+    }
+
+    #[tracing::instrument(skip(executor))]
     pub async fn create<'e, 'c: 'e, E>(
         executor: E,
         item_id: u16,

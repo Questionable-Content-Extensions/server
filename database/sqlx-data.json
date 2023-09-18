@@ -366,6 +366,31 @@
     },
     "query": "\n                UPDATE `Comic`\n                SET\n                    `has_no_title` = ?\n                WHERE\n                    `id` = ?\n            "
   },
+  "0b8cda73bf288c260b501b08bbd47fa1504333ec3cb8488fec1520dfb2cd916c": {
+    "describe": {
+      "columns": [
+        {
+          "name": "comic_id",
+          "ordinal": 0,
+          "type_info": {
+            "char_set": 63,
+            "flags": {
+              "bits": 4139
+            },
+            "max_size": 6,
+            "type": "Short"
+          }
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n                SELECT `comic_id` FROM `Occurrence`\n                WHERE\n                    `item_id` = ?\n            "
+  },
   "106dc28e2e1871090af8e88d92e4ad282f23ab5ed899837a8b469ef39016daf1": {
     "describe": {
       "columns": [],
