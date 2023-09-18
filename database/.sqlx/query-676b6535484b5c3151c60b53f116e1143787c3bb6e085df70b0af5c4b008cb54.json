@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                UPDATE `Item`\n                SET `type` = ?\n                WHERE `id` = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "676b6535484b5c3151c60b53f116e1143787c3bb6e085df70b0af5c4b008cb54"
+}

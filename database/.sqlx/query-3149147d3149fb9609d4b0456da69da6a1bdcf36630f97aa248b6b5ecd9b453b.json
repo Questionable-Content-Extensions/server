@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO `Occurrence`\n                    (`comic_id`, `item_id`)\n                VALUES\n                    (?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3149147d3149fb9609d4b0456da69da6a1bdcf36630f97aa248b6b5ecd9b453b"
+}

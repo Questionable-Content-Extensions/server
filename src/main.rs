@@ -307,7 +307,7 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<Vec<String>
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    DatabaseToken::get_permissions_for_token(&mut conn, token.to_string())
+    DatabaseToken::get_permissions_for_token(&mut *conn, token.to_string())
         .await
         .map_err(error::ErrorInternalServerError)
 }

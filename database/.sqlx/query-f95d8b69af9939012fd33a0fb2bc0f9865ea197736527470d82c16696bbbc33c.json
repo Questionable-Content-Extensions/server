@@ -1,0 +1,58 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `item_id` AS `id`,\n                    MIN(`comic_id`) AS `first`,\n                    MAX(`comic_id`) AS `last`,\n                    COUNT(`comic_id`) AS `count`\n                FROM `Occurrence`\n                WHERE `item_id` = ?\n                GROUP by `item_id`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | MULTIPLE_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "first",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "char_set": 63,
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "last",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "char_set": 63,
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "count",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "char_set": 63,
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "f95d8b69af9939012fd33a0fb2bc0f9865ea197736527470d82c16696bbbc33c"
+}

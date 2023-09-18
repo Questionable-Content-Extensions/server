@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT `c`.`id`\n                FROM `Comic` `c`\n                WHERE `c`.`id` NOT IN\n                    (\n                        SELECT `o`.`comic_id`\n                        FROM `Occurrence` `o`\n                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                        WHERE `i`.`type` = ?\n                        AND `o`.`comic_id` = `c`.`id`\n                        GROUP BY `o`.`comic_id`\n                    )\n                    AND `c`.`id` > ?\n                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)\n                    AND (? <> 'location' OR NOT `c`.`has_no_location`)\n                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)\n                ORDER BY `c`.`id` ASC\n                LIMIT 1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 6
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "237d986df9c28980f6afd69d6e00264a3efbecec573fbc3a61c9baeb9e3f1474"
+}

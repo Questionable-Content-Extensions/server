@@ -1,0 +1,36 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `i`.`id` as `id`,\n                    MIN(`c`.`id`) as `comic`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                WHERE `c`.`id` > ?\n                    AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                    AND (? is NULL OR `c`.`is_non_canon` = ?)\n                GROUP BY i.id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "char_set": 63,
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "comic",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "char_set": 63,
+          "max_size": 6
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "305fbeeb777d63aaeb883fa90e4eaf05b3c1ac6031fe50450e1785287737fb51"
+}

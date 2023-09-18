@@ -125,7 +125,7 @@ impl NewsUpdater {
                         &mut *transaction,
                         comic_id.into_inner(),
                         new_update_factor,
-                        Utc::today().naive_utc(),
+                        Utc::now().date_naive(),
                     )
                     .await?;
                 } else {
@@ -135,7 +135,7 @@ impl NewsUpdater {
                         comic_id.into_inner(),
                         &news_text,
                         1.0,
-                        Utc::today().naive_utc(),
+                        Utc::now().date_naive(),
                     )
                     .await?;
                 }
@@ -146,7 +146,7 @@ impl NewsUpdater {
                     comic_id.into_inner(),
                     &news_text,
                     1.0,
-                    Utc::today().naive_utc(),
+                    Utc::now().date_naive(),
                 )
                 .await?;
             }

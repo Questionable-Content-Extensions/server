@@ -1,0 +1,47 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `t`.`identifier`,\n                    `l`.`date_time`,\n                    `l`.`action`\n                FROM `LogEntry` `l`\n                JOIN `Token` `t` ON `t`.`id` = `l`.`user_token`\n                WHERE `l`.`item_involved` = ?\n                ORDER BY `date_time` DESC\n                LIMIT ?, ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "identifier",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 200
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "date_time",
+        "type_info": {
+          "type": "Datetime",
+          "flags": "NOT_NULL | BINARY | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 19
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "action",
+        "type_info": {
+          "type": "Blob",
+          "flags": "NOT_NULL | BLOB | NO_DEFAULT_VALUE",
+          "char_set": 224,
+          "max_size": 4294967295
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "2c9ed7de00eb3e475c0727af50998db91b5b109678f688b2cd8264e4bbf7ac38"
+}

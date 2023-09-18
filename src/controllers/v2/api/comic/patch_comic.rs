@@ -338,7 +338,7 @@ pub(super) async fn update_flag(
             "to be a guest comic",
             "to be a Jeph comic",
             DatabaseComic::update_is_guest_comic_by_id(
-                &mut *transaction,
+                &mut **transaction,
                 comic_id.into_inner(),
                 flag_value,
             )
@@ -348,7 +348,7 @@ pub(super) async fn update_flag(
             "to be non-canon",
             "to be canon",
             DatabaseComic::update_is_non_canon_by_id(
-                &mut *transaction,
+                &mut **transaction,
                 comic_id.into_inner(),
                 flag_value,
             )
@@ -358,7 +358,7 @@ pub(super) async fn update_flag(
             "to have no cast",
             "to have cast",
             DatabaseComic::update_has_no_cast_by_id(
-                &mut *transaction,
+                &mut **transaction,
                 comic_id.into_inner(),
                 flag_value,
             )
@@ -368,7 +368,7 @@ pub(super) async fn update_flag(
             "to have no locations",
             "to have locations",
             DatabaseComic::update_has_no_location_by_id(
-                &mut *transaction,
+                &mut **transaction,
                 comic_id.into_inner(),
                 flag_value,
             )
@@ -378,7 +378,7 @@ pub(super) async fn update_flag(
             "to have no storylines",
             "to have storylines",
             DatabaseComic::update_has_no_storyline_by_id(
-                &mut *transaction,
+                &mut **transaction,
                 comic_id.into_inner(),
                 flag_value,
             )
@@ -388,7 +388,7 @@ pub(super) async fn update_flag(
             "to have no title",
             "to have a title",
             DatabaseComic::update_has_no_title_by_id(
-                &mut *transaction,
+                &mut **transaction,
                 comic_id.into_inner(),
                 flag_value,
             )
@@ -398,7 +398,7 @@ pub(super) async fn update_flag(
             "to have no tagline",
             "to have a tagline",
             DatabaseComic::update_has_no_tagline_by_id(
-                &mut *transaction,
+                &mut **transaction,
                 comic_id.into_inner(),
                 flag_value,
             )
@@ -409,7 +409,7 @@ pub(super) async fn update_flag(
     sql_result.map_err(error::ErrorInternalServerError)?;
 
     LogEntry::log_action(
-        &mut *transaction,
+        &mut **transaction,
         token.to_string(),
         format!(
             "Set comic #{} {}",

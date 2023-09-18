@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT IGNORE INTO `Comic`\n                    (`id`)\n                VALUES\n                    (?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "6cf1a8a0fdb78b5ec0f808329ee8d40ea01f8fd0917c3eb56ef28176f983b92d"
+}

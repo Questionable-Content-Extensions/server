@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                DELETE FROM `ItemImage`\n                WHERE `id` = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "515031c8b75d00ff1d0a2cafca83b107eeedf788734bb40c9a20139c3565cd3d"
+}

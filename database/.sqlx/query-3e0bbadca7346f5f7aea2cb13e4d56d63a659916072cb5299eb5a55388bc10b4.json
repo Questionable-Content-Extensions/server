@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                UPDATE `Comic`\n                SET\n                    `is_non_canon` = ?\n                WHERE\n                    `id` = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "3e0bbadca7346f5f7aea2cb13e4d56d63a659916072cb5299eb5a55388bc10b4"
+}

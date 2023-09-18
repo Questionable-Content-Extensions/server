@@ -37,6 +37,7 @@ impl Deref for DbPool {
     }
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn migrate(pool: &DbPool) -> Result<(), MigrateError> {
     sqlx::migrate!("./migrations").run(&**pool).await
 }

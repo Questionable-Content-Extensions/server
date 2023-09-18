@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                UPDATE `Comic`\n                SET `tagline` = ?\n                WHERE\n                    `id` = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "12b51b4f6261b790b4bf28cfe5f80dbe9146f59ca1d0b94baca257e91f5bb51f"
+}

@@ -18,21 +18,21 @@ pub(crate) async fn by_id(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let item = DatabaseItem::by_id(&mut conn, item_id.into_inner())
+    let item = DatabaseItem::by_id(&mut *conn, item_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?
         .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {} exists", item_id)))?;
 
     let item_occurrence =
-        DatabaseItem::first_and_last_apperance_and_count_by_id(&mut conn, item_id.into_inner())
+        DatabaseItem::first_and_last_apperance_and_count_by_id(&mut *conn, item_id.into_inner())
             .await
             .map_err(error::ErrorInternalServerError)?;
 
-    let total_comics = DatabaseComic::count(&mut conn)
+    let total_comics = DatabaseComic::count(&mut *conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let image_count = DatabaseItem::image_count_by_id(&mut conn, item_id.into_inner())
+    let image_count = DatabaseItem::image_count_by_id(&mut *conn, item_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 

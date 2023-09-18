@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                DELETE FROM `Occurrence`\n                WHERE\n                    `item_id` = ?\n                AND\n                    `comic_id` = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "644d75157afbae61259a7cd896534145f8de1fc03db3c8cb671b3ab90b5bea0e"
+}

@@ -18,7 +18,7 @@ pub(crate) async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let all_items = DatabaseItem::all(&mut conn)
+    let all_items = DatabaseItem::all(&mut *conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 

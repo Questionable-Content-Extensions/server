@@ -26,12 +26,12 @@ async fn get(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let log_entry_count = DatabaseLogEntry::count(&mut conn)
+    let log_entry_count = DatabaseLogEntry::count(&mut *conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
     let log_entries =
-        DatabaseLogEntry::by_page_number_with_mapping(&mut conn, query.page, LogEntry::from)
+        DatabaseLogEntry::by_page_number_with_mapping(&mut *conn, query.page, LogEntry::from)
             .await
             .map_err(error::ErrorInternalServerError)?;
 

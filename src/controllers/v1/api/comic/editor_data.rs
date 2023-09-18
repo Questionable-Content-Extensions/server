@@ -32,15 +32,16 @@ async fn fetch_navigation_data_for_tagline(
     conn: &mut DbPoolConnection,
     comic_id: ComicId,
 ) -> Result<NavigationData> {
-    let (first, last) = DatabaseComic::first_and_last_missing_tagline(&mut *conn)
+    let (first, last) = DatabaseComic::first_and_last_missing_tagline(&mut **conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let previous = DatabaseComic::previous_missing_tagline_by_id(&mut *conn, comic_id.into_inner())
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+    let previous =
+        DatabaseComic::previous_missing_tagline_by_id(&mut **conn, comic_id.into_inner())
+            .await
+            .map_err(error::ErrorInternalServerError)?;
 
-    let next = DatabaseComic::next_missing_tagline_by_id(&mut *conn, comic_id.into_inner())
+    let next = DatabaseComic::next_missing_tagline_by_id(&mut **conn, comic_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -69,15 +70,15 @@ async fn fetch_navigation_data_for_title(
     conn: &mut DbPoolConnection,
     comic_id: ComicId,
 ) -> Result<NavigationData> {
-    let (first, last) = DatabaseComic::first_and_last_missing_title(&mut *conn)
+    let (first, last) = DatabaseComic::first_and_last_missing_title(&mut **conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let previous = DatabaseComic::previous_missing_title_by_id(&mut *conn, comic_id.into_inner())
+    let previous = DatabaseComic::previous_missing_title_by_id(&mut **conn, comic_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let next = DatabaseComic::next_missing_title_by_id(&mut *conn, comic_id.into_inner())
+    let next = DatabaseComic::next_missing_title_by_id(&mut **conn, comic_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -127,7 +128,7 @@ async fn fetch_first_for_item(
 ) -> Result<Option<ComicId>> {
     let item = item.as_str();
     let first = DatabaseComic::first_missing_items_by_type(
-        &mut *conn,
+        &mut **conn,
         item.try_into().map_err(error::ErrorInternalServerError)?,
     )
     .await
@@ -147,7 +148,7 @@ async fn fetch_previous_for_item(
 ) -> Result<Option<ComicId>> {
     let item = item.as_str();
     let previous = DatabaseComic::previous_missing_items_by_id_and_type(
-        &mut *conn,
+        &mut **conn,
         comic_id.into_inner(),
         item.try_into().map_err(error::ErrorInternalServerError)?,
     )
@@ -168,7 +169,7 @@ async fn fetch_next_for_item(
 ) -> Result<Option<ComicId>> {
     let item = item.as_str();
     let next = DatabaseComic::next_missing_items_by_id_and_type(
-        &mut *conn,
+        &mut **conn,
         comic_id.into_inner(),
         item.try_into().map_err(error::ErrorInternalServerError)?,
     )
@@ -188,7 +189,7 @@ async fn fetch_last_for_item(
 ) -> Result<Option<ComicId>> {
     let item = item.as_str();
     let last = DatabaseComic::last_missing_items_by_type(
-        &mut *conn,
+        &mut **conn,
         item.try_into().map_err(error::ErrorInternalServerError)?,
     )
     .await

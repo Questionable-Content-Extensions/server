@@ -290,17 +290,17 @@ fn time_until_next_update(now: DateTime<Utc>) -> Duration {
     let hour = time.hour();
     match weekday {
         Weekday::Sat | Weekday::Sun => {
-            if time < NaiveTime::from_hms(12, 0, 0) {
-                NaiveTime::from_hms(12, 0, 0) - time
+            if time < NaiveTime::from_hms_opt(12, 0, 0).unwrap() {
+                NaiveTime::from_hms_opt(12, 0, 0).unwrap() - time
             } else {
-                NaiveTime::from_hms(23, 59, 59) - time + Duration::seconds(1)
+                NaiveTime::from_hms_opt(23, 59, 59).unwrap() - time + Duration::seconds(1)
             }
         }
         _ => {
             if hour < 23 {
-                NaiveTime::from_hms(hour + 1, 0, 0) - time
+                NaiveTime::from_hms_opt(hour + 1, 0, 0).unwrap() - time
             } else {
-                NaiveTime::from_hms(23, 59, 59) - time + Duration::seconds(1)
+                NaiveTime::from_hms_opt(23, 59, 59).unwrap() - time + Duration::seconds(1)
             }
         }
     }

@@ -1,0 +1,25 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT `c`.`id`\n                FROM `Comic` `c`\n                WHERE (`c`.`title` IS NULL OR NULLIF(`c`.`title`, '') IS NULL)\n                    AND NOT `c`.`has_no_title`\n                    AND `c`.`id` > ?\n                ORDER BY `c`.`id` ASC\n                LIMIT 1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "char_set": 63,
+          "max_size": 6
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f2961e01182b31dff66b4d9e00831d1772883a88dfdef1bb02b4d831c74e7289"
+}

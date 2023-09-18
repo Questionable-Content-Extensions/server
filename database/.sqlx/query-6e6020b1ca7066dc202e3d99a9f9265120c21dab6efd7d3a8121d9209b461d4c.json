@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO `LogEntry`\n                    (`user_token`, `date_time`, `action`, `comic_involved`, `item_involved`)\n                VALUES\n                    (?, ?, ?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "6e6020b1ca7066dc202e3d99a9f9265120c21dab6efd7d3a8121d9209b461d4c"
+}

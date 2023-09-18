@@ -1,5 +1,5 @@
-use chrono::NaiveDate;
-use log::debug;
+use chrono::{NaiveDate, Utc};
+use tracing::debug;
 
 #[derive(Debug)]
 pub struct News {
@@ -118,7 +118,7 @@ impl News {
 
 impl News {
     pub fn is_outdated(&self) -> bool {
-        let days_since_update = (chrono::Utc::today().naive_utc() - self.last_updated).num_days();
+        let days_since_update = (Utc::now().date_naive() - self.last_updated).num_days();
         let update_factor_days = (31.0 * self.update_factor) as i64;
         let locked = self.is_locked != 0;
 

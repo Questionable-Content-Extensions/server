@@ -1,0 +1,58 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    MIN(`c`.`id`) as `first`,\n                    MAX(`c`.`id`) as `last`,\n                    COUNT(`c`.`id`) as `count`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                    AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                    AND (? is NULL OR `c`.`is_non_canon` = ?)\n                WHERE `i`.`id` IN (\n                    SELECT `item_id` FROM `Occurrence` WHERE `comic_id` = ?\n                )\n                GROUP by `i`.`id`\n                ORDER BY `count` DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "char_set": 63,
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "first",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "char_set": 63,
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "last",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "char_set": 63,
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "count",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "char_set": 63,
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "5c0300a9872eb7eae79fe183530d42fac8296a033465b310c55224b4c834f5b7"
+}

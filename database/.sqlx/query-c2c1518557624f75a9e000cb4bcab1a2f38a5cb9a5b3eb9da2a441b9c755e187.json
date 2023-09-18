@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO `Item`\n                    (`name`, `short_name`, `type`)\n                VALUES\n                    (?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "c2c1518557624f75a9e000cb4bcab1a2f38a5cb9a5b3eb9da2a441b9c755e187"
+}

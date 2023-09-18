@@ -30,12 +30,12 @@ async fn get(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let log_entry_count = DatabaseLogEntry::count(&mut conn)
+    let log_entry_count = DatabaseLogEntry::count(&mut *conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
     let log_entries =
-        DatabaseLogEntry::by_page_number_with_mapping(&mut conn, query.page, LogEntry::from)
+        DatabaseLogEntry::by_page_number_with_mapping(&mut *conn, query.page, LogEntry::from)
             .await
             .map_err(error::ErrorInternalServerError)?;
 
@@ -61,12 +61,12 @@ async fn get_by_comic(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let log_entry_count = DatabaseLogEntry::count_including_comic(&mut conn, query.id)
+    let log_entry_count = DatabaseLogEntry::count_including_comic(&mut *conn, query.id)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
     let log_entries = DatabaseLogEntry::including_comic_by_page_number_with_mapping(
-        &mut conn,
+        &mut *conn,
         query.id,
         query.page,
         LogEntry::from,
@@ -96,12 +96,12 @@ async fn get_by_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let log_entry_count = DatabaseLogEntry::count_including_item(&mut conn, query.id)
+    let log_entry_count = DatabaseLogEntry::count_including_item(&mut *conn, query.id)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
     let log_entries = DatabaseLogEntry::including_item_by_page_number_with_mapping(
-        &mut conn,
+        &mut *conn,
         query.id,
         query.page,
         LogEntry::from,

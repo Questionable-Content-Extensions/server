@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                UPDATE `Comic`\n                SET\n                    `publish_date` = ?,\n                    `is_accurate_publish_date` = ?\n                WHERE\n                    `id` = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "a3c4ac3a74ab5a5465d7bde61180a037114db06750f2310e1fdad58b4559481b"
+}

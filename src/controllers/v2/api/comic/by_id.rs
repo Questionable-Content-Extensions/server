@@ -41,12 +41,12 @@ pub(crate) async fn by_id(
         Some(Exclusion::NonCanon) => (None, Some(false)),
     };
 
-    let comic = DatabaseComic::by_id(&mut conn, comic_id.into_inner())
+    let comic = DatabaseComic::by_id(&mut *conn, comic_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 
     let previous = DatabaseComic::previous_id(
-        &mut conn,
+        &mut *conn,
         comic_id.into_inner(),
         include_guest_comics,
         include_non_canon_comics,
@@ -55,7 +55,7 @@ pub(crate) async fn by_id(
     .map_err(error::ErrorInternalServerError)?;
 
     let next = DatabaseComic::next_id(
-        &mut conn,
+        &mut *conn,
         comic_id.into_inner(),
         include_guest_comics,
         include_non_canon_comics,
@@ -66,7 +66,7 @@ pub(crate) async fn by_id(
     let news: Option<DatabaseNews> = if comic.is_some() {
         news_updater.check_for(comic_id);
 
-        DatabaseNews::by_comic_id(&mut conn, comic_id.into_inner())
+        DatabaseNews::by_comic_id(&mut *conn, comic_id.into_inner())
             .await
             .map_err(error::ErrorInternalServerError)?
     } else {
@@ -97,7 +97,7 @@ pub(crate) async fn by_id(
         .collect();
 
         let item_ids_in_comic =
-            DatabaseItem::occurrences_in_comic_by_id(&mut conn, comic_id.into_inner())
+            DatabaseItem::occurrences_in_comic_by_id(&mut *conn, comic_id.into_inner())
                 .await
                 .map_err(error::ErrorInternalServerError)?;
 

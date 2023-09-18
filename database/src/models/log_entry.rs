@@ -1,6 +1,6 @@
 use chrono::{NaiveDateTime, Utc};
 use futures::TryStreamExt;
-use log::info;
+use tracing::info;
 
 const PAGE_SIZE: u16 = 10;
 

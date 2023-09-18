@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO `News`\n                    (`news`, `update_factor`, `last_updated`, `comic_id`)\n                VALUES\n                    (?, ?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "d2299af1c17bb20244faab2ddadf12308532277302396116c79fba0a84a0db42"
+}

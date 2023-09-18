@@ -103,7 +103,7 @@ impl Validate for SetPublishDateBody {
         ValidationContext::new()
             .validate_with(&self.comic_id, SetPublishDateBodyInvalidity::ComicId)
             .invalidate_if(
-                self.publish_date < Utc.ymd(2003, 8, 1).and_hms(0, 0, 0)
+                self.publish_date < Utc.with_ymd_and_hms(2003, 8, 1, 0, 0, 0).unwrap()
                     || self.publish_date > Utc::now().add_months(1),
                 SetPublishDateBodyInvalidity::PublishDate,
             )

@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO `ItemImage`\n                    (`item_id`, `image`, `crc32c_hash`)\n                VALUES\n                    (?, ?, ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "e7895992ecbea6e9594f0e094fa3ac58ef90150b43e0aa99221d30c1d006e73f"
+}

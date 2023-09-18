@@ -1,0 +1,36 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    MIN(`c`.`id`) as `first`,\n                    MAX(`c`.`id`) as `last`\n                FROM `Comic` `c`\n                WHERE (`c`.`title` IS NULL or NULLIF(`c`.`title`, '') IS NULL)\n                    AND NOT `c`.`has_no_title`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "first",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "char_set": 63,
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "last",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "char_set": 63,
+          "max_size": 6
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "8b91655dc647ad29f6e9d06dd17d2ba228f2f595c58ed378841b24f52d1a84cf"
+}

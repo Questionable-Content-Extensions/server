@@ -144,20 +144,20 @@ impl AddMonths for DateTime<Utc> {
             day = days_in_month;
         }
 
-        Utc.ymd(year, month, day)
-            .and_hms(self.hour(), self.minute(), self.second())
+        Utc.with_ymd_and_hms(year, month, day, self.hour(), self.minute(), self.second())
+            .unwrap()
     }
 }
 
 #[test]
 fn test_add_month() {
-    let jan012000 = Utc.ymd(2000, 1, 1).and_hms(0, 0, 0);
+    let jan012000 = Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap();
     for m in 1..12 {
         let result = jan012000.add_months(m);
         assert_eq!(result.month(), m + 1);
     }
 
-    let jan312000 = Utc.ymd(2000, 1, 31).and_hms(0, 0, 0);
+    let jan312000 = Utc.with_ymd_and_hms(2000, 1, 31, 0, 0, 0).unwrap();
     let result = jan312000.add_months(1);
     assert_eq!(result.month(), 2);
     assert_eq!(result.day(), 29);

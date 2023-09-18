@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                UPDATE `News`\n                SET\n                    `news` = ?,\n                    `update_factor` = ?,\n                    `last_updated` = ?\n                WHERE\n                    `comic_id` = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "d3cd380e47217dccf58579bc947903983903508005cbfa08fd6f3ecbb0de5249"
+}

@@ -13,7 +13,7 @@ pub async fn fetch_all_item_navigation_data(
     include_non_canon_comics: Option<bool>,
 ) -> Result<Vec<UnhydratedItemNavigationData>> {
     let first_last_counts = DatabaseItem::first_and_last_apperances_and_count(
-        &mut *conn,
+        &mut **conn,
         include_guest_comics,
         include_non_canon_comics,
     )
@@ -21,7 +21,7 @@ pub async fn fetch_all_item_navigation_data(
     .map_err(error::ErrorInternalServerError)?;
 
     let previous = DatabaseItem::previous_apperances_by_comic_id_mapped_by_id(
-        &mut *conn,
+        &mut **conn,
         comic_id.into_inner(),
         include_guest_comics,
         include_non_canon_comics,
@@ -30,7 +30,7 @@ pub async fn fetch_all_item_navigation_data(
     .map_err(error::ErrorInternalServerError)?;
 
     let next = DatabaseItem::next_apperances_by_comic_id_mapped_by_id(
-        &mut *conn,
+        &mut **conn,
         comic_id.into_inner(),
         include_guest_comics,
         include_non_canon_comics,
@@ -81,7 +81,7 @@ pub async fn fetch_comic_item_navigation_data(
 ) -> Result<Vec<UnhydratedItemNavigationData>> {
     let first_last_counts =
         DatabaseItem::first_and_last_apperances_and_count_of_items_in_comic_by_comic_id(
-            &mut *conn,
+            &mut **conn,
             comic_id.into_inner(),
             include_guest_comics,
             include_non_canon_comics,
@@ -90,7 +90,7 @@ pub async fn fetch_comic_item_navigation_data(
         .map_err(error::ErrorInternalServerError)?;
 
     let previous = DatabaseItem::previous_apperances_of_items_in_comic_by_comic_id(
-        &mut *conn,
+        &mut **conn,
         comic_id.into_inner(),
         include_guest_comics,
         include_non_canon_comics,
@@ -99,7 +99,7 @@ pub async fn fetch_comic_item_navigation_data(
     .map_err(error::ErrorInternalServerError)?;
 
     let next = DatabaseItem::next_apperances_of_items_in_comic_by_comic_id(
-        &mut *conn,
+        &mut **conn,
         comic_id.into_inner(),
         include_guest_comics,
         include_non_canon_comics,
