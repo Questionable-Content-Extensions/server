@@ -12,12 +12,4 @@ shared = { path = "../shared" }
 chrono = { workspace = true }
 futures = { workspace = true }
 tracing = { workspace = true }
-
-sqlx = { version = "0.7.1", features = [
-    "runtime-tokio-native-tls",
-    "mysql",
-    "macros",
-    "migrate",
-    "uuid",
-    "chrono",
-] }
+sqlx = { workspace = true }
