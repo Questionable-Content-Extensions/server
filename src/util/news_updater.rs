@@ -150,6 +150,9 @@ impl NewsUpdater {
                 )
                 .await?;
             }
+
+            // Take a short break after a news update to not hammer the server.
+            sleep(Duration::from_millis(500)).await;
         }
 
         info!("Saving any changes to the news to the database.");
