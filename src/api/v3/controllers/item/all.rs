@@ -1,4 +1,6 @@
-use crate::api::v3::controllers::comic::navigation_data::fetch_all_item_navigation_data;
+use crate::api::v3::controllers::comic::navigation_data::{
+    fetch_all_item_navigation_data, ItemNavigationDataSorting,
+};
 use crate::api::v3::models::{ItemColor, ItemList, ItemType, UnhydratedItemNavigationData};
 use crate::models::{ComicId, ItemId};
 use actix_web::{error, web, HttpResponse, Result};
@@ -21,12 +23,17 @@ pub async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let all_navigation_items =
-        fetch_all_item_navigation_data(&mut conn, ComicId::from(1), None, None)
-            .await?
-            .into_iter()
-            .map(|i| (i.id, i))
-            .collect::<BTreeMap<ItemId, UnhydratedItemNavigationData>>();
+    let all_navigation_items = fetch_all_item_navigation_data(
+        &mut conn,
+        ComicId::from(1),
+        None,
+        None,
+        ItemNavigationDataSorting::ByCount,
+    )
+    .await?
+    .into_iter()
+    .map(|i| (i.id, i))
+    .collect::<BTreeMap<ItemId, UnhydratedItemNavigationData>>();
 
     let mut items = vec![];
     for item in all_items {

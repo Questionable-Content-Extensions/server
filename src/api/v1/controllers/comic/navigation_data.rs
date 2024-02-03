@@ -1,7 +1,7 @@
 use crate::api::v1::models::{NavigationData, UnhydratedItemNavigationData};
 use crate::models::ComicId;
 use actix_web::{error, Result};
-use database::models::Item as DatabaseItem;
+use database::models::{Item as DatabaseItem, PreviousAppearances};
 use database::DbPoolConnection;
 use std::convert::TryInto;
 
@@ -21,7 +21,10 @@ pub async fn fetch_all_item_navigation_data(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    let previous = DatabaseItem::previous_apperances_by_comic_id_mapped_by_id(
+    let PreviousAppearances {
+        appearances: previous,
+        ..
+    } = DatabaseItem::previous_apperances_by_comic_id_mapped_by_id(
         &mut **conn,
         comic_id.into_inner(),
         include_guest_comics,

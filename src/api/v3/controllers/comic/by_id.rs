@@ -1,10 +1,10 @@
 use crate::api::v3::controllers::comic::editor_data::fetch_editor_data_for_comic;
 use crate::api::v3::controllers::comic::navigation_data::{
-    fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
+    fetch_all_item_navigation_data, fetch_comic_item_navigation_data, ItemNavigationDataSorting,
 };
 use crate::api::v3::models::{
     Comic, ComicData, EditorData, Exclusion, Inclusion, ItemNavigationData, MissingComic,
-    MissingEditorData, PresentComic,
+    MissingEditorData, PresentComic, Sorting,
 };
 use crate::models::{ComicId, False, Token, True};
 use crate::util::NewsUpdater;
@@ -87,6 +87,10 @@ pub async fn by_id(
             comic_id,
             include_guest_comics,
             include_non_canon_comics,
+            match query.sorting {
+                Some(Sorting::ByLastAppearance) => ItemNavigationDataSorting::ByLastAppearance,
+                Some(Sorting::ByCount) | None => ItemNavigationDataSorting::ByCount,
+            },
         )
         .await?
         .into_iter()
@@ -183,4 +187,6 @@ pub struct ByIdQuery {
     exclude: Option<Exclusion>,
     #[ts(optional)]
     include: Option<Inclusion>,
+    #[ts(optional)]
+    sorting: Option<Sorting>,
 }

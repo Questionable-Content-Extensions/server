@@ -199,6 +199,13 @@ pub enum Inclusion {
     All,
 }
 
+#[derive(Copy, Clone, Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum Sorting {
+    ByCount,
+    ByLastAppearance,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogEntry {

@@ -1,3 +1,4 @@
+use database::models::ComicId as DatabaseComicId;
 use parse_display::Display;
 use semval::{context::Context as ValidationContext, Validate};
 use serde::{Deserialize, Serialize};
@@ -32,6 +33,12 @@ impl ComicId {
 impl From<u16> for ComicId {
     fn from(comic_id: u16) -> Self {
         Self(comic_id)
+    }
+}
+
+impl From<DatabaseComicId> for ComicId {
+    fn from(comic_id: DatabaseComicId) -> Self {
+        Self(comic_id.into_inner())
     }
 }
 

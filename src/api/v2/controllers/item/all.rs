@@ -6,7 +6,9 @@ use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use tracing::{info_span, Instrument};
 
-use crate::api::v2::controllers::comic::navigation_data::fetch_all_item_navigation_data;
+use crate::api::v2::controllers::comic::navigation_data::{
+    fetch_all_item_navigation_data, ItemNavigationDataSorting,
+};
 use crate::api::v2::models::{ItemColor, ItemList, ItemType, UnhydratedItemNavigationData};
 use crate::models::{ComicId, ItemId};
 
@@ -22,12 +24,17 @@ pub(crate) async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let all_navigation_items =
-        fetch_all_item_navigation_data(&mut conn, ComicId::from(1), None, None)
-            .await?
-            .into_iter()
-            .map(|i| (i.id, i))
-            .collect::<BTreeMap<ItemId, UnhydratedItemNavigationData>>();
+    let all_navigation_items = fetch_all_item_navigation_data(
+        &mut conn,
+        ComicId::from(1),
+        None,
+        None,
+        ItemNavigationDataSorting::ByCount,
+    )
+    .await?
+    .into_iter()
+    .map(|i| (i.id, i))
+    .collect::<BTreeMap<ItemId, UnhydratedItemNavigationData>>();
 
     let mut items = vec![];
     for item in all_items {

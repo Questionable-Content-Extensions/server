@@ -2,7 +2,7 @@ use futures::TryStreamExt;
 
 use std::collections::{BTreeMap, HashSet};
 
-use crate::models::ItemType;
+use crate::models::{ComicId, ItemId, ItemType};
 
 #[derive(Debug)]
 pub struct Item {
@@ -205,11 +205,12 @@ impl Item {
         comic_id: u16,
         include_guest_comics: Option<bool>,
         include_non_canon_comics: Option<bool>,
-    ) -> sqlx::Result<BTreeMap<u16, u16>>
+    ) -> sqlx::Result<PreviousAppearances>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
-        sqlx::query_as!(
+        let mut order = Vec::new();
+        let map = sqlx::query_as!(
             PrevNext,
             r#"
                 SELECT
@@ -222,6 +223,7 @@ impl Item {
                     AND (? is NULL OR `c`.`is_guest_comic` = ?)
                     AND (? is NULL OR `c`.`is_non_canon` = ?)
                 GROUP BY `i`.`id`
+                ORDER BY `comic` DESC
             "#,
             comic_id,
             include_guest_comics,
@@ -230,15 +232,23 @@ impl Item {
             include_non_canon_comics,
         )
         .fetch(executor)
-        .try_filter_map(|pn| async move {
-            if let Some(comic) = pn.comic {
-                Ok(Some((pn.id, comic)))
-            } else {
-                Ok(None)
+        .try_filter_map(|pn| {
+            if pn.comic.is_some() {
+                order.push(ItemId::from(pn.id));
+            }
+            async move {
+                Ok(pn
+                    .comic
+                    .map(|comic| (ItemId::from(pn.id), ComicId::from(comic))))
             }
         })
         .try_collect()
-        .await
+        .await?;
+
+        Ok(PreviousAppearances {
+            appearances: map,
+            order,
+        })
     }
 
     #[tracing::instrument(skip(executor))]
@@ -749,6 +759,11 @@ pub struct ItemFirstLastCount {
 struct PrevNext {
     id: u16,
     comic: Option<u16>,
+}
+
+pub struct PreviousAppearances {
+    pub appearances: BTreeMap<ItemId, ComicId>,
+    pub order: Vec<ItemId>,
 }
 
 // Can't deprecate these fields because `sqlx::FromRow` causes them to be

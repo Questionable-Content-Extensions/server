@@ -90,6 +90,14 @@ pub enum Inclusion {
     All,
 }
 
+#[derive(Copy, Clone, Debug, Deserialize, TS)]
+#[serde(rename_all = "kebab-case")]
+#[ts(export)]
+pub enum Sorting {
+    ByCount,
+    ByLastAppearance,
+}
+
 #[derive(Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]

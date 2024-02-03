@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `i`.`id` as `id`,\n                    MAX(`c`.`id`) as `comic`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                WHERE `c`.`id` < ?\n                    AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                    AND (? is NULL OR `c`.`is_non_canon` = ?)\n                GROUP BY `i`.`id`\n            ",
+  "query": "\n                SELECT\n                    `i`.`id` as `id`,\n                    MAX(`c`.`id`) as `comic`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                WHERE `c`.`id` < ?\n                    AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                    AND (? is NULL OR `c`.`is_non_canon` = ?)\n                GROUP BY `i`.`id`\n                ORDER BY `comic` DESC\n            ",
   "describe": {
     "columns": [
       {
@@ -32,5 +32,5 @@
       true
     ]
   },
-  "hash": "05764f174d03456037b1be29b77f99e5d6acc583b63e6d87950172ee4191feb8"
+  "hash": "e3b5e2a3943db6bc2360902da2db65fe759315968fa31f506d5ef2d6dc90b29b"
 }
