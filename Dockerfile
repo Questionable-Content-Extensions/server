@@ -43,7 +43,7 @@ ENV NODE_MAJOR=18
 RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update && \
-    apt-get install nodejs -y && \
+    apt-get install nodejs npm -y && \
     apt-get clean
 
 

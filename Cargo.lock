@@ -3468,8 +3468,8 @@ checksum = "3528ecfd12c466c6f163363caf2d02a71161dd5e1cc6ae7b34207ea2d42d81ed"
 
 [[package]]
 name = "ts-rs"
-version = "7.0.0"
-source = "git+https://github.com/alexschrod/ts-rs?branch=flatten-untagged-hack#14031e4e3275d96ecf8d6705ad855093ef56fd98"
+version = "7.1.0"
+source = "git+https://github.com/ilyvion-contrib/ts-rs?branch=flatten-untagged-hack#a4128b5b756600e467a78ffee954b4228cde05cf"
 dependencies = [
  "thiserror",
  "ts-rs-macros",
@@ -3477,8 +3477,8 @@ dependencies = [
 
 [[package]]
 name = "ts-rs-macros"
-version = "7.0.0"
-source = "git+https://github.com/alexschrod/ts-rs?branch=flatten-untagged-hack#14031e4e3275d96ecf8d6705ad855093ef56fd98"
+version = "7.1.0"
+source = "git+https://github.com/ilyvion-contrib/ts-rs?branch=flatten-untagged-hack#a4128b5b756600e467a78ffee954b4228cde05cf"
 dependencies = [
  "Inflector",
  "proc-macro2",
