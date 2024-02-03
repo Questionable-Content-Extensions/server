@@ -56,7 +56,7 @@ RUN mkdir /usr/src/qcext-server/src
 COPY src/client /usr/src/qcext-server/src/client
 COPY src/index.js /usr/src/qcext-server/src
 
-RUN npx browserslist@latest --update-db
+RUN npx update-browserslist-db@latest
 
 COPY public /usr/src/qcext-server/public
 RUN npm run build
