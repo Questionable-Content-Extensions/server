@@ -1,39 +1,23 @@
 name: Build and Deploy
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
     build:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-24.04-arm
         steps:
             - uses: actions/checkout@v4
-            
-            - uses: docker/setup-buildx-action@v3
-            - uses: docker/build-push-action@v5
+
+            - uses: ilyvion-contrib/container-ci-build@main
               with:
-                context: .
-                cache-from: type=gha
-                cache-to: type=gha,mode=max
-                load: true
-                tags: qcext-server:latest
-
-            - name: Save Docker image
-              if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-              run: docker save -o qcext-server.tar qcext-server
-
-            - name: Compress Docker image
-              if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-              run: bzip2 -z qcext-server.tar
+                image: questionablextensions
 
             - name: Upload artifact
               if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-              uses: actions/upload-artifact@v3
+              uses: actions/upload-artifact@v4
               with:
-                  name: qcext-server-tar-bz2
-                  path: |
-                      qcext-server.tar.bz2
-                      docker-compose.yml
-                      deploy.sh
+                  name: questionablextensions-tar
+                  path: questionablextensions.tar
 
     deploy:
         runs-on: ubuntu-latest
@@ -41,24 +25,15 @@ jobs:
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         steps:
             - name: Download artifact
-              uses: actions/download-artifact@v3
+              uses: actions/download-artifact@v4
               with:
-                  name: qcext-server-tar-bz2
+                  name: questionablextensions-tar
 
-            - name: Deploy
-              run: docker-compose run deploy
-              env:
-                  DEPLOY_KEY: ${{ secrets.deploy_key }}
-                  DEPLOY_TARGET: ${{ secrets.deploy_target }}
-                  DEPLOY_USER: ${{ secrets.deploy_user }}
-
-    cleanup_job:
-        needs: [deploy]
-        runs-on: ubuntu-latest
-        steps:
-            - name: Delete artifacts
-              env:
-                  FOR_WEBHOOKS_SECRET: ${{ secrets.FOR_WEBHOOKS_SECRET }}
-              run: |
-                  echo "::add-mask::$FOR_WEBHOOKS_SECRET"
-                  curl --verbose --fail --show-error --location --request POST "https://api.github.com/repos/$GITHUB_REPOSITORY/dispatches" --header "Authorization: token $FOR_WEBHOOKS_SECRET" --header 'Content-Type: application/json' --header 'Accept: application/vnd.github.everest-preview+json' --data-raw "{ \"event_type\": \"delete_all_artifacts\", \"client_payload\": {\"parent_runid\": \"$GITHUB_RUN_ID\", \"parent_repo\": \"$GITHUB_REPOSITORY\"} }"
+            - uses: ilyvion-contrib/container-ci-deploy@main
+              with:
+                ssh_known_hosts: ${{ secrets.deploy_known_hosts }}
+                ssh_private_key: ${{ secrets.deploy_key }}
+                ssh_user: ${{ secrets.deploy_user }}
+                ssh_host: ${{ secrets.deploy_target }}
+                ssh_port: ${{ secrets.deploy_port }}
+                image: questionablextensions

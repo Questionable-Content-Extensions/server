@@ -4,7 +4,8 @@
 
 FROM rust:1-bookworm AS chef 
 WORKDIR /usr/src/qcext-server
-RUN cargo install cargo-chef 
+RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+RUN cargo binstall cargo-chef 
 
 FROM chef AS planner
 COPY . .
@@ -43,7 +44,7 @@ ENV NODE_MAJOR=18
 RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update && \
-    apt-get install nodejs npm -y && \
+    apt-get install nodejs -y && \
     apt-get clean
 
 
