@@ -1,0 +1,71 @@
+name: Promote Staging to Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    env:
+        GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Find latest successful staging deployment
+        id: staging
+        run: |
+          DEPLOYMENT_JSON=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+                repos/${{ github.repository }}/deployments \
+            --jq '.[] | select(.environment == "staging")' | head -n1)
+
+          echo "ref=$(echo "$DEPLOYMENT_JSON" | jq -r '.ref')" >> "$GITHUB_OUTPUT"
+          echo "sha=$(echo "$DEPLOYMENT_JSON" | jq -r '.sha')" >> "$GITHUB_OUTPUT"
+
+      - name: Create production deployment
+        id: prod_deploy
+        run: |
+          jq -n \
+            --arg ref "${{ steps.staging.outputs.ref }}" \
+            --arg sha "${{ steps.staging.outputs.sha }}" \
+            --arg environment "production" \
+            '{ref: $ref, sha: $sha, environment: $environment, auto_merge: false, required_contexts: []}' \
+            > payload.json
+            
+          DEPLOY_ID=$(gh api \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+                repos/${{ github.repository }}/deployments \
+            --input payload.json \
+            --jq '.id')
+
+          echo "id=$DEPLOY_ID" >> "$GITHUB_OUTPUT"
+
+      - uses: ilyvion-contrib/ci-utils/setup-ssh@main
+        with:
+            ssh_known_hosts: ${{ secrets.deploy_known_hosts }}
+            ssh_private_key: ${{ secrets.deploy_key }}
+            ssh_host: ${{ secrets.deploy_target }}
+            ssh_port: ${{ secrets.deploy_port }}
+
+      - name: Trigger promote script on server
+        run: |
+          ssh -i ~/.ssh/id -p ${{ secrets.deploy_port }} \
+            ${{ secrets.deploy_user }}@${{ secrets.deploy_target }} \
+            'cd ~/docker/questionablextensions/; sudo promote-staging-to-prod.sh'
+
+      - name: Mark deployment as success
+        if: success()
+        run: |
+          gh api \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            repos/${{ github.repository }}/deployments/${{ steps.prod_deploy.outputs.id }}/statuses \
+            -f state="success"
+
+      - name: Mark deployment as failure
+        if: failure()
+        run: |
+          gh api \
+            -X POST \
+            -H "Accept: application/vnd.github+json" \
+            repos/${{ github.repository }}/deployments/${{ steps.prod_deploy.outputs.id }}/statuses \
+            -f state="failure"
