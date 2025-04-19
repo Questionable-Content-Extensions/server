@@ -19,25 +19,13 @@ jobs:
 
           echo "ref=$(echo "$DEPLOYMENT_JSON" | jq -r '.ref')" >> "$GITHUB_OUTPUT"
           echo "sha=$(echo "$DEPLOYMENT_JSON" | jq -r '.sha')" >> "$GITHUB_OUTPUT"
-
-      - name: Create production deployment
-        id: prod_deploy
-        run: |
-          jq -n \
-            --arg ref "${{ steps.staging.outputs.ref }}" \
-            --arg sha "${{ steps.staging.outputs.sha }}" \
-            --arg environment "production" \
-            '{ref: $ref, sha: $sha, environment: $environment, auto_merge: false, required_contexts: []}' \
-            > payload.json
-            
-          DEPLOY_ID=$(gh api \
-            -X POST \
-            -H "Accept: application/vnd.github+json" \
-                repos/${{ github.repository }}/deployments \
-            --input payload.json \
-            --jq '.id')
-
-          echo "id=$DEPLOY_ID" >> "$GITHUB_OUTPUT"
+          
+      - uses: ilyvion-contrib/ci-utils/create-deployment@main
+        id: deployment
+        with:
+            ref: ${{ steps.staging.outputs.ref }}
+            sha: ${{ steps.staging.outputs.sha }}
+            environment: "production"
 
       - uses: ilyvion-contrib/ci-utils/setup-ssh@main
         with:
@@ -58,7 +46,7 @@ jobs:
           gh api \
             -X POST \
             -H "Accept: application/vnd.github+json" \
-            repos/${{ github.repository }}/deployments/${{ steps.prod_deploy.outputs.id }}/statuses \
+            repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
             -f state="success"
 
       - name: Mark deployment as failure
@@ -67,5 +55,5 @@ jobs:
           gh api \
             -X POST \
             -H "Accept: application/vnd.github+json" \
-            repos/${{ github.repository }}/deployments/${{ steps.prod_deploy.outputs.id }}/statuses \
+            repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
             -f state="failure"
