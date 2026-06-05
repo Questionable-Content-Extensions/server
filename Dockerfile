@@ -71,5 +71,10 @@ FROM gcr.io/distroless/cc-debian12
 COPY --from=rust /usr/src/qcext-server/target/release/qcext-server /usr/local/bin/
 COPY --from=nodejs /usr/src/qcext-server/build /build
 
+ENV PORT=80
+EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=5s \
+    CMD wget --quiet --spider http://localhost/ || exit 1
+
 ENV RUST_LOG=info
 CMD ["/usr/local/bin/qcext-server"]
