@@ -2,7 +2,7 @@ use crate::models::Token;
 use crate::util::ensure_is_authorized;
 use actix_multipart::Multipart;
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::AuthDetails;
+use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use crc32c::crc32c;
 use database::models::{Item as DatabaseItem, LogEntry, Token as DatabaseToken};
@@ -23,9 +23,9 @@ pub(crate) async fn image_upload(
     while let Some(item) = image_upload_form.next().await {
         let mut field = item.map_err(error::ErrorBadRequest)?;
 
-        let content_disposition = field.content_disposition();
-        let name = content_disposition
-            .get_name()
+        let name = field
+            .content_disposition()
+            .and_then(|cd| cd.get_name())
             .ok_or_else(|| error::ErrorBadRequest(anyhow!("A form field was missing a name")))?;
 
         match name {

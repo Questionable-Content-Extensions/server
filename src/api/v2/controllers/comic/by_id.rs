@@ -9,7 +9,7 @@ use crate::api::v2::models::{
 use crate::models::{ComicId, False, True};
 use crate::util::NewsUpdater;
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
+use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
 use chrono::{TimeZone, Utc};
 use database::models::{Comic as DatabaseComic, Item as DatabaseItem, News as DatabaseNews};
 use database::DbPool;
@@ -18,7 +18,7 @@ use shared::token_permissions;
 use std::convert::TryInto;
 use tracing::{info_span, Instrument};
 
-#[tracing::instrument(skip(pool, news_updater, auth), fields(permissions = ?auth.permissions))]
+#[tracing::instrument(skip(pool, news_updater, auth), fields(permissions = ?auth.authorities))]
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn by_id(
     pool: web::Data<DbPool>,
@@ -73,7 +73,7 @@ pub(crate) async fn by_id(
         None
     };
 
-    let editor_data = if auth.has_permission(token_permissions::HAS_VALID_TOKEN) {
+    let editor_data = if auth.has_authority(token_permissions::HAS_VALID_TOKEN) {
         fetch_editor_data_for_comic(&mut conn, comic_id).await?
     } else {
         EditorData::Missing(MissingEditorData::default())

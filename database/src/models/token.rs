@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use shared::token_permissions;
 
 #[derive(Debug)]
@@ -17,7 +19,7 @@ impl Token {
     pub async fn get_permissions_for_token<'e, 'c: 'e, E>(
         executor: E,
         token: impl AsRef<str>,
-    ) -> sqlx::Result<Vec<String>>
+    ) -> sqlx::Result<HashSet<String>>
     where
         E: 'e + sqlx::Executor<'c, Database = sqlx::MySql>,
     {
@@ -38,28 +40,28 @@ impl Token {
             token
         } else {
             // Invalid token provided, there are no permissions
-            return Ok(vec![]);
+            return Ok(HashSet::new());
         };
 
-        let mut permissions = Vec::with_capacity(7);
-        permissions.push(token_permissions::HAS_VALID_TOKEN.to_string());
+        let mut permissions = HashSet::with_capacity(7);
+        permissions.insert(token_permissions::HAS_VALID_TOKEN.to_string());
         if token.can_add_item_to_comic != 0 {
-            permissions.push(token_permissions::CAN_ADD_ITEM_TO_COMIC.to_string());
+            permissions.insert(token_permissions::CAN_ADD_ITEM_TO_COMIC.to_string());
         }
         if token.can_remove_item_from_comic != 0 {
-            permissions.push(token_permissions::CAN_REMOVE_ITEM_FROM_COMIC.to_string());
+            permissions.insert(token_permissions::CAN_REMOVE_ITEM_FROM_COMIC.to_string());
         }
         if token.can_change_comic_data != 0 {
-            permissions.push(token_permissions::CAN_CHANGE_COMIC_DATA.to_string());
+            permissions.insert(token_permissions::CAN_CHANGE_COMIC_DATA.to_string());
         }
         if token.can_add_image_to_item != 0 {
-            permissions.push(token_permissions::CAN_ADD_IMAGE_TO_ITEM.to_string());
+            permissions.insert(token_permissions::CAN_ADD_IMAGE_TO_ITEM.to_string());
         }
         if token.can_remove_image_from_item != 0 {
-            permissions.push(token_permissions::CAN_REMOVE_IMAGE_FROM_ITEM.to_string());
+            permissions.insert(token_permissions::CAN_REMOVE_IMAGE_FROM_ITEM.to_string());
         }
         if token.can_change_item_data != 0 {
-            permissions.push(token_permissions::CAN_CHANGE_ITEM_DATA.to_string());
+            permissions.insert(token_permissions::CAN_CHANGE_ITEM_DATA.to_string());
         }
         Ok(permissions)
     }

@@ -9,7 +9,7 @@ use crate::api::v1::models::{
 use crate::models::{ComicId, False, True};
 use crate::util::NewsUpdater;
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
+use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
 use chrono::{TimeZone, Utc};
 use database::models::{Comic as DatabaseComic, Item as DatabaseItem, News as DatabaseNews};
 use database::DbPool;
@@ -71,7 +71,7 @@ pub(crate) async fn by_id(
         None
     };
 
-    let editor_data = if auth.has_permission(token_permissions::HAS_VALID_TOKEN) {
+    let editor_data = if auth.has_authority(token_permissions::HAS_VALID_TOKEN) {
         Some(fetch_editor_data_for_comic(&mut conn, comic_id).await?)
     } else {
         None

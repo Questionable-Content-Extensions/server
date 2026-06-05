@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use sqlx::migrate::MigrateError;
 use sqlx::mysql::{MySqlConnectOptions, MySqlPoolOptions};
 use std::ops::Deref;

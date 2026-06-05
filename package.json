@@ -8,32 +8,39 @@
         "url": ""
     },
     "dependencies": {
-        "chart.js": "^2.7.2",
-        "chartjs-plugin-annotation": "^0.5.7",
-        "create-react-class": "^15.5.3",
-        "cross-fetch": "^2.1.0",
-        "prop-types": "^15.6.1",
-        "react": "16.2.0",
-        "react-dom": "16.2.0",
-        "react-router-dom": "^4.2.2",
-        "react-scripts": "1.1.1",
-        "semantic-ui-react": "^0.79.0"
+        "react": "^19.2.7",
+        "react-dom": "^19.2.7"
     },
     "scripts": {
-        "start": "react-scripts start",
-        "build": "react-scripts build",
+        "start": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "lint": "eslint .",
         "docker:build": "docker build -t qcext-server .",
         "docker:save": "docker save -o ./qcext-server.tar qcext-server",
-        "prepare": "husky install"
+        "prepare": "husky"
     },
-    "proxy": {
-        "/api": {
-            "target": "http://localhost:5000"
-        }
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
     },
     "devDependencies": {
-        "@commitlint/cli": "^17.7.1",
-        "@commitlint/config-conventional": "^17.7.0",
-        "husky": "^8.0.1"
+        "@commitlint/cli": "^21.0.2",
+        "@commitlint/config-conventional": "^21.0.2",
+        "@eslint/js": "^10.0.1",
+        "@vitejs/plugin-react": "^6.0.2",
+        "eslint": "^10.4.1",
+        "eslint-plugin-react-hooks": "^7.1.1",
+        "globals": "^17.6.0",
+        "husky": "^9.1.7",
+        "vite": "^8.0.16"
     }
 }

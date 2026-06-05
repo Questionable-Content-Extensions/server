@@ -2,7 +2,7 @@ use crate::api::v3::models::{ItemColor, ItemType};
 use crate::models::{ItemId, Token};
 use crate::util::{andify_comma_string, ensure_is_authorized};
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::AuthDetails;
+use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;
@@ -11,7 +11,7 @@ use shared::token_permissions;
 use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
-#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 #[allow(clippy::too_many_lines)]
 pub async fn patch_item(
     pool: web::Data<DbPool>,

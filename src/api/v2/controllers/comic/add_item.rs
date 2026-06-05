@@ -2,7 +2,7 @@ use crate::api::v2::controllers::comic::patch_comic::update_flag;
 use crate::api::v2::models::ItemType;
 use crate::util::{andify_comma_string, ensure_is_authorized, ensure_is_valid};
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::AuthDetails;
+use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
 use database::DbPool;
@@ -16,7 +16,7 @@ use tracing::{info_span, Instrument};
 
 use crate::models::{ComicId, ComicIdInvalidity, False, Token, True};
 
-#[tracing::instrument(skip(pool,  auth), fields(permissions = ?auth.permissions))]
+#[tracing::instrument(skip(pool,  auth), fields(permissions = ?auth.authorities))]
 #[allow(clippy::too_many_lines)]
 pub(crate) async fn add_item(
     pool: web::Data<DbPool>,

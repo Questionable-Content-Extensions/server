@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 pub mod token_permissions {
     pub const HAS_VALID_TOKEN: &str = "HAS_VALID_TOKEN";
     pub const CAN_ADD_ITEM_TO_COMIC: &str = "CAN_ADD_ITEM_TO_COMIC";

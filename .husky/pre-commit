@@ -1,4 +1,1 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 pushd database && cargo sqlx prepare && git add .sqlx && popd

@@ -4,7 +4,7 @@ use actix_web::{error, web, HttpRequest, HttpResponse, Result};
 use arc_swap::ArcSwap;
 use chrono::{DateTime, Duration, Utc};
 use once_cell::sync::Lazy;
-use rand::Rng;
+use rand::RngExt;
 use reqwest::Client;
 use serde::Deserialize;
 use tracing::{debug, info_span, trace, Instrument};
@@ -167,7 +167,7 @@ fn validate_cache(
         error::ErrorBadRequest(format!("{file} is not a valid release file name"))
     })?;
 
-    let jitter = rand::thread_rng().gen_range(-20..20);
+    let jitter = rand::rng().random_range(-20..20);
     trace!(jitter);
 
     let cache = SCRIPT_CACHE.load();

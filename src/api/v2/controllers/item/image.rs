@@ -2,7 +2,7 @@ use crate::api::v2::models::ItemImageList;
 use crate::models::{ImageId, Token};
 use crate::util::ensure_is_authorized;
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::AuthDetails;
+use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;
@@ -38,7 +38,7 @@ pub(crate) async fn image(
     Ok(HttpResponse::Ok().content_type("image/png").body(image))
 }
 
-#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 pub(crate) async fn delete(
     pool: web::Data<DbPool>,
     image_id: web::Path<u32>,

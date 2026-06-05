@@ -1,4 +1,4 @@
-use actix_web_grants::permissions::{AuthDetails, PermissionsCheck};
+use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Datelike, TimeZone, Timelike, Utc};
 use futures::Future;
@@ -29,7 +29,7 @@ pub mod environment {
 
 #[inline]
 pub fn ensure_is_authorized(auth: &AuthDetails, permission: &str) -> anyhow::Result<()> {
-    if !auth.has_permission(permission) {
+    if !auth.has_authority(permission) {
         return Err(anyhow!("Invalid token or insufficient permissions"));
     }
 

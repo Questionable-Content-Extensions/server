@@ -2,7 +2,7 @@ use crate::api::v1::models::ItemColor;
 use crate::models::{ItemId, Token};
 use crate::util::ensure_is_authorized;
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::AuthDetails;
+use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;

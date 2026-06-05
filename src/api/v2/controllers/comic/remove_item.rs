@@ -1,7 +1,7 @@
 use crate::models::{ComicId, ComicIdInvalidity, ItemId, ItemIdInvalidity, Token};
 use crate::util::{ensure_is_authorized, ensure_is_valid};
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::AuthDetails;
+use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence as DatabaseOccurrence,
@@ -13,7 +13,7 @@ use serde::Deserialize;
 use shared::token_permissions;
 use tracing::{info_span, Instrument};
 
-#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 pub(crate) async fn remove_item(
     pool: web::Data<DbPool>,
     request: web::Json<RemoveItemFromComicBody>,

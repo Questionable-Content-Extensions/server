@@ -1,7 +1,7 @@
 use crate::models::{ComicId, Token};
 use crate::util::{andify_comma_string, ensure_is_authorized};
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::AuthDetails;
+use actix_web_grants::authorities::AuthDetails;
 use chrono::{DateTime, TimeZone, Utc};
 use database::models::{Comic as DatabaseComic, LogEntry};
 use database::{DbPool, DbTransaction};
@@ -10,7 +10,7 @@ use shared::token_permissions;
 use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
-#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 #[allow(clippy::too_many_lines)]
 pub async fn patch_comic(
     pool: web::Data<DbPool>,

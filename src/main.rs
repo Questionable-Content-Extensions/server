@@ -20,6 +20,7 @@ use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::broadcast;
 use tokio::time::{sleep, Duration};
@@ -202,7 +203,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn extract_permissions(request: &mut ServiceRequest) -> Result<Vec<String>, Error> {
+async fn extract_permissions(request: &mut ServiceRequest) -> Result<HashSet<String>, Error> {
     #[derive(Debug, Deserialize)]
     struct TokenQuery {
         token: Option<Token>,
@@ -231,11 +232,11 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<Vec<String>
                     token
                 } else {
                     // If there is no token provided, there are no permissions
-                    return Ok(vec![]);
+                    return Ok(HashSet::new());
                 }
             } else {
                 // If there is no token provided, there are no permissions
-                return Ok(vec![]);
+                return Ok(HashSet::new());
             }
         }
     };
@@ -267,7 +268,7 @@ fn init_tracer() -> Result<Tracer, TraceError> {
             opentelemetry_otlp::new_exporter()
                 .http()
                 .with_endpoint("https://api.honeycomb.io/v1/traces")
-                .with_http_client(reqwest::Client::default())
+                .with_http_client(reqwest_011::Client::default())
                 .with_headers(HashMap::from([
                     ("x-honeycomb-dataset".into(), "qcext-server-dataset".into()),
                     (

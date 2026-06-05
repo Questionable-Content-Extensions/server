@@ -6,7 +6,7 @@ use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, RelatedItem as RelatedDatabaseItem,
 };
 use database::DbPool;
-use rand::seq::SliceRandom;
+use rand::prelude::IndexedRandom;
 use serde::Deserialize;
 use std::convert::{TryFrom, TryInto};
 use tracing::{info_span, Instrument};
@@ -157,7 +157,7 @@ pub async fn random_comic(
         return Ok(HttpResponse::Ok().json(()));
     }
 
-    let mut thread_rng = rand::thread_rng();
+    let mut thread_rng = rand::rng();
     let comic = loop {
         let comic = comics.choose(&mut thread_rng).unwrap();
         if !include_guest_comics.unwrap_or(true) && comic.is_guest_comic {

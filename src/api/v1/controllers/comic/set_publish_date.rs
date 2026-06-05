@@ -1,7 +1,7 @@
 use crate::models::{ComicId, ComicIdInvalidity, Token};
 use crate::util::{ensure_is_authorized, ensure_is_valid, AddMonths};
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::AuthDetails;
+use actix_web_grants::authorities::AuthDetails;
 use chrono::{DateTime, TimeZone, Utc};
 use database::models::{Comic as DatabaseComic, LogEntry};
 use database::DbPool;

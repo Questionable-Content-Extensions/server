@@ -2,7 +2,7 @@ use crate::api::v2::models::LogEntry;
 use crate::models::Token;
 use crate::util::ensure_is_authorized;
 use actix_web::{error, web, HttpResponse, Result};
-use actix_web_grants::permissions::AuthDetails;
+use actix_web_grants::authorities::AuthDetails;
 use database::models::LogEntry as DatabaseLogEntry;
 use database::DbPool;
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
 const PAGE_SIZE: u16 = 10;
 
-#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 async fn get(
     pool: web::Data<DbPool>,
     query: web::Query<LogQuery>,
@@ -47,7 +47,7 @@ async fn get(
     }))
 }
 
-#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 async fn get_by_comic(
     pool: web::Data<DbPool>,
     query: web::Query<LogByIdQuery>,
@@ -82,7 +82,7 @@ async fn get_by_comic(
     }))
 }
 
-#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.permissions))]
+#[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 async fn get_by_item(
     pool: web::Data<DbPool>,
     query: web::Query<LogByIdQuery>,
