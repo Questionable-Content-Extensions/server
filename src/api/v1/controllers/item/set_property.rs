@@ -1,15 +1,15 @@
 use crate::api::v1::models::ItemColor;
 use crate::models::{ItemId, Token};
 use crate::util::ensure_is_authorized;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
-use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;
+use database::models::{Item as DatabaseItem, LogEntry};
 use serde::Deserialize;
 use shared::token_permissions;
 
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 pub(crate) async fn set_property(
     pool: web::Data<DbPool>,
     request: web::Json<SetItemPropertyBody>,
@@ -132,9 +132,8 @@ pub(crate) async fn set_property(
         }
         property => {
             return Err(error::ErrorBadRequest(anyhow!(
-                "No property named \"{}\"",
-                property
-            )))
+                "No property named \"{property}\""
+            )));
         }
     }
 

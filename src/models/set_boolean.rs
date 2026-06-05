@@ -16,7 +16,7 @@ impl Default for True {
 #[ts(export)]
 pub struct False(#[ts(type = "false")] bool);
 // I want the impl to be explict here, to match the impl of `True`
-#[allow(clippy::derivable_impls)]
+#[expect(clippy::derivable_impls)]
 impl Default for False {
     fn default() -> Self {
         Self(false)

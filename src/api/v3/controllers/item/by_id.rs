@@ -1,17 +1,21 @@
 use crate::api::v3::models::{ComicList, Exclusion, Item, ItemColor, ItemType, RelatedItem};
 use crate::models::ItemId;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use anyhow::anyhow;
+use database::DbPool;
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, RelatedItem as RelatedDatabaseItem,
 };
-use database::DbPool;
 use rand::prelude::IndexedRandom;
 use serde::Deserialize;
 use std::convert::{TryFrom, TryInto};
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "comic/item counts are well within f64 mantissa precision"
+)]
 #[tracing::instrument(skip(pool))]
 pub async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Result<HttpResponse> {
     let item_id = item_id.into_inner();
@@ -25,7 +29,7 @@ pub async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Resul
     let item = DatabaseItem::by_id(&mut *conn, item_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?
-        .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {} exists", item_id)))?;
+        .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {item_id} exists")))?;
 
     let primary_image = if let Some(primary_image) = item.primary_image {
         Some(primary_image)

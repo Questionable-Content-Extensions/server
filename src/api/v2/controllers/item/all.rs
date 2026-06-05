@@ -1,13 +1,13 @@
-use actix_web::{error, web, HttpResponse, Result};
-use database::models::Item as DatabaseItem;
+use actix_web::{HttpResponse, Result, error, web};
 use database::DbPool;
+use database::models::Item as DatabaseItem;
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 
 use crate::api::v2::controllers::comic::navigation_data::{
-    fetch_all_item_navigation_data, ItemNavigationDataSorting,
+    ItemNavigationDataSorting, fetch_all_item_navigation_data,
 };
 use crate::api::v2::models::{ItemColor, ItemList, ItemType, UnhydratedItemNavigationData};
 use crate::models::{ComicId, ItemId};
@@ -62,7 +62,7 @@ pub(crate) async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             r#type: ItemType::try_from(&*r#type).map_err(error::ErrorInternalServerError)?,
             color: ItemColor(color_red, color_green, color_blue),
             count: i32::try_from(count).unwrap(),
-        })
+        });
     }
 
     items.sort_by_key(|i| Reverse(i.count));

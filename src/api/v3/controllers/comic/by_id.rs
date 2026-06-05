@@ -1,6 +1,6 @@
 use crate::api::v3::controllers::comic::editor_data::fetch_editor_data_for_comic;
 use crate::api::v3::controllers::comic::navigation_data::{
-    fetch_all_item_navigation_data, fetch_comic_item_navigation_data, ItemNavigationDataSorting,
+    ItemNavigationDataSorting, fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
 };
 use crate::api::v3::models::{
     Comic, ComicData, EditorData, Exclusion, Inclusion, ItemNavigationData, MissingComic,
@@ -8,19 +8,19 @@ use crate::api::v3::models::{
 };
 use crate::models::{ComicId, False, Token, True};
 use crate::util::NewsUpdater;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
 use chrono::{TimeZone, Utc};
-use database::models::{Comic as DatabaseComic, Item as DatabaseItem, News as DatabaseNews};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, Item as DatabaseItem, News as DatabaseNews};
 use serde::Deserialize;
 use shared::token_permissions;
 use std::convert::TryInto;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
 #[tracing::instrument(skip(pool, news_updater, auth), fields(permissions = ?auth.authorities))]
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 pub async fn by_id(
     pool: web::Data<DbPool>,
     news_updater: web::Data<NewsUpdater>,
@@ -80,54 +80,54 @@ pub async fn by_id(
         EditorData::Missing(MissingEditorData::default())
     };
 
-    let (comic_navigation_items, all_navigation_items) = if let Some(Inclusion::All) = query.include
-    {
-        let mut all_navigation_items: Vec<ItemNavigationData> = fetch_all_item_navigation_data(
-            &mut conn,
-            comic_id,
-            include_guest_comics,
-            include_non_canon_comics,
-            match query.sorting {
-                Some(Sorting::ByLastAppearance) => ItemNavigationDataSorting::ByLastAppearance,
-                Some(Sorting::ByCount) | None => ItemNavigationDataSorting::ByCount,
-            },
-        )
-        .await?
-        .into_iter()
-        .map(Into::into)
-        .collect();
+    let (comic_navigation_items, all_navigation_items) =
+        if matches!(query.include, Some(Inclusion::All)) {
+            let mut all_navigation_items: Vec<ItemNavigationData> = fetch_all_item_navigation_data(
+                &mut conn,
+                comic_id,
+                include_guest_comics,
+                include_non_canon_comics,
+                match query.sorting {
+                    Some(Sorting::ByLastAppearance) => ItemNavigationDataSorting::ByLastAppearance,
+                    Some(Sorting::ByCount) | None => ItemNavigationDataSorting::ByCount,
+                },
+            )
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect();
 
-        let item_ids_in_comic =
-            DatabaseItem::occurrences_in_comic_by_id(&mut *conn, comic_id.into_inner())
-                .await
-                .map_err(error::ErrorInternalServerError)?;
+            let item_ids_in_comic =
+                DatabaseItem::occurrences_in_comic_by_id(&mut *conn, comic_id.into_inner())
+                    .await
+                    .map_err(error::ErrorInternalServerError)?;
 
-        let mut comic_navigation_items = Vec::with_capacity(item_ids_in_comic.len());
-        let mut i = 0;
-        while i < all_navigation_items.len() {
-            let navigation_item = &mut all_navigation_items[i];
-            if item_ids_in_comic.contains(&navigation_item.id.into_inner()) {
-                let element = all_navigation_items.remove(i);
-                comic_navigation_items.push(element);
-            } else {
-                i += 1;
+            let mut comic_navigation_items = Vec::with_capacity(item_ids_in_comic.len());
+            let mut i = 0;
+            while i < all_navigation_items.len() {
+                let navigation_item = &mut all_navigation_items[i];
+                if item_ids_in_comic.contains(&navigation_item.id.into_inner()) {
+                    let element = all_navigation_items.remove(i);
+                    comic_navigation_items.push(element);
+                } else {
+                    i += 1;
+                }
             }
-        }
-        (comic_navigation_items, all_navigation_items)
-    } else {
-        let comic_navigation_items = fetch_comic_item_navigation_data(
-            &mut conn,
-            comic_id,
-            include_guest_comics,
-            include_non_canon_comics,
-        )
-        .await?;
+            (comic_navigation_items, all_navigation_items)
+        } else {
+            let comic_navigation_items = fetch_comic_item_navigation_data(
+                &mut conn,
+                comic_id,
+                include_guest_comics,
+                include_non_canon_comics,
+            )
+            .await?;
 
-        (
-            comic_navigation_items.into_iter().map(Into::into).collect(),
-            Vec::new(),
-        )
-    };
+            (
+                comic_navigation_items.into_iter().map(Into::into).collect(),
+                Vec::new(),
+            )
+        };
 
     let comic = if let Some(comic) = comic {
         Comic {
@@ -179,7 +179,7 @@ pub async fn by_id(
 pub struct ByIdQuery {
     // This is never read because it's used by the auth middleware only.
     // We still include it here so it ends up in the TS binding.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     #[ts(optional)]
     pub token: Option<Token>,
 

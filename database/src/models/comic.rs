@@ -3,6 +3,7 @@ use futures::TryStreamExt;
 
 use crate::models::ItemType;
 
+#[expect(clippy::struct_field_names, reason = "field names match the database column names")]
 #[derive(Debug)]
 pub struct Comic {
     pub id: u16,
@@ -21,6 +22,9 @@ pub struct Comic {
 }
 
 impl Comic {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn count<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<i64>
     where
@@ -35,6 +39,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor, map))]
     pub async fn all_with_mapping<'e, 'c: 'e, E, T, F>(
         executor: E,
@@ -65,6 +72,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn ensure_exists_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -86,6 +96,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn exists_by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<bool>
     where
@@ -104,6 +117,9 @@ impl Comic {
         .map(|c| c == 1)
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<Option<Self>>
     where
@@ -121,6 +137,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor, map))]
     pub async fn all_with_item_id_mapped<'e, 'c: 'e, E, T, F>(
         executor: E,
@@ -147,6 +166,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn previous_id<'e, 'c: 'e, E>(
         executor: E,
@@ -176,6 +198,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn next_id<'e, 'c: 'e, E>(
         executor: E,
@@ -205,6 +230,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn publish_date_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -223,6 +251,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_publish_date_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -250,6 +281,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_is_guest_comic_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -274,6 +308,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_is_non_canon_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -298,6 +335,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_has_no_cast_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -322,6 +362,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_has_no_location_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -346,6 +389,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_has_no_storyline_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -370,6 +416,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_has_no_title_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -394,6 +443,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_has_no_tagline_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -418,6 +470,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_missing_tagline<'e, 'c: 'e, E>(
         executor: E,
@@ -442,6 +497,9 @@ impl Comic {
         .map(|ofl| ofl.map_or((None, None), |fl| (fl.first, fl.last)))
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn previous_missing_tagline_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -467,6 +525,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn next_missing_tagline_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -494,6 +555,9 @@ impl Comic {
 
     // ---
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_missing_title<'e, 'c: 'e, E>(
         executor: E,
@@ -517,6 +581,9 @@ impl Comic {
         .map(|ofl| ofl.map_or((None, None), |fl| (fl.first, fl.last)))
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn previous_missing_title_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -541,6 +608,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn next_missing_title_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -567,6 +637,9 @@ impl Comic {
 
     // ---
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn first_missing_items_by_type<'e, 'c: 'e, E>(
         executor: E,
@@ -604,6 +677,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn previous_missing_items_by_id_and_type<'e, 'c: 'e, E>(
         executor: E,
@@ -644,6 +720,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn next_missing_items_by_id_and_type<'e, 'c: 'e, E>(
         executor: E,
@@ -684,6 +763,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn last_missing_items_by_type<'e, 'c: 'e, E>(
         executor: E,
@@ -721,6 +803,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn tagline_by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<Option<String>>
     where
@@ -737,6 +822,9 @@ impl Comic {
         .map(Option::flatten)
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_tagline_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -760,6 +848,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn title_by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<Option<String>>
     where
@@ -775,6 +866,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_title_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -798,6 +892,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn needs_updating_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -831,6 +928,9 @@ impl Comic {
         }
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn insert_or_update_title_imagetype_and_publish_date_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -865,6 +965,9 @@ impl Comic {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_image_type_and_publish_date_by_id<'e, 'c: 'e, E>(
         executor: E,

@@ -25,7 +25,7 @@ pub struct ComicList {
 impl From<DatabaseComic> for ComicList {
     fn from(c: DatabaseComic) -> Self {
         Self {
-            comic: ComicId::try_from(c.id).expect("database has valid comicIds"),
+            comic: ComicId::from(c.id),
             title: c.title,
             is_guest_comic: c.is_guest_comic != 0,
             is_non_canon: c.is_non_canon != 0,
@@ -33,6 +33,10 @@ impl From<DatabaseComic> for ComicList {
     }
 }
 
+#[expect(
+    clippy::struct_field_names,
+    reason = "field name matches the serialized API field name"
+)]
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Comic {
@@ -47,7 +51,6 @@ pub struct Comic {
 
 #[derive(Debug, Serialize)]
 #[serde(untagged)]
-#[allow(variant_size_differences)]
 pub enum ComicData {
     Missing(MissingComic),
     Present(PresentComic),
@@ -59,6 +62,10 @@ pub struct MissingComic {
     pub has_data: False,
 }
 
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "API response struct represents comic flags"
+)]
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PresentComic {

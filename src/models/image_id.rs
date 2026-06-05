@@ -1,6 +1,6 @@
 use parse_display::Display;
-use semval::context::Context as ValidationContext;
 use semval::Validate;
+use semval::context::Context as ValidationContext;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -25,7 +25,7 @@ pub struct ImageId(u32);
 
 impl ImageId {
     #[inline]
-    pub fn into_inner(self) -> u32 {
+    pub const fn into_inner(self) -> u32 {
         self.0
     }
 }

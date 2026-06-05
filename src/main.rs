@@ -6,25 +6,25 @@ use actix_files::Files;
 use actix_http::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::web::PayloadConfig;
-use actix_web::{error, web, App, Error, FromRequest, HttpServer};
+use actix_web::{App, Error, FromRequest, HttpServer, error, web};
 use actix_web_grants::GrantsMiddleware;
-use anyhow::{anyhow, Context as _, Result};
-use database::models::Token as DatabaseToken;
+use anyhow::{Context as _, Result, anyhow};
 use database::DbPool;
+use database::models::Token as DatabaseToken;
 use futures::stream::{FuturesUnordered, StreamExt};
-use futures::{pin_mut, FutureExt};
-use opentelemetry::sdk::trace::Tracer;
-use opentelemetry::sdk::Resource;
-use opentelemetry::trace::TraceError;
+use futures::{FutureExt, pin_mut};
 use opentelemetry::KeyValue;
+use opentelemetry::sdk::Resource;
+use opentelemetry::sdk::trace::Tracer;
+use opentelemetry::trace::TraceError;
 use opentelemetry_otlp::WithExportConfig;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use tokio::time::{sleep, Duration};
-use tracing::{error, info, Level, Span};
+use tokio::time::{Duration, sleep};
+use tracing::{Level, Span, error, info};
 use tracing_actix_web::{DefaultRootSpanBuilder, RootSpanBuilder, TracingLogger};
 use tracing_subscriber::layer::SubscriberExt;
 use util::environment;
@@ -73,7 +73,7 @@ async fn main() -> Result<()> {
             let a = App::new()
                 .app_data(web::Data::new(http_db_pool.clone()))
                 .app_data(http_news_updater.clone())
-                .app_data(PayloadConfig::new(1048576))
+                .app_data(PayloadConfig::new(1_048_576))
                 .wrap(auth)
                 .wrap(actix_web::middleware::Compress::default()).wrap(actix_web::middleware::Logger::new(
                     r#"%{X-Forwarded-For}i (%{X-Real-IP}i) (QCExt version %{X-QCExt-Version}i) "%r" %s %b "%{Referer}i" "%{User-Agent}i" %T"#,
@@ -114,7 +114,7 @@ async fn main() -> Result<()> {
             {
                 error!("The background news updater returned an error: {}", e);
                 info!("Waiting one minute before starting up again.");
-                sleep(Duration::from_secs(60)).await;
+                sleep(Duration::from_mins(1)).await;
             }
         });
 
@@ -132,7 +132,7 @@ async fn main() -> Result<()> {
             {
                 error!("The background comic updater returned an error: {}", e);
                 info!("Waiting one minute before starting up again.");
-                sleep(Duration::from_secs(60)).await;
+                sleep(Duration::from_mins(1)).await;
             }
         });
 
@@ -146,7 +146,7 @@ async fn main() -> Result<()> {
 
     #[cfg(unix)]
     let mut sig_term_signal_stream = {
-        use tokio::signal::unix::{signal, SignalKind};
+        use tokio::signal::unix::{SignalKind, signal};
 
         signal(SignalKind::terminate())?
     };
@@ -174,7 +174,6 @@ async fn main() -> Result<()> {
             sigterm = sig_term => sigterm.context("tokio::signal::terminate failed")?,
         }
     } else {
-        #[allow(clippy::mut_mut)]
         {
             futures::select! {
                 sigint = ctrl_c => sigint.context("tokio::signal::ctrl_c failed")?,
@@ -196,7 +195,7 @@ async fn main() -> Result<()> {
 
     while let Some(either) = shutdown_futures.next().await {
         if let Either::Right(result) = either {
-            result?
+            result?;
         }
     }
 

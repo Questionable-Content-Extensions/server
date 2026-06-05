@@ -1,18 +1,18 @@
 use crate::api::v3::models::{ItemColor, ItemType};
 use crate::models::{ItemId, Token};
 use crate::util::{andify_comma_string, ensure_is_authorized};
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
-use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;
+use database::models::{Item as DatabaseItem, LogEntry};
 use serde::Deserialize;
 use shared::token_permissions;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
 #[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 pub async fn patch_item(
     pool: web::Data<DbPool>,
     request: web::Json<PatchItemBody>,
@@ -33,7 +33,7 @@ pub async fn patch_item(
     let old_item = DatabaseItem::by_id(&mut *transaction, item_id)
         .await
         .map_err(error::ErrorInternalServerError)?
-        .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {} exists", item_id)))?;
+        .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {item_id} exists")))?;
 
     let PatchItemBody {
         token,
@@ -78,7 +78,7 @@ pub async fn patch_item(
             .map_err(error::ErrorInternalServerError)?;
         }
 
-        updated.push("name")
+        updated.push("name");
     }
 
     if let Some(short_name) = short_name {
@@ -114,7 +114,7 @@ pub async fn patch_item(
             .map_err(error::ErrorInternalServerError)?;
         }
 
-        updated.push("short name")
+        updated.push("short name");
     }
 
     if let Some(color) = color {
@@ -148,7 +148,7 @@ pub async fn patch_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-        updated.push("color")
+        updated.push("color");
     }
 
     if let Some(r#type) = r#type {
@@ -171,7 +171,7 @@ pub async fn patch_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-        updated.push("type")
+        updated.push("type");
     }
 
     transaction

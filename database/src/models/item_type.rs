@@ -10,7 +10,8 @@ pub enum ItemType {
 
 impl ItemType {
     #[inline]
-    pub fn as_str(&self) -> &'static str {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
         match self {
             Self::Cast => "cast",
             Self::Location => "location",

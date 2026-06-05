@@ -1,6 +1,6 @@
 use database::models::ComicId as DatabaseComicId;
 use parse_display::Display;
-use semval::{context::Context as ValidationContext, Validate};
+use semval::{Validate, context::Context as ValidationContext};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -25,7 +25,7 @@ pub struct ComicId(u16);
 
 impl ComicId {
     #[inline]
-    pub fn into_inner(self) -> u16 {
+    pub const fn into_inner(self) -> u16 {
         self.0
     }
 }
@@ -50,7 +50,7 @@ impl TryFrom<i16> for ComicId {
         if comic_id < 1 {
             Err(())
         } else {
-            Ok(Self(comic_id as u16))
+            Ok(Self(comic_id.cast_unsigned()))
         }
     }
 }

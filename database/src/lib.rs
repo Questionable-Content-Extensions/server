@@ -12,10 +12,13 @@ type DatabaseQueryResult = sqlx::mysql::MySqlQueryResult;
 pub type DbPoolConnection = sqlx::pool::PoolConnection<DatabaseDriver>;
 pub type DbTransaction<'c> = sqlx::Transaction<'c, sqlx::MySql>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DbPool(sqlx::Pool<DatabaseDriver>);
 
 impl DbPool {
+    /// # Panics
+    ///
+    /// Panics if the database URL cannot be parsed or the connection pool cannot be created.
     // Set up database connection pool
     pub async fn create(database_url: &'static str) -> Self {
         let database_options = database_url
@@ -39,6 +42,9 @@ impl Deref for DbPool {
     }
 }
 
+/// # Errors
+///
+/// Returns a database error if the query fails.
 #[tracing::instrument(skip(pool))]
 pub async fn migrate(pool: &DbPool) -> Result<(), MigrateError> {
     sqlx::migrate!("./migrations").run(&**pool).await

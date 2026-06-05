@@ -1,16 +1,15 @@
 use crate::models::{ComicId, ComicIdInvalidity, Token};
 use crate::util::{ensure_is_authorized, ensure_is_valid};
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
-use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
 use parse_display::Display;
-use semval::{context::Context as ValidationContext, Validate};
+use semval::{Validate, context::Context as ValidationContext};
 use serde::Deserialize;
 use shared::token_permissions;
 
-#[allow(clippy::too_many_lines)]
 pub(crate) async fn add_item(
     pool: web::Data<DbPool>,
     request: web::Json<AddItemToComicBody>,
@@ -50,20 +49,17 @@ pub(crate) async fn add_item(
             new_item_name,
             AsRef::<str>::as_ref(new_item_type)
                 .try_into()
-                .map_err(|e| error::ErrorBadRequest(anyhow!("Invalid item type: {}", e)))?,
+                .map_err(|e| error::ErrorBadRequest(anyhow!("Invalid item type: {e}")))?,
         )
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-        let new_item_id = result.last_insert_id() as u16;
+        let new_item_id = u16::try_from(result.last_insert_id()).expect("new item ID fits in u16");
 
         LogEntry::log_action(
             &mut *transaction,
             request.token.to_string(),
-            format!(
-                "Created {} #{} ({})",
-                new_item_type, new_item_id, new_item_name
-            ),
+            format!("Created {new_item_type} #{new_item_id} ({new_item_name})"),
             None,
             Some(new_item_id),
         )
@@ -81,7 +77,7 @@ pub(crate) async fn add_item(
             primary_image: None,
         }
     } else {
-        let item_id = request.item_id as u16;
+        let item_id = request.item_id.cast_unsigned();
         let item = DatabaseItem::by_id(&mut *transaction, item_id)
             .await
             .map_err(error::ErrorInternalServerError)?

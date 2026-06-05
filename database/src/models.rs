@@ -21,12 +21,14 @@ pub struct ComicId(u16);
 
 impl ComicId {
     #[inline]
-    pub fn as_inner(&self) -> &u16 {
+    #[must_use]
+    pub const fn as_inner(&self) -> &u16 {
         &self.0
     }
 
     #[inline]
-    pub fn into_inner(self) -> u16 {
+    #[must_use]
+    pub const fn into_inner(self) -> u16 {
         self.0
     }
 }
@@ -54,12 +56,14 @@ pub struct ItemId(u16);
 
 impl ItemId {
     #[inline]
-    pub fn as_inner(&self) -> &u16 {
+    #[must_use]
+    pub const fn as_inner(&self) -> &u16 {
         &self.0
     }
 
     #[inline]
-    pub fn into_inner(self) -> u16 {
+    #[must_use]
+    pub const fn into_inner(self) -> u16 {
         self.0
     }
 }

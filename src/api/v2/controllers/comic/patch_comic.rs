@@ -1,17 +1,17 @@
 use crate::api::v2::controllers::comic::add_item::FlagType;
 use crate::models::{ComicId, Token};
 use crate::util::{andify_comma_string, ensure_is_authorized};
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use chrono::{DateTime, TimeZone, Utc};
 use database::models::{Comic as DatabaseComic, LogEntry};
 use database::{DbPool, DbTransaction};
 use serde::Deserialize;
 use shared::token_permissions;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 
 #[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 pub(crate) async fn patch_comic(
     pool: web::Data<DbPool>,
     request: web::Json<PatchComicBody>,
@@ -62,19 +62,19 @@ pub(crate) async fn patch_comic(
         )
         .await?;
 
-        updated.push("publish date")
+        updated.push("publish date");
     }
 
     if let Some(title) = title {
         update_title(&mut transaction, comic_id, title, token).await?;
 
-        updated.push("title")
+        updated.push("title");
     }
 
     if let Some(tagline) = tagline {
         update_tagline(&mut transaction, comic_id, tagline, token).await?;
 
-        updated.push("tagline")
+        updated.push("tagline");
     }
 
     if let Some(is_guest_comic) = is_guest_comic {
@@ -87,7 +87,7 @@ pub(crate) async fn patch_comic(
         )
         .await?;
 
-        updated.push("isGuestComic flag")
+        updated.push("isGuestComic flag");
     }
 
     if let Some(is_non_canon) = is_non_canon {
@@ -100,7 +100,7 @@ pub(crate) async fn patch_comic(
         )
         .await?;
 
-        updated.push("isNonCanon flag")
+        updated.push("isNonCanon flag");
     }
 
     if let Some(has_no_cast) = has_no_cast {
@@ -113,7 +113,7 @@ pub(crate) async fn patch_comic(
         )
         .await?;
 
-        updated.push("hasNoCast flag")
+        updated.push("hasNoCast flag");
     }
 
     if let Some(has_no_location) = has_no_location {
@@ -126,7 +126,7 @@ pub(crate) async fn patch_comic(
         )
         .await?;
 
-        updated.push("hasNoLocation flag")
+        updated.push("hasNoLocation flag");
     }
 
     if let Some(has_no_storyline) = has_no_storyline {
@@ -139,7 +139,7 @@ pub(crate) async fn patch_comic(
         )
         .await?;
 
-        updated.push("hasNoStoryline flag")
+        updated.push("hasNoStoryline flag");
     }
 
     if let Some(has_no_title) = has_no_title {
@@ -152,7 +152,7 @@ pub(crate) async fn patch_comic(
         )
         .await?;
 
-        updated.push("hasNoTitle flag")
+        updated.push("hasNoTitle flag");
     }
 
     if let Some(has_no_tagline) = has_no_tagline {
@@ -165,7 +165,7 @@ pub(crate) async fn patch_comic(
         )
         .await?;
 
-        updated.push("hasNoTagline flag")
+        updated.push("hasNoTagline flag");
     }
 
     transaction
@@ -177,7 +177,7 @@ pub(crate) async fn patch_comic(
     let mut changed = updated.join(", ");
     andify_comma_string(&mut changed);
 
-    Ok(HttpResponse::Ok().body(format!("Updated {} for comic {comic_id}", changed)))
+    Ok(HttpResponse::Ok().body(format!("Updated {changed} for comic {comic_id}")))
 }
 
 #[tracing::instrument(skip(transaction))]
@@ -255,7 +255,7 @@ async fn update_title(
         LogEntry::log_action(
             &mut **transaction,
             token.to_string(),
-            format!("Set title on comic #{} to \"{}\"", comic_id, title),
+            format!("Set title on comic #{comic_id} to \"{title}\""),
             Some(comic_id.into_inner()),
             None,
         )
@@ -265,10 +265,7 @@ async fn update_title(
         LogEntry::log_action(
             &mut **transaction,
             token.to_string(),
-            format!(
-                "Changed title on comic #{} from \"{}\" to \"{}\"",
-                comic_id, old_title, title
-            ),
+            format!("Changed title on comic #{comic_id} from \"{old_title}\" to \"{title}\""),
             Some(comic_id.into_inner()),
             None,
         )
@@ -299,8 +296,7 @@ async fn update_tagline(
                 &mut **transaction,
                 token.to_string(),
                 format!(
-                    "Changed tagline on comic #{} from \"{}\" to \"{}\"",
-                    comic_id, old_tagline, tagline
+                    "Changed tagline on comic #{comic_id} from \"{old_tagline}\" to \"{tagline}\""
                 ),
                 Some(comic_id.into_inner()),
                 None,
@@ -312,7 +308,7 @@ async fn update_tagline(
             LogEntry::log_action(
                 &mut **transaction,
                 token.to_string(),
-                format!("Set tagline on comic #{} to \"{}\"", comic_id, tagline),
+                format!("Set tagline on comic #{comic_id} to \"{tagline}\""),
                 Some(comic_id.into_inner()),
                 None,
             )

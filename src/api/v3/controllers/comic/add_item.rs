@@ -1,23 +1,23 @@
-use crate::api::v3::controllers::comic::patch_comic::{update_flag, FlagType};
+use crate::api::v3::controllers::comic::patch_comic::{FlagType, update_flag};
 use crate::api::v3::models::ItemType;
 use crate::models::{ComicId, ComicIdInvalidity, False, Token, True};
 use crate::util::{andify_comma_string, ensure_is_authorized, ensure_is_valid};
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
-use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
 use parse_display::Display;
-use semval::context::Context as ValidationContext;
 use semval::Validate;
+use semval::context::Context as ValidationContext;
 use serde::Deserialize;
 use shared::token_permissions;
 use std::fmt::Write;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
 #[tracing::instrument(skip(pool,  auth), fields(permissions = ?auth.authorities))]
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 pub async fn add_item(
     pool: web::Data<DbPool>,
     request: web::Json<AddItemToComicBody>,
@@ -56,7 +56,8 @@ pub async fn add_item(
             .await
             .map_err(error::ErrorInternalServerError)?;
 
-            let new_item_id = result.last_insert_id() as u16;
+            let new_item_id =
+                u16::try_from(result.last_insert_id()).expect("new item ID fits in u16");
 
             LogEntry::log_action(
                 &mut *transaction,
@@ -223,7 +224,7 @@ pub async fn add_items(
                 &mut transaction,
             )
             .await?;
-            *flag = 0
+            *flag = 0;
         }
 
         Occurrence::create(&mut *transaction, item.id, comic_id)
@@ -287,7 +288,7 @@ impl Validate for AddItemToComicBody {
                 {
                     match &self.item {
                         ItemBody::Existing(existing) => existing.item_id < 1,
-                        _ => false,
+                        ItemBody::New(_) => false,
                     }
                 },
                 AddItemToComicBodyInvalidity::ItemIdInvalid,
@@ -296,7 +297,7 @@ impl Validate for AddItemToComicBody {
                 {
                     match &self.item {
                         ItemBody::New(new) => new.new_item_name.is_empty(),
-                        _ => false,
+                        ItemBody::Existing(_) => false,
                     }
                 },
                 AddItemToComicBodyInvalidity::EmptyNewItemName,
@@ -357,7 +358,6 @@ pub enum AddItemsToComicBodyInvalidity {
 #[derive(Debug, Deserialize, TS)]
 #[serde(untagged)]
 #[ts(export)]
-#[allow(variant_size_differences)]
 pub enum ItemBody {
     New(NewItem),
     Existing(ExistingItem),
@@ -367,14 +367,26 @@ pub enum ItemBody {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct ExistingItem {
+    #[expect(
+        dead_code,
+        reason = "discriminator field for untagged enum deserialization"
+    )]
     pub new: False,
     pub item_id: u16,
 }
 
+#[expect(
+    clippy::struct_field_names,
+    reason = "field names match the serialized API field names"
+)]
 #[derive(Debug, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct NewItem {
+    #[expect(
+        dead_code,
+        reason = "discriminator field for untagged enum deserialization"
+    )]
     pub new: True,
     pub new_item_name: String,
     pub new_item_type: ItemType,

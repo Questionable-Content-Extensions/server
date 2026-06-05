@@ -1,5 +1,5 @@
 use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use chrono::{DateTime, Datelike, TimeZone, Timelike, Utc};
 use futures::Future;
 use ilyvion_util::chrono::days_from_month_in_year;
@@ -45,8 +45,8 @@ pub enum Either<A, B> {
 }
 
 impl<A, B> Either<A, B> {
-    #[allow(unsafe_code)]
-    fn project(self: Pin<&mut Self>) -> Either<Pin<&mut A>, Pin<&mut B>> {
+    #[expect(unsafe_code)]
+    const fn project(self: Pin<&mut Self>) -> Either<Pin<&mut A>, Pin<&mut B>> {
         unsafe {
             match self.get_unchecked_mut() {
                 Self::Left(a) => Either::Left(Pin::new_unchecked(a)),
@@ -95,7 +95,7 @@ impl<I: IntoIterator<Item = V>, V: Invalidity + Display> Display for InvalidityF
 
         writeln!(f, "Validation failed: ")?;
         for v in invalidations {
-            writeln!(f, "* {}", v)?;
+            writeln!(f, "* {v}")?;
         }
 
         Ok(())
@@ -139,7 +139,8 @@ impl AddMonths for DateTime<Utc> {
 
         // Check if the day we have is bigger than the biggest day of the resulting month
         // and if so, truncateca
-        let days_in_month = days_from_month_in_year(month, year).unwrap() as u32;
+        let days_in_month = u32::try_from(days_from_month_in_year(month, year).unwrap())
+            .expect("days in month are always 28-31");
         if day > days_in_month {
             day = days_in_month;
         }
@@ -173,10 +174,10 @@ pub fn andify_comma_string(changed: &mut String) {
         let (first_comma_index, _) = changed.char_indices().find(|&(_, c)| c == ',').unwrap();
         if first_comma_index == last_comma_index {
             // Only a single comma. Replace with 'and'
-            changed.replace_range(last_comma_index..last_comma_index + 1, " and");
+            changed.replace_range(last_comma_index..=last_comma_index, " and");
         } else {
             // Multiple commas. Replace with ', and'
-            changed.replace_range(last_comma_index..last_comma_index + 1, ", and");
+            changed.replace_range(last_comma_index..=last_comma_index, ", and");
         }
     }
 }

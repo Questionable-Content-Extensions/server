@@ -13,7 +13,7 @@ pub enum ItemType {
 
 impl ItemType {
     #[inline]
-    pub fn as_str(&self) -> &'static str {
+    pub const fn as_str(self) -> &'static str {
         match self {
             Self::Cast => "cast",
             Self::Location => "location",
@@ -31,7 +31,7 @@ impl TryFrom<&'_ str> for ItemType {
             "cast" => Self::Cast,
             "location" => Self::Location,
             "storyline" => Self::Storyline,
-            _ => bail!("Invalid item type value: {}", item_type),
+            _ => bail!("Invalid item type value: {item_type}"),
         })
     }
 }

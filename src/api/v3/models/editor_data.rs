@@ -7,7 +7,6 @@ use crate::models::{False, True};
 #[derive(Debug, Serialize, TS)]
 #[serde(untagged)]
 #[ts(export)]
-#[allow(variant_size_differences)]
 pub enum EditorData {
     Missing(MissingEditorData),
     Present(PresentEditorData),

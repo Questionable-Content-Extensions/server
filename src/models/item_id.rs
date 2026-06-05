@@ -1,5 +1,5 @@
 use parse_display::Display;
-use semval::{context::Context as ValidationContext, Validate};
+use semval::{Validate, context::Context as ValidationContext};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -24,7 +24,7 @@ pub struct ItemId(u16);
 
 impl ItemId {
     #[inline]
-    pub fn into_inner(self) -> u16 {
+    pub const fn into_inner(self) -> u16 {
         self.0
     }
 }

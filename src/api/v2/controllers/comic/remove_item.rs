@@ -1,17 +1,17 @@
 use crate::models::{ComicId, ComicIdInvalidity, ItemId, ItemIdInvalidity, Token};
 use crate::util::{ensure_is_authorized, ensure_is_valid};
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
+use database::DbPool;
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence as DatabaseOccurrence,
 };
-use database::DbPool;
 use parse_display::Display;
-use semval::{context::Context as ValidationContext, Validate};
+use semval::{Validate, context::Context as ValidationContext};
 use serde::Deserialize;
 use shared::token_permissions;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 
 #[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 pub(crate) async fn remove_item(
@@ -52,8 +52,7 @@ pub(crate) async fn remove_item(
 
     if result.rows_affected() != 1 {
         return Err(error::ErrorNotFound(format!(
-            "Could not delete item {} from comic {}; the item is not in the comic",
-            item_id, comic_id
+            "Could not delete item {item_id} from comic {comic_id}; the item is not in the comic"
         )));
     }
 

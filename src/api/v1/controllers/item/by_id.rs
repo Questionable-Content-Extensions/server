@@ -1,13 +1,17 @@
 use crate::api::v1::models::{Item, ItemColor, ItemImageList, ItemType, RelatedItem};
 use crate::models::ItemId;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use anyhow::anyhow;
+use database::DbPool;
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, RelatedItem as RelatedDatabaseItem,
 };
-use database::DbPool;
 use std::convert::{TryFrom, TryInto};
 
+#[expect(
+    clippy::cast_precision_loss,
+    reason = "comic/item counts are well within f64 mantissa precision"
+)]
 pub(crate) async fn by_id(
     pool: web::Data<DbPool>,
     item_id: web::Path<ItemId>,
@@ -22,7 +26,7 @@ pub(crate) async fn by_id(
     let item = DatabaseItem::by_id(&mut *conn, item_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?
-        .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {} exists", item_id)))?;
+        .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {item_id} exists")))?;
 
     let item_occurrence =
         DatabaseItem::first_and_last_apperance_and_count_by_id(&mut *conn, item_id.into_inner())
@@ -112,7 +116,6 @@ pub(crate) async fn image(
     Ok(HttpResponse::Ok().content_type("image/png").body(image))
 }
 
-#[allow(deprecated)]
 async fn related_items(
     pool: web::Data<DbPool>,
     item_id: u16,

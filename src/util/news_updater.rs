@@ -1,26 +1,26 @@
 use crate::models::ComicId;
 use anyhow::Result;
 use chrono::Utc;
-use database::models::{Comic, News};
 use database::DbPool;
+use database::models::{Comic, News};
 use futures::lock::Mutex;
-use futures::{select, FutureExt};
-use once_cell::sync::Lazy;
+use futures::{FutureExt, select};
 use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use tokio::time::{sleep, Duration};
-use tracing::{debug, info, info_span, warn, Instrument};
+use tokio::time::{Duration, sleep};
+use tracing::{Instrument, debug, info, info_span, warn};
 
 const QC_COMIC_URL_BASE: &str = "https://questionablecontent.net/view.php?comic=";
 const TASK_DELAY_TIME: Duration = Duration::from_secs(5);
 
-static REMOVE_NEWLINES: Lazy<Regex> = Lazy::new(|| Regex::new(r"\r|\n").expect("valid regex"));
-static REPLACE_HTML_NEWLINES: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"<br\s*/?>").expect("valid regex"));
+static REMOVE_NEWLINES: std::sync::LazyLock<Regex> =
+    std::sync::LazyLock::new(|| Regex::new(r"\r|\n").expect("valid regex"));
+static REPLACE_HTML_NEWLINES: std::sync::LazyLock<Regex> =
+    std::sync::LazyLock::new(|| Regex::new(r"<br\s*/?>").expect("valid regex"));
 
 #[derive(Debug)]
 pub struct NewsUpdater {
@@ -45,7 +45,6 @@ impl NewsUpdater {
         });
     }
 
-    #[allow(clippy::too_many_lines)]
     pub async fn background_news_updater(
         &self,
         db_pool: &DbPool,
@@ -62,10 +61,9 @@ impl NewsUpdater {
 
             self.remove_pending_update_entries(update_entries).await;
 
-            #[allow(clippy::mut_mut)]
             {
                 select! {
-                    _ = sleep(TASK_DELAY_TIME).fuse() => {},
+                    () = sleep(TASK_DELAY_TIME).fuse() => {},
                     _ = shutdown_receiver.recv().fuse() => {
                         info!("Shutting down background news updater");
                         break;
@@ -129,7 +127,10 @@ impl NewsUpdater {
                     )
                     .await?;
                 } else {
-                    info!("News text for comic #{} has changed. Resetting update factor and updating text.",comic_id);
+                    info!(
+                        "News text for comic #{} has changed. Resetting update factor and updating text.",
+                        comic_id
+                    );
                     News::update_by_comic_id(
                         &mut *transaction,
                         comic_id.into_inner(),
@@ -140,7 +141,10 @@ impl NewsUpdater {
                     .await?;
                 }
             } else {
-                info!("News text for comic #{} has changed. Resetting update factor and updating text.",comic_id);
+                info!(
+                    "News text for comic #{} has changed. Resetting update factor and updating text.",
+                    comic_id
+                );
                 News::create_for_comic_id(
                     &mut *transaction,
                     comic_id.into_inner(),
@@ -173,7 +177,7 @@ impl NewsUpdater {
 
     #[tracing::instrument]
     pub async fn fetch_news_for(&self, comic_id: ComicId) -> Result<String> {
-        let url = format!("{}{}", QC_COMIC_URL_BASE, comic_id);
+        let url = format!("{QC_COMIC_URL_BASE}{comic_id}");
         let response = self
             .client
             .get(url)
@@ -197,7 +201,7 @@ impl NewsUpdater {
         };
 
         if qc_page.trim().is_empty() {
-            anyhow::bail!("Could not fetch news for #{}, got empty response", comic_id);
+            anyhow::bail!("Could not fetch news for #{comic_id}, got empty response");
         }
 
         let parse_document_span = info_span!("parse_comic_page_document", ?comic_id);
@@ -206,8 +210,7 @@ impl NewsUpdater {
             let news_selector = Selector::parse("#news,#newspost").expect("valid selector");
             let news = document.select(&news_selector).next().ok_or_else(|| {
                 anyhow::anyhow!(
-                    "Could not fetch news for #{}, couldn't find #news or #newspost element",
-                    comic_id
+                    "Could not fetch news for #{comic_id}, couldn't find #news or #newspost element"
                 )
             })?;
 
@@ -220,9 +223,8 @@ impl NewsUpdater {
                     .trim_start_matches("<br>");
                 if trimmed_news_inner_html == news_inner_html {
                     break;
-                } else {
-                    news_inner_html = trimmed_news_inner_html;
                 }
+                news_inner_html = trimmed_news_inner_html;
             }
 
             let news_inner_html = REMOVE_NEWLINES.replace_all(news_inner_html, "");

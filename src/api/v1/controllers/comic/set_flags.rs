@@ -1,11 +1,11 @@
 use crate::models::{ComicId, ComicIdInvalidity, Token};
 use crate::util::{ensure_is_authorized, ensure_is_valid};
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
-use database::models::{Comic as DatabaseComic, LogEntry};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, LogEntry};
 use parse_display::Display;
-use semval::{context::Context as ValidationContext, Validate};
+use semval::{Validate, context::Context as ValidationContext};
 use serde::Deserialize;
 use shared::token_permissions;
 
@@ -79,7 +79,7 @@ pub(crate) async fn set_no_tagline(
     Ok(HttpResponse::Ok().body("No tagline set or updated for comic"))
 }
 
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 async fn set_flag(
     pool: web::Data<DbPool>,
     request: web::Json<SetFlagBody>,

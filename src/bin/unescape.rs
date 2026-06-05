@@ -1,5 +1,10 @@
-use anyhow::{anyhow, bail, Result};
+//! Utility binary that unescapes escape sequences in a file and prints the result.
 
+use anyhow::{Result, anyhow, bail};
+
+/// # Errors
+///
+/// Returns an error if the file argument is missing, the file cannot be read, or it contains invalid escaped content.
 fn main() -> Result<()> {
     let mut args = std::env::args();
     args.next();
@@ -29,7 +34,7 @@ fn main() -> Result<()> {
                     b'r' => 0xd,
                     b't' => 0x9,
                     b'Z' => 0x1a,
-                    _ => bail!("Invalid escape character: {}", byte),
+                    _ => bail!("Invalid escape character: {byte}"),
                 };
 
                 output_file.push(output_byte);

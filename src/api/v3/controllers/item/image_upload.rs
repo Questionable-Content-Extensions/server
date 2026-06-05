@@ -1,19 +1,18 @@
 use crate::models::Token;
 use crate::util::ensure_is_authorized;
 use actix_multipart::Multipart;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use crc32c::crc32c;
-use database::models::{Item as DatabaseItem, LogEntry, Token as DatabaseToken};
 use database::DbPool;
+use database::models::{Item as DatabaseItem, LogEntry, Token as DatabaseToken};
 use futures::StreamExt;
 use shared::token_permissions;
 use std::str::FromStr;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 
 #[tracing::instrument(skip(pool, image_upload_form),fields(token,image.size,image.crc32c,permissions))]
-#[allow(clippy::too_many_lines)]
 pub async fn image_upload(
     pool: web::Data<DbPool>,
     item_id: web::Path<u16>,
@@ -51,12 +50,10 @@ pub async fn image_upload(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let new_item_image_id = result.last_insert_id() as i32;
+    let new_item_image_id =
+        i32::try_from(result.last_insert_id()).expect("new image ID fits in i32");
 
-    let action = format!(
-        "Uploaded image #{} for item #{}",
-        new_item_image_id, item_id
-    );
+    let action = format!("Uploaded image #{new_item_image_id} for item #{item_id}");
     LogEntry::log_action(
         &mut *transaction,
         token.to_string(),
@@ -118,9 +115,8 @@ async fn get_form_data(mut image_upload_form: Multipart) -> Result<FormData, act
             }
             _ => {
                 return Err(error::ErrorBadRequest(anyhow!(
-                    "Encountered unexpected field \"{}\"",
-                    name
-                )))
+                    "Encountered unexpected field \"{name}\""
+                )));
             }
         }
     }

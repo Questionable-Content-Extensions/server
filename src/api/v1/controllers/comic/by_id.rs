@@ -8,17 +8,17 @@ use crate::api::v1::models::{
 };
 use crate::models::{ComicId, False, True};
 use crate::util::NewsUpdater;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
 use chrono::{TimeZone, Utc};
-use database::models::{Comic as DatabaseComic, Item as DatabaseItem, News as DatabaseNews};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, Item as DatabaseItem, News as DatabaseNews};
 use serde::Deserialize;
 use shared::token_permissions;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};
 
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 pub(crate) async fn by_id(
     pool: web::Data<DbPool>,
     news_updater: web::Data<NewsUpdater>,
@@ -85,7 +85,7 @@ pub(crate) async fn by_id(
     let (comic_navigation_items, all_navigation_items) =
         if items.is_empty() && !matches!(query.include, Some(Inclusion::All)) {
             (vec![], vec![])
-        } else if let Some(Inclusion::All) = query.include {
+        } else if matches!(query.include, Some(Inclusion::All)) {
             let mut all_items = DatabaseItem::all_mapped_by_id(&mut *conn)
                 .await
                 .map_err(error::ErrorInternalServerError)?;
@@ -101,7 +101,7 @@ pub(crate) async fn by_id(
             let mut i = 0;
             while i < all_navigation_items.len() {
                 let element = &mut all_navigation_items[i];
-                if items.get(&element.id.into_inner()).is_some() {
+                if items.contains_key(&element.id.into_inner()) {
                     let element = all_navigation_items.remove(i);
                     navigation_items_in_comic.push(element);
                 } else {

@@ -1,10 +1,13 @@
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Occurrence {
     pub comic_id: i16,
     pub item_id: i16,
 }
 
 impl Occurrence {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn occurrence_by_item_id_and_comic_id<'e, 'c: 'e, E>(
         executor: E,
@@ -30,6 +33,9 @@ impl Occurrence {
         .map(|c| c == 1)
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn comic_id_occurrence_by_item_id<'e, 'c: 'e, E>(
         executor: E,
@@ -50,6 +56,9 @@ impl Occurrence {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn create<'e, 'c: 'e, E>(
         executor: E,
@@ -73,6 +82,9 @@ impl Occurrence {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn delete<'e, 'c: 'e, E>(
         executor: E,

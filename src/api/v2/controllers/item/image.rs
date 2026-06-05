@@ -1,14 +1,14 @@
 use crate::api::v2::models::ItemImageList;
 use crate::models::{ImageId, Token};
 use crate::util::ensure_is_authorized;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
-use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;
+use database::models::{Item as DatabaseItem, LogEntry};
 use serde::Deserialize;
 use shared::token_permissions;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 
 #[tracing::instrument(skip(pool))]
 pub(crate) async fn images(
@@ -59,9 +59,7 @@ pub(crate) async fn delete(
     let item_id = DatabaseItem::item_id_by_image_id(&mut *transaction, image_id)
         .await
         .map_err(error::ErrorInternalServerError)?
-        .ok_or_else(|| {
-            error::ErrorNotFound(anyhow!("No item image with id {} exists", image_id))
-        })?;
+        .ok_or_else(|| error::ErrorNotFound(anyhow!("No item image with id {image_id} exists")))?;
 
     let result = DatabaseItem::delete_image(&mut *transaction, image_id)
         .await
@@ -69,15 +67,14 @@ pub(crate) async fn delete(
 
     if result.rows_affected() != 1 {
         return Err(error::ErrorNotFound(format!(
-            "Could not delete image {}; the image did not exist",
-            image_id
+            "Could not delete image {image_id}; the image did not exist"
         )));
     }
 
     LogEntry::log_action(
         &mut *transaction,
         request.token.to_string(),
-        format!("Deleted image #{}", image_id),
+        format!("Deleted image #{image_id}"),
         None,
         Some(item_id),
     )
@@ -90,7 +87,7 @@ pub(crate) async fn delete(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body(format!("Deleted image #{}", image_id)))
+    Ok(HttpResponse::Ok().body(format!("Deleted image #{image_id}")))
 }
 
 pub(crate) async fn set_primary(

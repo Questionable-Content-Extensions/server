@@ -1,10 +1,10 @@
 use crate::api::v1::models::LogEntry;
 use crate::models::Token;
 use crate::util::ensure_is_authorized;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
-use database::models::LogEntry as DatabaseLogEntry;
 use database::DbPool;
+use database::models::LogEntry as DatabaseLogEntry;
 use serde::{Deserialize, Serialize};
 use shared::token_permissions;
 
@@ -40,13 +40,16 @@ async fn get(
         log_entries,
         page: query.page,
         log_entry_count,
-        page_count: (log_entry_count as f64 / f64::from(PAGE_SIZE)).ceil() as u16,
+        page_count: u16::try_from(
+            (log_entry_count + i64::from(PAGE_SIZE) - 1) / i64::from(PAGE_SIZE),
+        )
+        .expect("page count fits in u16"),
     }))
 }
 
 #[derive(Debug, Deserialize)]
 struct LogQuery {
-    #[allow(unused)]
+    #[expect(unused)]
     token: Token,
     page: u16,
 }

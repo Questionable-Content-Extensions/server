@@ -19,8 +19,8 @@ pub async fn all(pool: web::Data<DbPool>, query: web::Query<AllQuery>) -> Result
 
     info!(
         "Requesting all comics (exclude guest comics: {}, exclude non-canon comics: {})",
-        is_guest_comic.map_or(false, |v| !v),
-        is_non_canon.map_or(false, |v| !v)
+        is_guest_comic.is_some_and(|v| !v),
+        is_non_canon.is_some_and(|v| !v)
     );
 
     Ok(HttpResponse::Ok().json(fetch_comic_list(&pool, is_guest_comic, is_non_canon).await?))

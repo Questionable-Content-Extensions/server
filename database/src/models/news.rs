@@ -1,6 +1,7 @@
 use chrono::{NaiveDate, Utc};
 use tracing::debug;
 
+#[expect(clippy::struct_field_names, reason = "field name matches the database column name")]
 #[derive(Debug)]
 pub struct News {
     pub comic_id: u16,
@@ -11,6 +12,9 @@ pub struct News {
 }
 
 impl News {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn by_comic_id<'e, 'c: 'e, E>(
         executor: E,
@@ -31,6 +35,9 @@ impl News {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_last_updated_by_comic_id<'e, 'c: 'e, E>(
         executor: E,
@@ -58,6 +65,9 @@ impl News {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_by_comic_id<'e, 'c: 'e, E>(
         executor: E,
@@ -88,6 +98,9 @@ impl News {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn create_for_comic_id<'e, 'c: 'e, E>(
         executor: E,
@@ -117,6 +130,7 @@ impl News {
 }
 
 impl News {
+    #[expect(clippy::cast_possible_truncation, reason = "intentional floor-truncation: update_factor days always small")]
     pub fn is_outdated(&self) -> bool {
         let days_since_update = (Utc::now().date_naive() - self.last_updated).num_days();
         let update_factor_days = (31.0 * self.update_factor) as i64;

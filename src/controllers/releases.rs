@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
-use actix_web::{error, web, HttpRequest, HttpResponse, Result};
+use actix_web::{HttpRequest, HttpResponse, Result, error, web};
 use arc_swap::ArcSwap;
 use chrono::{DateTime, Duration, Utc};
-use once_cell::sync::Lazy;
 use rand::RngExt;
 use reqwest::Client;
 use serde::Deserialize;
-use tracing::{debug, info_span, trace, Instrument};
+use tracing::{Instrument, debug, info_span, trace};
 
 use crate::util::Either;
 
@@ -34,7 +33,7 @@ impl ScriptFile {
         })
     }
 
-    fn github_filename(self) -> &'static str {
+    const fn github_filename(self) -> &'static str {
         match self {
             Self::User => "qc-ext.user.js",
             Self::Meta => "qc-ext.meta.js",
@@ -246,7 +245,7 @@ struct ScriptCache {
     meta: Option<(Asset, String)>,
 }
 
-static SCRIPT_CACHE: Lazy<ArcSwap<ScriptCache>> = Lazy::new(|| {
+static SCRIPT_CACHE: std::sync::LazyLock<ArcSwap<ScriptCache>> = std::sync::LazyLock::new(|| {
     ArcSwap::from_pointee(ScriptCache {
         expiration: Utc::now() - Duration::hours(1),
         user: None,

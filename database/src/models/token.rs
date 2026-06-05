@@ -15,6 +15,9 @@ pub struct Token {
 }
 
 impl Token {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor, token), fields(token = token.as_ref()))]
     pub async fn get_permissions_for_token<'e, 'c: 'e, E>(
         executor: E,
@@ -36,9 +39,7 @@ impl Token {
         .fetch_optional(executor)
         .await?;
 
-        let token = if let Some(token) = result {
-            token
-        } else {
+        let Some(token) = result else {
             // Invalid token provided, there are no permissions
             return Ok(HashSet::new());
         };

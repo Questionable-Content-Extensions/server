@@ -1,12 +1,11 @@
 use crate::api::v1::models::{NavigationData, UnhydratedItemNavigationData};
 use crate::models::ComicId;
-use actix_web::{error, Result};
-use database::models::{Item as DatabaseItem, PreviousAppearances};
+use actix_web::{Result, error};
 use database::DbPoolConnection;
+use database::models::{Item as DatabaseItem, PreviousAppearances};
 use std::convert::TryInto;
 
 #[tracing::instrument(skip(conn))]
-#[allow(clippy::too_many_lines)]
 pub async fn fetch_all_item_navigation_data(
     conn: &mut DbPoolConnection,
     comic_id: ComicId,
@@ -76,7 +75,6 @@ pub async fn fetch_all_item_navigation_data(
 }
 
 #[tracing::instrument(skip(conn))]
-#[allow(clippy::too_many_lines)]
 pub async fn fetch_comic_item_navigation_data(
     conn: &mut DbPoolConnection,
     comic_id: ComicId,

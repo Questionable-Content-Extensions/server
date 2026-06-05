@@ -1,9 +1,9 @@
 use crate::api::v2::models::{ComicList, Exclusion};
 use crate::models::ItemId;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_lab::extract::Query;
-use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence};
 use serde::Deserialize;
 use std::collections::HashSet;
 use tracing::info;
@@ -21,8 +21,8 @@ pub(crate) async fn all(
 
     info!(
         "Requesting all comics (exclude guest comics: {}, exclude non-canon comics: {})",
-        is_guest_comic.map_or(false, |v| !v),
-        is_non_canon.map_or(false, |v| !v)
+        is_guest_comic.is_some_and(|v| !v),
+        is_non_canon.is_some_and(|v| !v)
     );
 
     Ok(HttpResponse::Ok().json(fetch_comic_list(&pool, is_guest_comic, is_non_canon).await?))
@@ -37,7 +37,7 @@ pub(crate) async fn excluded(
         None => {
             return Err(error::ErrorBadRequest(
                 "exclusion parameter must be set to either `guest` or `non-canon`",
-            ))
+            ));
         }
         Some(Exclusion::Guest) => (Some(true), None),
         Some(Exclusion::NonCanon) => (None, Some(true)),

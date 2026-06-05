@@ -17,6 +17,9 @@ pub struct Item {
 }
 
 impl Item {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn occurrences_in_comic_mapped_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -41,6 +44,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn occurrences_in_comic_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -64,6 +70,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
     where
@@ -80,6 +89,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn all_mapped_by_id<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<BTreeMap<u16, Self>>
     where
@@ -98,6 +110,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<Option<Self>>
     where
@@ -114,6 +129,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn create<'e, 'c: 'e, E>(
         executor: E,
@@ -139,6 +157,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_apperance_and_count_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -165,6 +186,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_apperances_and_count<'e, 'c: 'e, E>(
         executor: E,
@@ -199,6 +223,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn previous_apperances_by_comic_id_mapped_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -251,6 +278,9 @@ impl Item {
         })
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn next_apperances_by_comic_id_mapped_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -282,19 +312,16 @@ impl Item {
             include_non_canon_comics,
         )
         .fetch(executor)
-        .try_filter_map(|pn| async move {
-            if let Some(comic) = pn.comic {
-                Ok(Some((pn.id, comic)))
-            } else {
-                Ok(None)
-            }
-        })
+        .try_filter_map(|pn| async move { Ok(pn.comic.map(|comic| (pn.id, comic))) })
         .try_collect()
         .await
     }
 
     // ---
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_apperances_and_count_of_items_in_comic_by_comic_id<'e, 'c: 'e, E>(
         executor: E,
@@ -334,6 +361,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn previous_apperances_of_items_in_comic_by_comic_id<'e, 'c: 'e, E>(
         executor: E,
@@ -369,17 +399,14 @@ impl Item {
             include_non_canon_comics,
         )
         .fetch(executor)
-        .try_filter_map(|pn| async move {
-            if let Some(comic) = pn.comic {
-                Ok(Some((pn.id, comic)))
-            } else {
-                Ok(None)
-            }
-        })
+        .try_filter_map(|pn| async move { Ok(pn.comic.map(|comic| (pn.id, comic))) })
         .try_collect()
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn next_apperances_of_items_in_comic_by_comic_id<'e, 'c: 'e, E>(
         executor: E,
@@ -415,17 +442,14 @@ impl Item {
             include_non_canon_comics,
         )
         .fetch(executor)
-        .try_filter_map(|pn| async move {
-            if let Some(comic) = pn.comic {
-                Ok(Some((pn.id, comic)))
-            } else {
-                Ok(None)
-            }
-        })
+        .try_filter_map(|pn| async move { Ok(pn.comic.map(|comic| (pn.id, comic))) })
         .try_collect()
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn image_count_by_id<'e, 'c: 'e, E>(executor: E, id: u16) -> sqlx::Result<i64>
     where
@@ -442,6 +466,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn image_metadatas_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -466,6 +493,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor, map))]
     pub async fn image_metadatas_by_id_with_mapping<'e, 'c: 'e, E, T, F>(
         executor: E,
@@ -494,6 +524,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn image_by_image_id<'e, 'c: 'e, E>(
         executor: E,
@@ -514,6 +547,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn item_id_by_image_id<'e, 'c: 'e, E>(
         executor: E,
@@ -534,6 +570,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor,image), fields(image.size = image.len()))]
     pub async fn create_image<'e, 'c: 'e, E>(
         executor: E,
@@ -559,6 +598,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn delete_image<'e, 'c: 'e, E>(
         executor: E,
@@ -578,6 +620,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn set_primary_image<'e, 'c: 'e, E>(
         executor: E,
@@ -600,6 +645,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_name_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -622,6 +670,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_short_name_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -644,6 +695,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_color_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -673,6 +727,9 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
     pub async fn update_type_by_id<'e, 'c: 'e, E>(
         executor: E,
@@ -696,7 +753,9 @@ impl Item {
     }
 
     // Until v1 of API is gone
-    #[allow(deprecated)]
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
     pub async fn related_items_by_id_and_type_with_mapping<'e, 'c: 'e, E, T, F>(
         executor: E,
         id: u16,
@@ -742,12 +801,13 @@ impl Item {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct ItemImageMetadata {
     pub id: u32,
     pub crc32c_hash: u32,
 }
 
-#[derive(Debug, sqlx::FromRow)]
+#[derive(Debug, Copy, Clone, sqlx::FromRow)]
 pub struct ItemFirstLastCount {
     pub id: u16,
     pub first: Option<u16>,
@@ -761,6 +821,7 @@ struct PrevNext {
     comic: Option<u16>,
 }
 
+#[derive(Debug)]
 pub struct PreviousAppearances {
     pub appearances: BTreeMap<ItemId, ComicId>,
     pub order: Vec<ItemId>,

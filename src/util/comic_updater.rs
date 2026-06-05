@@ -1,19 +1,17 @@
-use std::convert::TryInto;
-
 use crate::models::{ComicId, ImageType};
 use crate::util::NewsUpdater;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Datelike, Duration, NaiveTime, TimeZone, Timelike, Utc, Weekday};
 use const_format::concatcp;
-use database::models::Comic as DatabaseComic;
 use database::DbPool;
-use futures::{select, FutureExt};
+use database::models::Comic as DatabaseComic;
+use futures::{FutureExt, select};
 use ilyvion_util::string_extensions::StrExtensions;
 use reqwest::Client;
 use scraper::{Html, Selector};
 use tokio::sync::broadcast;
-use tokio::time::{sleep, Duration as StdDuration};
-use tracing::{info, info_span, Instrument};
+use tokio::time::{Duration as StdDuration, sleep};
+use tracing::{Instrument, info, info_span};
 
 const FRONT_PAGE_URL: &str = "https://questionablecontent.net/";
 const ARCHIVE_URL: &str = concatcp!(FRONT_PAGE_URL, "archive.php");
@@ -31,7 +29,6 @@ impl ComicUpdater {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     pub async fn background_comic_updater(
         &self,
         db_pool: &DbPool,
@@ -60,10 +57,9 @@ impl ComicUpdater {
                 hours, minutes
             );
 
-            #[allow(clippy::mut_mut)]
             {
                 select! {
-                    _ = sleep(delay.to_std().expect("valid delay")).fuse() => {},
+                    () = sleep(delay.to_std().expect("valid delay")).fuse() => {},
                     _ = shutdown_receiver.recv().fuse() => {
                         info!("Shutting down background comic updater");
                         break;
@@ -76,7 +72,7 @@ impl ComicUpdater {
     }
 
     #[tracing::instrument(skip(db_pool))]
-    #[allow(clippy::too_many_lines)]
+    #[expect(clippy::too_many_lines)]
     async fn fetch_latest_comic_data(&self, db_pool: &DbPool) -> Result<ComicId> {
         info!("Fetching QC front page");
         let response = self
@@ -193,33 +189,32 @@ impl ComicUpdater {
             };
 
             let parse_document_span = info_span!("parse_archive_document");
-            let comic_title = parse_document_span.in_scope(|| -> Result<String> {
-                let document = Html::parse_document(&qc_archive_page);
-                let comic_title_selector = format!("a[href*=\"comic={}\"]", comic_id);
-                let comic_title_selector =
-                    Selector::parse(&comic_title_selector).expect("valid comic title selector");
-                let comic_title =
-                    document
-                        .select(&comic_title_selector)
-                        .next()
-                        .ok_or_else(|| {
+            let comic_title =
+                parse_document_span.in_scope(|| -> Result<String> {
+                    let document = Html::parse_document(&qc_archive_page);
+                    let comic_title_selector = format!("a[href*=\"comic={comic_id}\"]");
+                    let comic_title_selector =
+                        Selector::parse(&comic_title_selector).expect("valid comic title selector");
+                    let comic_title = document.select(&comic_title_selector).next().ok_or_else(
+                        || {
                             anyhow::anyhow!(
                                 "Could not fetch archive page, couldn't find comic title element",
                             )
-                        })?;
-                let comic_title = comic_title.inner_html();
-                let comic_title = comic_title
-                    .split_once(':')
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "Could not fetch archive page, couldn't find ':' in comic title",
-                        )
-                    })?
-                    .1
-                    .trim();
+                        },
+                    )?;
+                    let comic_title = comic_title.inner_html();
+                    let comic_title = comic_title
+                        .split_once(':')
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "Could not fetch archive page, couldn't find ':' in comic title",
+                            )
+                        })?
+                        .1
+                        .trim();
 
-                Ok(String::from(comic_title))
-            })?;
+                    Ok(String::from(comic_title))
+                })?;
             Some(comic_title)
         } else {
             None
@@ -278,9 +273,7 @@ impl ComicUpdater {
             .instrument(info_span!("Transaction::commit"))
             .await?;
 
-        comic_id
-            .try_into()
-            .map_err(|_| anyhow!("comic id extracted from front page is invalid"))
+        Ok(comic_id.into())
     }
 }
 
