@@ -1,7 +1,7 @@
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_lab::extract::Query;
-use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence};
 use serde::Deserialize;
 use std::collections::HashSet;
 use tracing::info;
@@ -10,10 +10,7 @@ use crate::api::v3::models::{ComicList, Exclusion};
 use crate::models::ItemId;
 
 #[tracing::instrument(skip(pool))]
-pub async fn all(
-    pool: web::Data<DbPool>,
-    query: web::Query<AllQuery>,
-) -> Result<HttpResponse> {
+pub async fn all(pool: web::Data<DbPool>, query: web::Query<AllQuery>) -> Result<HttpResponse> {
     let (is_guest_comic, is_non_canon) = match query.exclude {
         None => (None, None),
         Some(Exclusion::Guest) => (Some(false), None),
@@ -38,7 +35,7 @@ pub async fn excluded(
         None => {
             return Err(error::ErrorBadRequest(
                 "exclusion parameter must be set to either `guest` or `non-canon`",
-            ))
+            ));
         }
         Some(Exclusion::Guest) => (Some(true), None),
         Some(Exclusion::NonCanon) => (None, Some(true)),

@@ -1,0 +1,13 @@
+node_modules
+
+# Ignore artifacts:
+build
+coverage
+
+dist
+
+# Auto-generated sqlx query cache — never manually edit
+database/.sqlx
+
+# Rust build output
+target

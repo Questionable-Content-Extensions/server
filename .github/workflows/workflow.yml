@@ -10,7 +10,7 @@ jobs:
 
             - uses: ilyvion-contrib/ci-utils/container-build@main
               with:
-                image: questionablextensions
+                  image: questionablextensions
 
             - name: Upload artifact
               if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -29,9 +29,9 @@ jobs:
             - uses: ilyvion-contrib/ci-utils/create-deployment@main
               id: deployment
               with:
-                ref: ${{ github.ref }}
-                sha: ${{ github.sha }}
-                environment: "staging"
+                  ref: ${{ github.ref }}
+                  sha: ${{ github.sha }}
+                  environment: 'staging'
 
             - name: Download artifact
               uses: actions/download-artifact@v4
@@ -40,32 +40,32 @@ jobs:
 
             - uses: ilyvion-contrib/ci-utils/setup-ssh@main
               with:
-                ssh_known_hosts: ${{ secrets.deploy_known_hosts }}
-                ssh_private_key: ${{ secrets.deploy_key }}
-                ssh_host: ${{ secrets.deploy_target }}
-                ssh_port: ${{ secrets.deploy_port }}
+                  ssh_known_hosts: ${{ secrets.deploy_known_hosts }}
+                  ssh_private_key: ${{ secrets.deploy_key }}
+                  ssh_host: ${{ secrets.deploy_target }}
+                  ssh_port: ${{ secrets.deploy_port }}
 
             - uses: ilyvion-contrib/ci-utils/container-deploy@main
               with:
-                ssh_user: ${{ secrets.deploy_user }}
-                ssh_host: ${{ secrets.deploy_target }}
-                ssh_port: ${{ secrets.deploy_port }}
-                image: questionablextensions
+                  ssh_user: ${{ secrets.deploy_user }}
+                  ssh_host: ${{ secrets.deploy_target }}
+                  ssh_port: ${{ secrets.deploy_port }}
+                  image: questionablextensions
 
             - name: Mark deployment as success
               if: success()
               run: |
-                gh api \
-                    -X POST \
-                    -H "Accept: application/vnd.github+json" \
-                    repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
-                    -f state="success"
+                  gh api \
+                      -X POST \
+                      -H "Accept: application/vnd.github+json" \
+                      repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
+                      -f state="success"
 
             - name: Mark deployment as failure
               if: failure()
               run: |
-                gh api \
-                    -X POST \
-                    -H "Accept: application/vnd.github+json" \
-                    repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
-                    -f state="failure"
+                  gh api \
+                      -X POST \
+                      -H "Accept: application/vnd.github+json" \
+                      repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
+                      -f state="failure"
