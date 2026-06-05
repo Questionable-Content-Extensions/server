@@ -1,1 +1,46 @@
-pushd database && cargo sqlx prepare && git add .sqlx && popd
+set -ex
+
+if [ "$SKIP_PRE_COMMIT" = "1" ]; then
+  exit 0
+fi
+
+STAGED=$(git diff --cached --name-only)
+
+has_rust_changes() {
+    echo "$STAGED" | grep -qE '(\.rs$|Cargo\.(toml|lock)$)'
+}
+
+has_node_changes() {
+    echo "$STAGED" | grep -qE '\.(ts|tsx|js|jsx|mjs|cjs)$' || \
+    echo "$STAGED" | grep -qE 'package(-lock)?\.json$'
+}
+
+has_database_changes() {
+    echo "$STAGED" | grep -q '^database/'
+}
+
+if has_rust_changes; then
+    cargo clippy --workspace --all-targets
+    if [ "$SKIP_TESTS" != "1" ]; then
+        cargo test --workspace -- --skip export_bindings --skip __export_endpoint
+    fi
+    ./update_bindings.sh
+    git add --all bindings
+fi
+
+if has_node_changes; then
+    if [ "$SKIP_TESTS" != "1" ]; then
+        npm run test --if-present
+    fi
+    npm run build
+fi
+
+npx lint-staged
+
+if has_database_changes; then
+    (
+    cd database
+    cargo sqlx prepare
+    git add --all .sqlx
+    )
+fi
