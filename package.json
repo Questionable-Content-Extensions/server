@@ -36,6 +36,8 @@
         "@commitlint/cli": "^21.0.2",
         "@commitlint/config-conventional": "^21.0.2",
         "@eslint/js": "^10.0.1",
+        "@tailwindcss/typography": "^0.5.19",
+        "@tailwindcss/vite": "^4.3.0",
         "@trivago/prettier-plugin-sort-imports": "^6.0.2",
         "@types/react": "^19.2.16",
         "@types/react-dom": "^19.2.3",
@@ -46,6 +48,7 @@
         "husky": "^9.1.7",
         "lint-staged": "^17.0.7",
         "prettier": "^3.8.3",
+        "tailwindcss": "^4.3.0",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.60.1",
         "vite": "^8.0.16"

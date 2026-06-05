@@ -1,13 +1,8 @@
-body > .container {
-    height: 100%;
-}
+@import 'tailwindcss';
+@plugin "@tailwindcss/typography";
 
 #root {
     height: 100%;
-}
-
-.ui.menu.inverted .header {
-    color: rgba(255, 255, 255, 0.9);
 }
 
 .nowrap {

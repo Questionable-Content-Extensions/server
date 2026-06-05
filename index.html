@@ -6,82 +6,193 @@
         <title>Welcome to Questionable Content Extensions</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="shortcut icon" href="/icon.png" />
-        <link
-            href="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
-            rel="stylesheet"
-            integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
-            crossorigin="anonymous"
-        />
-        <link
-            rel="stylesheet"
-            href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css"
-            type="text/css"
-            crossorigin="anonymous"
-        />
-
-        <style type="text/css">
-            body {
-                padding-top: 50px;
-            }
-        </style>
     </head>
 
-    <body>
-        <nav class="navbar navbar-inverse navbar-fixed-top">
-            <div class="container">
-                <div class="navbar-header">
-                    <button
-                        type="button"
-                        class="navbar-toggle collapsed"
-                        data-toggle="collapse"
-                        data-target="#navbar"
-                        aria-expanded="false"
-                        aria-controls="navbar"
-                    >
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a class="navbar-brand" href="/"
-                        >Questionable Content Extensions</a
-                    >
-                </div>
-                <div id="navbar" class="collapse navbar-collapse">
-                    <ul class="nav navbar-nav">
-                        <li class="active"><a href="/">Home</a></li>
+    <body class="pt-14">
+        <nav class="bg-gray-900 fixed top-0 left-0 right-0 z-50">
+            <div class="mx-auto max-w-7xl px-4">
+                <div class="flex items-center justify-between h-14">
+                    <div class="flex items-center gap-2">
+                        <button
+                            type="button"
+                            id="nav-toggle"
+                            class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none"
+                            aria-expanded="false"
+                            aria-controls="navbar"
+                        >
+                            <span class="sr-only">Toggle navigation</span>
+                            <svg
+                                class="h-6 w-6"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16"
+                                />
+                            </svg>
+                        </button>
+                        <a class="text-white font-bold text-lg" href="/"
+                            >Questionable Content Extensions</a
+                        >
+                    </div>
+                    <ul class="hidden md:flex items-center">
                         <li>
-                            <a href="/releases/qc-ext.latest.user.js"
+                            <a
+                                class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                                href="/"
+                                >Home</a
+                            >
+                        </li>
+                        <li>
+                            <a
+                                class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                                href="/releases/qc-ext.latest.user.js"
                                 >User script</a
                             >
                         </li>
                         <li>
                             <a
+                                class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium inline-flex items-center gap-1"
                                 href="https://github.com/Questionable-Content-Extensions/client"
                                 >User script GitHub project
-                                <i class="fa fa-external-link"></i
-                            ></a>
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    class="w-3.5 h-3.5"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z"
+                                        clip-rule="evenodd"
+                                    />
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </a>
                         </li>
                         <li>
                             <a
+                                class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium inline-flex items-center gap-1"
                                 href="https://www.reddit.com/r/questionablextensions/"
-                                >Subreddit <i class="fa fa-external-link"></i
-                            ></a>
+                                >Subreddit
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    class="w-3.5 h-3.5"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z"
+                                        clip-rule="evenodd"
+                                    />
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </a>
                         </li>
                     </ul>
                 </div>
-                <!--/.nav-collapse -->
+                <div id="navbar" class="hidden md:hidden">
+                    <ul class="px-2 pt-2 pb-3 space-y-1">
+                        <li>
+                            <a
+                                class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+                                href="/"
+                                >Home</a
+                            >
+                        </li>
+                        <li>
+                            <a
+                                class="text-gray-300 hover:text-white block px-3 py-2 rounded-md text-base font-medium"
+                                href="/releases/qc-ext.latest.user.js"
+                                >User script</a
+                            >
+                        </li>
+                        <li>
+                            <a
+                                class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium inline-flex items-center gap-1"
+                                href="https://github.com/Questionable-Content-Extensions/client"
+                                >User script GitHub project
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    class="w-3.5 h-3.5"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z"
+                                        clip-rule="evenodd"
+                                    />
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </a>
+                        </li>
+                        <li>
+                            <a
+                                class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-base font-medium inline-flex items-center gap-1"
+                                href="https://www.reddit.com/r/questionablextensions/"
+                                >Subreddit
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    class="w-3.5 h-3.5"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z"
+                                        clip-rule="evenodd"
+                                    />
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z"
+                                        clip-rule="evenodd"
+                                    />
+                                </svg>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </nav>
-        <div class="container">
+
+        <div class="mx-auto max-w-7xl px-4">
             <div id="root"></div>
         </div>
 
-        <script
-            src="https://stackpath.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
-            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
-            crossorigin="anonymous"
-        ></script>
+        <script>
+            document
+                .getElementById('nav-toggle')
+                .addEventListener('click', function () {
+                    var menu = document.getElementById('navbar');
+                    var expanded =
+                        this.getAttribute('aria-expanded') === 'true';
+                    this.setAttribute('aria-expanded', String(!expanded));
+                    menu.classList.toggle('hidden');
+                });
+        </script>
         <script type="module" src="/src/index.tsx"></script>
     </body>
 </html>
