@@ -3,7 +3,10 @@ use futures::TryStreamExt;
 
 use crate::models::ItemType;
 
-#[expect(clippy::struct_field_names, reason = "field names match the database column names")]
+#[expect(
+    clippy::struct_field_names,
+    reason = "field names match the database column names"
+)]
 #[derive(Debug)]
 pub struct Comic {
     pub id: u16,
