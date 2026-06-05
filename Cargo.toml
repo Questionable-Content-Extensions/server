@@ -68,5 +68,57 @@ sqlx = { version = "0.7.3", features = [
 ] }
 tracing = "0.1.37"
 
+[lints]
+workspace = true
+
 [profile.release]
 strip = true
+
+[workspace.lints.rust]
+anonymous_parameters = "deny"
+elided_lifetimes_in_paths = "deny"
+ellipsis_inclusive_range_patterns = "deny"
+nonstandard_style = { level = "deny", priority = -1 }
+rust_2018_idioms = { level = "deny", priority = -1 }
+trivial_numeric_casts = "deny"
+unsafe_code = "deny"
+missing_copy_implementations = "warn"
+missing_debug_implementations = "warn"
+missing_docs = "warn"
+variant_size_differences = "warn"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+
+[workspace.lints.clippy]
+cast_lossless = "deny"
+default_trait_access = "deny"
+empty_enum = "deny"
+enum_glob_use = "deny"
+expl_impl_clone_on_copy = "deny"
+explicit_into_iter_loop = "deny"
+explicit_iter_loop = "deny"
+manual_filter_map = "deny"
+filter_map_next = "deny"
+if_not_else = "deny"
+invalid_upcast_comparisons = "deny"
+items_after_statements = "deny"
+large_digit_groups = "deny"
+map_flatten = "deny"
+match_same_arms = "deny"
+mut_mut = "deny"
+needless_continue = "deny"
+needless_pass_by_value = "deny"
+map_unwrap_or = "deny"
+redundant_closure_for_method_calls = "deny"
+single_match_else = "deny"
+string_add_assign = "deny"
+type_repetition_in_bounds = "deny"
+unseparated_literal_suffix = "deny"
+unused_self = "deny"
+use_self = "deny"
+used_underscore_binding = "deny"
+must_use_candidate = "warn"
+enum_variant_names = "warn"
+similar_names = "warn"
+too_many_lines = "warn"

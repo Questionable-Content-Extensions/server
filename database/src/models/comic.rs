@@ -734,7 +734,7 @@ impl Comic {
         )
         .fetch_optional(executor)
         .await
-        .map(|o| o.flatten())
+        .map(Option::flatten)
     }
 
     #[tracing::instrument(skip(executor))]
