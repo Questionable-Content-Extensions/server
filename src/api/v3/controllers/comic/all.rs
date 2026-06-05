@@ -5,6 +5,7 @@ use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence}
 use serde::Deserialize;
 use std::collections::HashSet;
 use tracing::info;
+use ts_rs::TS;
 
 use crate::api::v3::models::{ComicList, Exclusion};
 use crate::models::ItemId;
@@ -101,18 +102,24 @@ async fn fetch_comic_list(
     Ok(comics)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
 pub struct AllQuery {
+    #[ts(optional)]
     exclude: Option<Exclusion>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
 pub struct ExcludedQuery {
+    #[ts(optional)]
     exclusion: Option<Exclusion>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
 pub struct FilteredQuery {
     #[serde(default, rename = "item-id")]
+    #[ts(optional, rename = "item-id")]
     item_ids: Vec<ItemId>,
 }
