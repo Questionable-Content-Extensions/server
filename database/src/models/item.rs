@@ -221,6 +221,49 @@ impl Item {
     ///
     /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
+    pub async fn occurrence_stats_by_id<'e, 'c: 'e, E>(
+        executor: E,
+        id: u16,
+    ) -> sqlx::Result<ItemOccurrenceStats>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            ItemOccurrenceStats,
+            r#"
+                SELECT
+                    occ.first AS `first: u16`,
+                    occ.last AS `last: u16`,
+                    occ.count,
+                    comics.total_comics,
+                    imgs.image_count
+                FROM
+                    (
+                        SELECT
+                            MIN(`comic_id`) AS first,
+                            MAX(`comic_id`) AS last,
+                            COUNT(`comic_id`) AS `count`
+                        FROM `Occurrence`
+                        WHERE `item_id` = ?
+                    ) AS occ
+                    CROSS JOIN (SELECT COUNT(*) AS total_comics FROM `Comic`) AS comics
+                    CROSS JOIN (
+                        SELECT COUNT(*) AS image_count
+                        FROM `ItemImage`
+                        WHERE `item_id` = ?
+                    ) AS imgs
+            "#,
+            id,
+            id,
+        )
+        .fetch_one(executor)
+        .await
+    }
+
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
     pub async fn first_and_last_apperances_and_count<'e, 'c: 'e, E>(
         executor: E,
         include_guest_comics: Option<bool>,
@@ -857,6 +900,15 @@ pub struct ItemFirstLastCount {
     pub first: Option<u16>,
     pub last: Option<u16>,
     pub count: i64,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct ItemOccurrenceStats {
+    pub first: Option<u16>,
+    pub last: Option<u16>,
+    pub count: i64,
+    pub total_comics: i64,
+    pub image_count: i64,
 }
 
 #[derive(Debug, sqlx::FromRow)]

@@ -3,9 +3,7 @@ use crate::models::ItemId;
 use actix_web::{HttpResponse, Result, error, web};
 use anyhow::anyhow;
 use database::DbPool;
-use database::models::{
-    Comic as DatabaseComic, Item as DatabaseItem, RelatedItem as RelatedDatabaseItem,
-};
+use database::models::{Item as DatabaseItem, RelatedItem as RelatedDatabaseItem};
 use std::convert::{TryFrom, TryInto};
 
 #[expect(
@@ -28,16 +26,7 @@ pub(crate) async fn by_id(
         .map_err(error::ErrorInternalServerError)?
         .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {item_id} exists")))?;
 
-    let item_occurrence =
-        DatabaseItem::first_and_last_apperance_and_count_by_id(&mut *conn, item_id.into_inner())
-            .await
-            .map_err(error::ErrorInternalServerError)?;
-
-    let total_comics = DatabaseComic::count(&mut *conn)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let image_count = DatabaseItem::image_count_by_id(&mut *conn, item_id.into_inner())
+    let stats = DatabaseItem::occurrence_stats_by_id(&mut *conn, item_id.into_inner())
         .await
         .map_err(error::ErrorInternalServerError)?;
 
@@ -47,26 +36,26 @@ pub(crate) async fn by_id(
         name: item.name,
         r#type: ItemType::try_from(&*item.r#type).map_err(error::ErrorInternalServerError)?,
         color: ItemColor(item.color_red, item.color_green, item.color_blue),
-        first: item_occurrence
+        first: stats
             .first
             .map(TryInto::try_into)
             .transpose()
             .expect("database has valid comicIds")
             .unwrap_or_default(),
-        last: item_occurrence
+        last: stats
             .last
             .map(TryInto::try_into)
             .transpose()
             .expect("database has valid comicIds")
             .unwrap_or_default(),
-        appearances: i32::try_from(item_occurrence.count).unwrap(),
-        total_comics: i32::try_from(total_comics).unwrap(),
-        presence: if total_comics == 0 {
+        appearances: i32::try_from(stats.count).unwrap(),
+        total_comics: i32::try_from(stats.total_comics).unwrap(),
+        presence: if stats.total_comics == 0 {
             0.0
         } else {
-            item_occurrence.count as f64 * 100.0 / total_comics as f64
+            stats.count as f64 * 100.0 / stats.total_comics as f64
         },
-        has_image: image_count > 0,
+        has_image: stats.image_count > 0,
     };
 
     Ok(HttpResponse::Ok().json(item))
