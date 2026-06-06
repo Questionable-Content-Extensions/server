@@ -1,0 +1,54 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    MIN(`id`) AS \"first?: u16\",\n                    MAX(`id`) AS \"last?: u16\",\n                    MAX(CASE WHEN `id` < ? THEN `id` END) AS \"previous?: u16\",\n                    MIN(CASE WHEN `id` > ? THEN `id` END) AS \"next?: u16\"\n                FROM `v_comics_missing_location`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "first?: u16",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "last?: u16",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "previous?: u16",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "UNSIGNED | BINARY",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "next?: u16",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "UNSIGNED | BINARY",
+          "max_size": 6
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "07867debc2a1877a81fc534cfc5ef373914df0517d80217df540a6100730f5ec"
+}

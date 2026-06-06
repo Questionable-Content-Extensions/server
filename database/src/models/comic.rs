@@ -140,6 +140,71 @@ impl Comic {
         .await
     }
 
+    /// Fetches a comic by ID together with its previous/next IDs and news text in one query.
+    ///
+    /// Returns `None` when the comic does not exist.  The `prev_id` / `next_id` fields
+    /// respect the same guest/non-canon filters as the standalone `previous_id`/`next_id`
+    /// functions.  `news` is `None` when no news row exists for the comic.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn by_id_with_navigation_and_news<'e, 'c: 'e, E>(
+        executor: E,
+        id: u16,
+        include_guest_comics: Option<bool>,
+        include_non_canon_comics: Option<bool>,
+    ) -> sqlx::Result<Option<ComicWithNavigationAndNews>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            ComicWithNavigationAndNews,
+            r#"
+                SELECT
+                    `c`.`id`,
+                    `c`.`image_type`,
+                    `c`.`is_guest_comic`,
+                    `c`.`is_non_canon`,
+                    `c`.`has_no_cast`,
+                    `c`.`has_no_location`,
+                    `c`.`has_no_storyline`,
+                    `c`.`has_no_title`,
+                    `c`.`has_no_tagline`,
+                    `c`.`title`,
+                    `c`.`tagline`,
+                    `c`.`publish_date`,
+                    `c`.`is_accurate_publish_date`,
+                    (SELECT `id` FROM `Comic`
+                     WHERE `id` < `c`.`id`
+                       AND (? IS NULL OR `is_guest_comic` = ?)
+                       AND (? IS NULL OR `is_non_canon` = ?)
+                     ORDER BY `id` DESC LIMIT 1) AS `prev_id`,
+                    (SELECT `id` FROM `Comic`
+                     WHERE `id` > `c`.`id`
+                       AND (? IS NULL OR `is_guest_comic` = ?)
+                       AND (? IS NULL OR `is_non_canon` = ?)
+                     ORDER BY `id` ASC LIMIT 1) AS `next_id`,
+                    `n`.`news` AS `news`
+                FROM `Comic` `c`
+                LEFT JOIN `News` `n` ON `n`.`comic_id` = `c`.`id`
+                WHERE `c`.`id` = ?
+            "#,
+            include_guest_comics,
+            include_guest_comics,
+            include_non_canon_comics,
+            include_non_canon_comics,
+            include_guest_comics,
+            include_guest_comics,
+            include_non_canon_comics,
+            include_non_canon_comics,
+            id,
+        )
+        .fetch_optional(executor)
+        .await
+    }
+
     /// # Errors
     ///
     /// Returns a database error if the query fails.
@@ -806,6 +871,163 @@ impl Comic {
         .await
     }
 
+    /// Returns first, last, previous, and next comic IDs that are missing a cast item,
+    /// in a single query against the `v_comics_missing_cast` view.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn missing_cast_navigation<'e, 'c: 'e, E>(
+        executor: E,
+        comic_id: u16,
+    ) -> sqlx::Result<NavigationResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            NavigationResult,
+            r#"
+                SELECT
+                    MIN(`id`) AS "first?: u16",
+                    MAX(`id`) AS "last?: u16",
+                    MAX(CASE WHEN `id` < ? THEN `id` END) AS "previous?: u16",
+                    MIN(CASE WHEN `id` > ? THEN `id` END) AS "next?: u16"
+                FROM `v_comics_missing_cast`
+            "#,
+            comic_id,
+            comic_id,
+        )
+        .fetch_one(executor)
+        .await
+    }
+
+    /// Returns first, last, previous, and next comic IDs that are missing a location item,
+    /// in a single query against the `v_comics_missing_location` view.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn missing_location_navigation<'e, 'c: 'e, E>(
+        executor: E,
+        comic_id: u16,
+    ) -> sqlx::Result<NavigationResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            NavigationResult,
+            r#"
+                SELECT
+                    MIN(`id`) AS "first?: u16",
+                    MAX(`id`) AS "last?: u16",
+                    MAX(CASE WHEN `id` < ? THEN `id` END) AS "previous?: u16",
+                    MIN(CASE WHEN `id` > ? THEN `id` END) AS "next?: u16"
+                FROM `v_comics_missing_location`
+            "#,
+            comic_id,
+            comic_id,
+        )
+        .fetch_one(executor)
+        .await
+    }
+
+    /// Returns first, last, previous, and next comic IDs that are missing a storyline item,
+    /// in a single query against the `v_comics_missing_storyline` view.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn missing_storyline_navigation<'e, 'c: 'e, E>(
+        executor: E,
+        comic_id: u16,
+    ) -> sqlx::Result<NavigationResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            NavigationResult,
+            r#"
+                SELECT
+                    MIN(`id`) AS "first?: u16",
+                    MAX(`id`) AS "last?: u16",
+                    MAX(CASE WHEN `id` < ? THEN `id` END) AS "previous?: u16",
+                    MIN(CASE WHEN `id` > ? THEN `id` END) AS "next?: u16"
+                FROM `v_comics_missing_storyline`
+            "#,
+            comic_id,
+            comic_id,
+        )
+        .fetch_one(executor)
+        .await
+    }
+
+    /// Returns first, last, previous, and next comic IDs that are missing a title,
+    /// in a single query against the `v_comics_missing_title` view.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn missing_title_navigation<'e, 'c: 'e, E>(
+        executor: E,
+        comic_id: u16,
+    ) -> sqlx::Result<NavigationResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            NavigationResult,
+            r#"
+                SELECT
+                    MIN(`id`) AS "first?: u16",
+                    MAX(`id`) AS "last?: u16",
+                    MAX(CASE WHEN `id` < ? THEN `id` END) AS "previous?: u16",
+                    MIN(CASE WHEN `id` > ? THEN `id` END) AS "next?: u16"
+                FROM `v_comics_missing_title`
+            "#,
+            comic_id,
+            comic_id,
+        )
+        .fetch_one(executor)
+        .await
+    }
+
+    /// Returns first, last, previous, and next comic IDs that are missing a tagline,
+    /// in a single query against the `v_comics_missing_tagline` view.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn missing_tagline_navigation<'e, 'c: 'e, E>(
+        executor: E,
+        comic_id: u16,
+    ) -> sqlx::Result<NavigationResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            NavigationResult,
+            r#"
+                SELECT
+                    MIN(`id`) AS "first?: u16",
+                    MAX(`id`) AS "last?: u16",
+                    MAX(CASE WHEN `id` < ? THEN `id` END) AS "previous?: u16",
+                    MIN(CASE WHEN `id` > ? THEN `id` END) AS "next?: u16"
+                FROM `v_comics_missing_tagline`
+            "#,
+            comic_id,
+            comic_id,
+        )
+        .fetch_one(executor)
+        .await
+    }
+
+    // ---
+
     /// # Errors
     ///
     /// Returns a database error if the query fails.
@@ -1003,6 +1225,34 @@ impl Comic {
 struct FirstLast {
     first: Option<u16>,
     last: Option<u16>,
+}
+
+#[derive(Copy, Clone, Debug, sqlx::FromRow)]
+pub struct NavigationResult {
+    pub first: Option<u16>,
+    pub last: Option<u16>,
+    pub previous: Option<u16>,
+    pub next: Option<u16>,
+}
+
+#[derive(Debug)]
+pub struct ComicWithNavigationAndNews {
+    pub id: u16,
+    pub image_type: i32,
+    pub is_guest_comic: u8,
+    pub is_non_canon: u8,
+    pub has_no_cast: u8,
+    pub has_no_location: u8,
+    pub has_no_storyline: u8,
+    pub has_no_title: u8,
+    pub has_no_tagline: u8,
+    pub title: String,
+    pub tagline: Option<String>,
+    pub publish_date: Option<NaiveDateTime>,
+    pub is_accurate_publish_date: u8,
+    pub prev_id: Option<u16>,
+    pub next_id: Option<u16>,
+    pub news: Option<String>,
 }
 
 #[derive(Debug, sqlx::FromRow)]
