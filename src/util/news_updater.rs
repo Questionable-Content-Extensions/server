@@ -46,16 +46,16 @@ impl NewsUpdater {
         db_pool: &DbPool,
         shutdown_receiver: &mut broadcast::Receiver<()>,
     ) -> anyhow::Result<()> {
+        let mut process_set = HashSet::new();
         loop {
-            let update_entries = self.get_pending_update_entries();
-            debug!("There are {} news updates pending.", update_entries.len());
+            std::mem::swap(&mut process_set, &mut *self.update_set.lock().unwrap());
+            debug!("There are {} news updates pending.", process_set.len());
 
-            if !update_entries.is_empty() {
+            if !process_set.is_empty() {
                 info!("Running background news update...");
-                self.run_news_update(db_pool, update_entries.iter()).await?;
+                self.run_news_update(db_pool, process_set.iter()).await?;
+                process_set.clear();
             }
-
-            self.remove_pending_update_entries(&update_entries);
 
             {
                 select! {
@@ -165,17 +165,6 @@ impl NewsUpdater {
         Ok(())
     }
 
-    pub fn get_pending_update_entries(&self) -> HashSet<ComicId> {
-        self.update_set.lock().unwrap().clone()
-    }
-
-    pub fn remove_pending_update_entries(&self, updated_entries: &HashSet<ComicId>) {
-        self.update_set
-            .lock()
-            .unwrap()
-            .retain(|e| !updated_entries.contains(e));
-    }
-
     #[tracing::instrument]
     pub async fn fetch_news_for(&self, comic_id: ComicId) -> Result<String> {
         let url = format!("{QC_COMIC_URL_BASE}{comic_id}");
@@ -246,12 +235,16 @@ mod tests {
         ComicId::from_trusted(id)
     }
 
+    fn pending(updater: &NewsUpdater) -> HashSet<ComicId> {
+        updater.update_set.lock().unwrap().clone()
+    }
+
     #[test]
     fn check_for_inserts_into_pending_set() {
         let updater = NewsUpdater::new();
         updater.check_for(comic(1));
         updater.check_for(comic(2));
-        let entries = updater.get_pending_update_entries();
+        let entries = pending(&updater);
         assert!(entries.contains(&comic(1)));
         assert!(entries.contains(&comic(2)));
         assert_eq!(entries.len(), 2);
@@ -262,20 +255,25 @@ mod tests {
         let updater = NewsUpdater::new();
         updater.check_for(comic(5));
         updater.check_for(comic(5));
-        assert_eq!(updater.get_pending_update_entries().len(), 1);
+        assert_eq!(pending(&updater).len(), 1);
     }
 
     #[test]
-    fn remove_pending_update_entries_removes_only_processed() {
+    fn swap_transfers_entries_and_preserves_entries_added_during_processing() {
         let updater = NewsUpdater::new();
         updater.check_for(comic(1));
         updater.check_for(comic(2));
+
+        // Simulate what background_news_updater does: swap with the local process_set.
+        let mut process_set = HashSet::new();
+        std::mem::swap(&mut process_set, &mut *updater.update_set.lock().unwrap());
+        assert!(process_set.contains(&comic(1)));
+        assert!(process_set.contains(&comic(2)));
+
+        // Entries added after the swap go into the (now-empty) write set.
         updater.check_for(comic(3));
-        let processed = [comic(1), comic(3)].into_iter().collect::<HashSet<_>>();
-        updater.remove_pending_update_entries(&processed);
-        let remaining = updater.get_pending_update_entries();
-        assert!(!remaining.contains(&comic(1)));
-        assert!(remaining.contains(&comic(2)));
-        assert!(!remaining.contains(&comic(3)));
+        let remaining = pending(&updater);
+        assert_eq!(remaining.len(), 1);
+        assert!(remaining.contains(&comic(3)));
     }
 }
