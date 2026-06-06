@@ -177,7 +177,7 @@ pub struct ComicList {
 impl From<DatabaseComic> for ComicList {
     fn from(c: DatabaseComic) -> Self {
         Self {
-            comic: ComicId::from(c.id),
+            comic: ComicId::from_trusted(c.id),
             title: c.title,
             tagline: c.tagline,
             is_guest_comic: c.is_guest_comic != 0,

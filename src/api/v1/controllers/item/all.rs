@@ -19,7 +19,7 @@ pub(crate) async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .map_err(error::ErrorInternalServerError)?;
 
     let all_navigation_items =
-        fetch_all_item_navigation_data(&mut conn, ComicId::from(1), None, None)
+        fetch_all_item_navigation_data(&mut conn, ComicId::from_trusted(1), None, None)
             .await?
             .into_iter()
             .map(|i| (i.id, i))

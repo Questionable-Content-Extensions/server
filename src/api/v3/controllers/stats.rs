@@ -81,14 +81,17 @@ async fn yearly_spotlight(pool: web::Data<DbPool>) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(build_yearly_spotlight_response(rows)))
 }
 
-fn item_stats_from_db(row: DbItemStats) -> ItemStats {
-    ItemStats {
+fn item_stats_from_db(row: DbItemStats) -> Option<ItemStats> {
+    let (Some(first_comic), Some(last_comic)) = (row.first_comic, row.last_comic) else {
+        return None;
+    };
+    Some(ItemStats {
         id: ItemId::from(row.id),
         name: row.name,
-        first_comic: ComicId::from(row.first_comic.unwrap_or(0)),
-        last_comic: ComicId::from(row.last_comic.unwrap_or(0)),
+        first_comic: ComicId::from_trusted(first_comic),
+        last_comic: ComicId::from_trusted(last_comic),
         appearances: u32::try_from(row.appearances).unwrap_or(u32::MAX),
-    }
+    })
 }
 
 fn build_co_appearances_response(rows: Vec<DbCoAppearance>) -> CoAppearancesResponse {

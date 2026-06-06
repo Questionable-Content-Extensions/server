@@ -101,49 +101,55 @@ impl ComicUpdater {
         }
 
         let parse_document_span = info_span!("parse_front_page_document");
-        let (comic_id, image_type) = parse_document_span.in_scope(|| -> Result<(u16, i32)> {
-            let document = Html::parse_document(&qc_front_page);
+        let (comic_id, image_type) =
+            parse_document_span.in_scope(|| -> Result<(ComicId, i32)> {
+                let document = Html::parse_document(&qc_front_page);
 
-            let comic_image_selector =
-                Selector::parse("img[src*=\"/comics/\"]").expect("valid selector");
-            let comic_image = document
-                .select(&comic_image_selector)
-                .next()
-                .ok_or_else(|| {
-                    anyhow::anyhow!("Could not fetch front page, couldn't find comic image element")
+                let comic_image_selector =
+                    Selector::parse("img[src*=\"/comics/\"]").expect("valid selector");
+                let comic_image =
+                    document
+                        .select(&comic_image_selector)
+                        .next()
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "Could not fetch front page, couldn't find comic image element"
+                            )
+                        })?;
+                let comic_image_url = comic_image.value().attr("src").ok_or_else(|| {
+                    anyhow!("Could not fetch front page, couldn't get comic image element source")
                 })?;
-            let comic_image_url = comic_image.value().attr("src").ok_or_else(|| {
-                anyhow!("Could not fetch front page, couldn't get comic image element source")
+
+                let (comic_image, comic_type) = comic_image_url
+                    .rsplit_once('/')
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "Could not fetch front page, couldn't find '/' in comic image source"
+                        )
+                    })?
+                    .1
+                    .split_once('.')
+                    .ok_or_else(|| {
+                        anyhow::anyhow!(
+                            "Could not fetch front page, couldn't find '.' in comic image source"
+                        )
+                    })?;
+
+                let comic_image_type = match comic_type.to_ascii_lowercase_cow().as_ref() {
+                    "png" => 1,
+                    "gif" => 2,
+                    "jpg" | "jpeg" => 3,
+                    _ => 0,
+                };
+
+                let comic_image: u16 = comic_image.parse().context(
+                    "Could not fetch front page, couldn't parse comic id from comic image source",
+                )?;
+                let comic_image = ComicId::try_from(comic_image)
+                    .map_err(|()| anyhow!("Invalid comic ID: {comic_image}"))?;
+
+                Ok((comic_image, comic_image_type))
             })?;
-
-            let (comic_image, comic_type) = comic_image_url
-                .rsplit_once('/')
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "Could not fetch front page, couldn't find '/' in comic image source"
-                    )
-                })?
-                .1
-                .split_once('.')
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "Could not fetch front page, couldn't find '.' in comic image source"
-                    )
-                })?;
-
-            let comic_image_type = match comic_type.to_ascii_lowercase_cow().as_ref() {
-                "png" => 1,
-                "gif" => 2,
-                "jpg" | "jpeg" => 3,
-                _ => 0,
-            };
-
-            let comic_image = comic_image.parse().context(
-                "Could not fetch front page, couldn't parse comic id from comic image source",
-            )?;
-
-            Ok((comic_image, comic_image_type))
-        })?;
 
         info!(
             "Comic on front page is #{} ({:?}), uploaded at approximately {}",
@@ -158,7 +164,7 @@ impl ComicUpdater {
             .await?;
 
         let (needs_title, needs_image_type, current_comic_date) =
-            DatabaseComic::needs_updating_by_id(&mut *transaction, comic_id).await?;
+            DatabaseComic::needs_updating_by_id(&mut *transaction, comic_id.into_inner()).await?;
 
         info!(
             "Comic #{} needs title: {}, needs image type: {}, current comic date: {:?}",
@@ -232,7 +238,7 @@ impl ComicUpdater {
 
             DatabaseComic::insert_or_update_title_imagetype_and_publish_date_by_id(
                 &mut *transaction,
-                comic_id,
+                comic_id.into_inner(),
                 &title,
                 image_type,
                 comic_date.naive_utc(),
@@ -247,7 +253,7 @@ impl ComicUpdater {
 
             DatabaseComic::update_image_type_and_publish_date_by_id(
                 &mut *transaction,
-                comic_id,
+                comic_id.into_inner(),
                 image_type,
                 comic_date.naive_utc(),
             )
@@ -260,7 +266,7 @@ impl ComicUpdater {
 
             DatabaseComic::update_publish_date_by_id(
                 &mut *transaction,
-                comic_id,
+                comic_id.into_inner(),
                 comic_date,
                 false,
             )
@@ -273,7 +279,7 @@ impl ComicUpdater {
             .instrument(info_span!("Transaction::commit"))
             .await?;
 
-        Ok(comic_id.into())
+        Ok(comic_id)
     }
 }
 

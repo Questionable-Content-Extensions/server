@@ -25,14 +25,25 @@ pub struct ComicId(u16);
 
 impl ComicId {
     #[inline]
+    pub const fn from_trusted(trusted_comic_id: u16) -> Self {
+        Self(trusted_comic_id)
+    }
+    #[inline]
     pub const fn into_inner(self) -> u16 {
         self.0
     }
 }
 
-impl From<u16> for ComicId {
-    fn from(comic_id: u16) -> Self {
-        Self(comic_id)
+impl TryFrom<u16> for ComicId {
+    type Error = ();
+
+    #[inline]
+    fn try_from(comic_id: u16) -> Result<Self, Self::Error> {
+        if comic_id < 1 {
+            Err(())
+        } else {
+            Ok(Self(comic_id))
+        }
     }
 }
 

@@ -25,7 +25,7 @@ pub async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
 
     let all_navigation_items = fetch_all_item_navigation_data(
         &mut conn,
-        ComicId::from(1),
+        ComicId::from_trusted(1),
         None,
         None,
         ItemNavigationDataSorting::ByCount,
