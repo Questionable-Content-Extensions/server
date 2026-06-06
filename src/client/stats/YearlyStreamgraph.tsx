@@ -6,7 +6,7 @@ import {
     stackOffsetWiggle,
     stackOrderInsideOut,
 } from 'd3-shape';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { CharacterMeta } from '../../../bindings/CharacterMeta';
 import type { YearlySpotlightResponse } from '../../../bindings/YearlySpotlightResponse';
@@ -77,44 +77,51 @@ export default function YearlyStreamgraph({ response }: Props) {
     const innerWidth = width - MARGIN.left - MARGIN.right;
     const innerHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
 
-    const charIds = Object.keys(response.characters);
-    const years = response.years.map((y) => y.year);
+    const { years, layers, yMin, yMax } = useMemo(() => {
+        const charIds = Object.keys(response.characters);
+        const years = response.years.map((y) => y.year);
+
+        const stackData: StreamRow[] = response.years.map((yearEntry) => {
+            const row: StreamRow = { year: yearEntry.year };
+            for (const id of charIds) {
+                const ranked = yearEntry.characters.find(
+                    (c) => c.id === Number(id),
+                );
+                row[id] = ranked?.appearances ?? 0;
+            }
+            return row;
+        });
+
+        const layers = stack<StreamRow, string>()
+            .keys(charIds)
+            .offset(stackOffsetWiggle)
+            .order(stackOrderInsideOut)(stackData);
+
+        let yMin = Infinity;
+        let yMax = -Infinity;
+        for (const layer of layers) {
+            for (const pt of layer) {
+                if (pt[0] < yMin) yMin = pt[0];
+                if (pt[1] > yMax) yMax = pt[1];
+            }
+        }
+
+        return { years, layers, yMin, yMax };
+    }, [response]);
+
     const xStep =
         years.length > 1 ? innerWidth / (years.length - 1) : innerWidth;
 
-    const stackData: StreamRow[] = response.years.map((yearEntry) => {
-        const row: StreamRow = { year: yearEntry.year };
-        for (const id of charIds) {
-            const ranked = yearEntry.characters.find(
-                (c) => c.id === Number(id),
-            );
-            row[id] = ranked?.appearances ?? 0;
-        }
-        return row;
-    });
-
-    const layers = stack<StreamRow, string>()
-        .keys(charIds)
-        .offset(stackOffsetWiggle)
-        .order(stackOrderInsideOut)(stackData);
-
-    let yMin = Infinity;
-    let yMax = -Infinity;
-    for (const layer of layers) {
-        for (const pt of layer) {
-            if (pt[0] < yMin) yMin = pt[0];
-            if (pt[1] > yMax) yMax = pt[1];
-        }
-    }
-    const yRange = yMax - yMin || 1;
-    const yPos = (v: number) =>
-        MARGIN.top + innerHeight * (1 - (v - yMin) / yRange);
-
-    const areaGen = area<SeriesPoint<StreamRow>>()
-        .x((_, i) => MARGIN.left + i * xStep)
-        .y0((d) => yPos(d[0]))
-        .y1((d) => yPos(d[1]))
-        .curve(curveBasis);
+    const areaGen = useMemo(() => {
+        const yRange = yMax - yMin || 1;
+        const yPos = (v: number) =>
+            MARGIN.top + innerHeight * (1 - (v - yMin) / yRange);
+        return area<SeriesPoint<StreamRow>>()
+            .x((_, i) => MARGIN.left + i * xStep)
+            .y0((d) => yPos(d[0]))
+            .y1((d) => yPos(d[1]))
+            .curve(curveBasis);
+    }, [xStep, yMin, yMax, innerHeight]);
 
     function handleMouseMove(
         e: React.MouseEvent<SVGPathElement>,
@@ -196,6 +203,7 @@ export default function YearlyStreamgraph({ response }: Props) {
                 </svg>
                 {tooltip && (
                     <div
+                        data-testid="streamgraph-tooltip"
                         className="pointer-events-none absolute z-20 rounded border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-700 shadow-sm"
                         style={{ left: tooltip.x + 12, top: tooltip.y - 36 }}
                     >

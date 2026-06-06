@@ -20,6 +20,8 @@
         "build": "vite build",
         "preview": "vite preview",
         "lint": "eslint .",
+        "test": "vitest run",
+        "test:watch": "vitest",
         "docker:build": "docker build -t qcext-server .",
         "docker:save": "docker save -o ./qcext-server.tar qcext-server",
         "prepare": "husky"
@@ -42,6 +44,8 @@
         "@eslint/js": "^10.0.1",
         "@tailwindcss/typography": "^0.5.19",
         "@tailwindcss/vite": "^4.3.0",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
         "@trivago/prettier-plugin-sort-imports": "^6.0.2",
         "@types/d3-shape": "^3.1.8",
         "@types/react": "^19.2.16",
@@ -51,11 +55,13 @@
         "eslint-plugin-react-hooks": "^7.1.1",
         "globals": "^17.6.0",
         "husky": "^9.1.7",
+        "jsdom": "^29.1.1",
         "lint-staged": "^17.0.7",
         "prettier": "^3.8.3",
         "tailwindcss": "^4.3.0",
         "typescript": "^6.0.3",
         "typescript-eslint": "^8.60.1",
-        "vite": "^8.0.16"
+        "vite": "^8.0.16",
+        "vitest": "^4.1.8"
     }
 }
