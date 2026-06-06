@@ -77,17 +77,20 @@ export default function YearlyStreamgraph({ response }: Props) {
     const innerWidth = width - MARGIN.left - MARGIN.right;
     const innerHeight = HEIGHT - MARGIN.top - MARGIN.bottom;
 
-    const { years, layers, yMin, yMax } = useMemo(() => {
+    const { years, layers, yMin, yMax, appearanceMap } = useMemo(() => {
         const charIds = Object.keys(response.characters);
         const years = response.years.map((y) => y.year);
 
-        const stackData: StreamRow[] = response.years.map((yearEntry) => {
+        const appearanceMap = new Map<number, Map<number, number>>();
+        const stackData: StreamRow[] = response.years.map((yearEntry, idx) => {
+            const byChar = new Map<number, number>();
             const row: StreamRow = { year: yearEntry.year };
+            for (const c of yearEntry.characters) {
+                byChar.set(c.id, c.appearances);
+            }
+            appearanceMap.set(idx, byChar);
             for (const id of charIds) {
-                const ranked = yearEntry.characters.find(
-                    (c) => c.id === Number(id),
-                );
-                row[id] = ranked?.appearances ?? 0;
+                row[id] = byChar.get(Number(id)) ?? 0;
             }
             return row;
         });
@@ -106,7 +109,7 @@ export default function YearlyStreamgraph({ response }: Props) {
             }
         }
 
-        return { years, layers, yMin, yMax };
+        return { years, layers, yMin, yMax, appearanceMap };
     }, [response]);
 
     const xStep =
@@ -134,17 +137,14 @@ export default function YearlyStreamgraph({ response }: Props) {
             0,
             Math.min(years.length - 1, Math.round(mouseX / xStep)),
         );
-        const yearEntry = response.years[yearIdx];
-        const ranked = yearEntry?.characters.find(
-            (c) => c.id === Number(charId),
-        );
+        const count = appearanceMap.get(yearIdx)?.get(Number(charId)) ?? 0;
         const name = response.characters[Number(charId)]?.name ?? '';
         setTooltip({
             x: e.clientX - rect.left,
             y: e.clientY - rect.top,
             name,
             year: years[yearIdx],
-            count: ranked?.appearances ?? 0,
+            count,
         });
     }
 
