@@ -198,7 +198,6 @@ impl From<ItemImageMetadata> for ItemImageList {
 pub struct UnhydratedItemNavigationData {
     pub id: ItemId,
     pub navigation_data: NavigationData,
-    pub count: i64,
 }
 
 #[derive(Debug, Serialize, TS)]
@@ -215,7 +214,6 @@ impl From<UnhydratedItemNavigationData> for ItemNavigationData {
         let UnhydratedItemNavigationData {
             id,
             navigation_data,
-            count: _,
         } = unhydrated;
         Self {
             id,

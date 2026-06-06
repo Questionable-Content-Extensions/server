@@ -1,13 +1,7 @@
-use crate::api::v3::controllers::comic::navigation_data::{
-    ItemNavigationDataSorting, fetch_all_item_navigation_data,
-};
-use crate::api::v3::models::{ItemColor, ItemList, ItemType, UnhydratedItemNavigationData};
-use crate::models::{ComicId, ItemId};
+use crate::api::v3::models::{ItemColor, ItemList, ItemType};
 use actix_web::{HttpResponse, Result, error, web};
 use database::DbPool;
 use database::models::Item as DatabaseItem;
-use std::cmp::Reverse;
-use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use tracing::{Instrument, info_span};
 
@@ -19,52 +13,21 @@ pub async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let all_items = DatabaseItem::all(&mut *conn)
+    let all_items = DatabaseItem::all_with_counts(&mut *conn)
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let all_navigation_items = fetch_all_item_navigation_data(
-        &mut conn,
-        ComicId::from_trusted(1),
-        None,
-        None,
-        ItemNavigationDataSorting::ByCount,
-    )
-    .await?
-    .into_iter()
-    .map(|i| (i.id, i))
-    .collect::<BTreeMap<ItemId, UnhydratedItemNavigationData>>();
-
-    let mut items = vec![];
+    let mut items = Vec::with_capacity(all_items.len());
     for item in all_items {
-        let DatabaseItem {
-            id,
-            short_name,
-            name,
-            r#type,
-            color_red,
-            color_green,
-            color_blue,
-            primary_image: _,
-        } = item;
-        let id = id.into();
-
-        let count = all_navigation_items
-            .get(&id)
-            .map(|i| i.count)
-            .unwrap_or_default();
-
         items.push(ItemList {
-            id,
-            short_name,
-            name,
-            r#type: ItemType::try_from(&*r#type).map_err(error::ErrorInternalServerError)?,
-            color: ItemColor(color_red, color_green, color_blue),
-            count: i32::try_from(count).unwrap(),
+            id: item.id.into(),
+            short_name: item.short_name,
+            name: item.name,
+            r#type: ItemType::try_from(&*item.r#type).map_err(error::ErrorInternalServerError)?,
+            color: ItemColor(item.color_red, item.color_green, item.color_blue),
+            count: i32::try_from(item.count).unwrap_or(i32::MAX),
         });
     }
-
-    items.sort_by_key(|i| Reverse(i.count));
 
     Ok(HttpResponse::Ok().json(items))
 }

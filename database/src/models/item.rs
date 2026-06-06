@@ -93,6 +93,37 @@ impl Item {
     ///
     /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
+    pub async fn all_with_counts<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<ItemWithCount>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            ItemWithCount,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`short_name`,
+                    `i`.`name`,
+                    `i`.`type`,
+                    `i`.`color_blue`,
+                    `i`.`color_green`,
+                    `i`.`color_red`,
+                    `i`.`primary_image`,
+                    COUNT(`o`.`comic_id`) AS `count`
+                FROM `Item` `i`
+                LEFT JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                GROUP BY `i`.`id`
+                ORDER BY `count` DESC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
     pub async fn all_mapped_by_id<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<BTreeMap<u16, Self>>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
@@ -805,6 +836,19 @@ impl Item {
 pub struct ItemImageMetadata {
     pub id: u32,
     pub crc32c_hash: u32,
+}
+
+#[derive(Debug)]
+pub struct ItemWithCount {
+    pub id: u16,
+    pub short_name: String,
+    pub name: String,
+    pub r#type: String,
+    pub color_blue: u8,
+    pub color_green: u8,
+    pub color_red: u8,
+    pub primary_image: Option<u32>,
+    pub count: i64,
 }
 
 #[derive(Debug, Copy, Clone, sqlx::FromRow)]

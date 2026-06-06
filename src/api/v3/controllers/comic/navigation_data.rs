@@ -80,7 +80,6 @@ pub async fn fetch_all_item_navigation_data(
                         .transpose()
                         .expect("database has valid comicIds"),
                 },
-                count: flc.count,
             })
             .collect()),
         ItemNavigationDataSorting::ByLastAppearance => Ok(order_by_last_appearance(
@@ -114,7 +113,6 @@ pub async fn fetch_all_item_navigation_data(
                     .transpose()
                     .expect("database has valid comicIds"),
             },
-            count: flc.count,
         })
         .collect()),
     }
@@ -210,7 +208,6 @@ pub async fn fetch_comic_item_navigation_data(
                     .transpose()
                     .expect("database has valid comicIds"),
             },
-            count: flc.count,
         })
         .collect())
 }
