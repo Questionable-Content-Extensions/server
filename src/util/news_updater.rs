@@ -3,13 +3,13 @@ use anyhow::Result;
 use chrono::Utc;
 use database::DbPool;
 use database::models::{Comic, News};
-use futures::lock::Mutex;
 use futures::{FutureExt, select};
 use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::sync::Mutex;
 use tokio::sync::broadcast;
 use tokio::time::{Duration, sleep};
 use tracing::{Instrument, debug, info, info_span, warn};
@@ -38,11 +38,7 @@ impl NewsUpdater {
 
     pub fn check_for(&self, comic_id: ComicId) {
         info!("Scheduling a news update check for comic {}", comic_id);
-        let update_set = Arc::clone(&self.update_set);
-        tokio::task::spawn(async move {
-            let mut update_set = update_set.lock().await;
-            update_set.insert(comic_id);
-        });
+        self.update_set.lock().unwrap().insert(comic_id);
     }
 
     pub async fn background_news_updater(
@@ -51,7 +47,7 @@ impl NewsUpdater {
         shutdown_receiver: &mut broadcast::Receiver<()>,
     ) -> anyhow::Result<()> {
         loop {
-            let update_entries = self.get_pending_update_entries().await;
+            let update_entries = self.get_pending_update_entries();
             debug!("There are {} news updates pending.", update_entries.len());
 
             if !update_entries.is_empty() {
@@ -59,7 +55,7 @@ impl NewsUpdater {
                 self.run_news_update(db_pool, update_entries.iter()).await?;
             }
 
-            self.remove_pending_update_entries(update_entries).await;
+            self.remove_pending_update_entries(&update_entries);
 
             {
                 select! {
@@ -169,14 +165,15 @@ impl NewsUpdater {
         Ok(())
     }
 
-    pub async fn get_pending_update_entries(&self) -> HashSet<ComicId> {
-        let update_set = self.update_set.lock().await;
-        update_set.clone()
+    pub fn get_pending_update_entries(&self) -> HashSet<ComicId> {
+        self.update_set.lock().unwrap().clone()
     }
 
-    pub async fn remove_pending_update_entries(&self, updated_entries: HashSet<ComicId>) {
-        let mut update_set = self.update_set.lock().await;
-        update_set.retain(|e| !updated_entries.contains(e));
+    pub fn remove_pending_update_entries(&self, updated_entries: &HashSet<ComicId>) {
+        self.update_set
+            .lock()
+            .unwrap()
+            .retain(|e| !updated_entries.contains(e));
     }
 
     #[tracing::instrument]
@@ -238,5 +235,47 @@ impl NewsUpdater {
             Ok(String::from(news_inner_html))
         })?;
         Ok(news_inner_html)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn comic(id: u16) -> ComicId {
+        ComicId::from_trusted(id)
+    }
+
+    #[test]
+    fn check_for_inserts_into_pending_set() {
+        let updater = NewsUpdater::new();
+        updater.check_for(comic(1));
+        updater.check_for(comic(2));
+        let entries = updater.get_pending_update_entries();
+        assert!(entries.contains(&comic(1)));
+        assert!(entries.contains(&comic(2)));
+        assert_eq!(entries.len(), 2);
+    }
+
+    #[test]
+    fn check_for_is_idempotent() {
+        let updater = NewsUpdater::new();
+        updater.check_for(comic(5));
+        updater.check_for(comic(5));
+        assert_eq!(updater.get_pending_update_entries().len(), 1);
+    }
+
+    #[test]
+    fn remove_pending_update_entries_removes_only_processed() {
+        let updater = NewsUpdater::new();
+        updater.check_for(comic(1));
+        updater.check_for(comic(2));
+        updater.check_for(comic(3));
+        let processed = [comic(1), comic(3)].into_iter().collect::<HashSet<_>>();
+        updater.remove_pending_update_entries(&processed);
+        let remaining = updater.get_pending_update_entries();
+        assert!(!remaining.contains(&comic(1)));
+        assert!(remaining.contains(&comic(2)));
+        assert!(!remaining.contains(&comic(3)));
     }
 }
