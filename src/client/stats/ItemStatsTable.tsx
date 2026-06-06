@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { ItemStats } from '../../../bindings/ItemStats';
 
@@ -7,6 +7,8 @@ interface ItemStatsTableProps {
     title: string;
     description: string;
     sortBy: 'appearances' | 'firstComic';
+    sharedData?: ItemStats[] | null;
+    sharedError?: string | null;
 }
 
 function comicLink(comicId: number) {
@@ -18,26 +20,35 @@ export default function ItemStatsTable({
     title,
     description,
     sortBy,
+    sharedData,
+    sharedError,
 }: ItemStatsTableProps) {
-    const [data, setData] = useState<ItemStats[] | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [localData, setLocalData] = useState<ItemStats[] | null>(null);
+    const [localError, setLocalError] = useState<string | null>(null);
 
     useEffect(() => {
+        if (sharedData !== undefined || sharedError !== undefined) return;
         fetch(endpoint)
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json() as Promise<ItemStats[]>;
             })
-            .then((rows) => {
-                if (sortBy === 'firstComic') {
-                    rows.sort((a, b) => a.firstComic - b.firstComic);
-                }
-                setData(rows);
-            })
+            .then((rows) => setLocalData(rows))
             .catch((e: unknown) =>
-                setError(e instanceof Error ? e.message : String(e)),
+                setLocalError(e instanceof Error ? e.message : String(e)),
             );
-    }, [endpoint, sortBy]);
+    }, [endpoint, sharedData, sharedError]);
+
+    const rawData = sharedData !== undefined ? sharedData : localData;
+    const error = sharedError !== undefined ? sharedError : localError;
+
+    const data = useMemo(() => {
+        if (!rawData) return null;
+        if (sortBy === 'firstComic') {
+            return [...rawData].sort((a, b) => a.firstComic - b.firstComic);
+        }
+        return rawData;
+    }, [rawData, sortBy]);
 
     if (error) {
         return <p className="text-red-600">Failed to load data: {error}</p>;

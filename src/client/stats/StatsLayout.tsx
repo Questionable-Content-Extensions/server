@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 
+import type { ItemStats } from '../../../bindings/ItemStats';
 import CharacterDebuts from './CharacterDebuts';
 import CharacterRankings from './CharacterRankings';
 import CoAppearances from './CoAppearances';
@@ -46,6 +48,21 @@ function StatsNav() {
 }
 
 export default function StatsLayout() {
+    const [castData, setCastData] = useState<ItemStats[] | null>(null);
+    const [castError, setCastError] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetch('/api/v3/stats/cast')
+            .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json() as Promise<ItemStats[]>;
+            })
+            .then(setCastData)
+            .catch((e: unknown) =>
+                setCastError(e instanceof Error ? e.message : String(e)),
+            );
+    }, []);
+
     return (
         <div className="py-6">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">
@@ -53,9 +70,25 @@ export default function StatsLayout() {
             </h1>
             <StatsNav />
             <Routes>
-                <Route index element={<CharacterRankings />} />
+                <Route
+                    index
+                    element={
+                        <CharacterRankings
+                            sharedData={castData}
+                            sharedError={castError}
+                        />
+                    }
+                />
                 <Route path="locations" element={<LocationStats />} />
-                <Route path="debuts" element={<CharacterDebuts />} />
+                <Route
+                    path="debuts"
+                    element={
+                        <CharacterDebuts
+                            sharedData={castData}
+                            sharedError={castError}
+                        />
+                    }
+                />
                 <Route path="co-appearances" element={<CoAppearances />} />
                 <Route path="yearly-spotlight" element={<YearlySpotlight />} />
             </Routes>
