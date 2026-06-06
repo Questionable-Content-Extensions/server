@@ -12,7 +12,7 @@ use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
 use chrono::{TimeZone, Utc};
 use database::DbPool;
-use database::models::{Comic as DatabaseComic, Item as DatabaseItem, News as DatabaseNews};
+use database::models::{Comic as DatabaseComic, Item as DatabaseItem};
 use serde::Deserialize;
 use shared::token_permissions;
 use std::collections::BTreeMap;
@@ -39,11 +39,7 @@ pub(crate) async fn by_id(
         Some(Exclusion::NonCanon) => (None, Some(false)),
     };
 
-    let comic = DatabaseComic::by_id(&mut *conn, comic_id.into_inner())
-        .await
-        .map_err(error::ErrorInternalServerError)?;
-
-    let previous = DatabaseComic::previous_id(
+    let comic = DatabaseComic::by_id_with_navigation_and_news(
         &mut *conn,
         comic_id.into_inner(),
         include_guest_comics,
@@ -52,24 +48,9 @@ pub(crate) async fn by_id(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    let next = DatabaseComic::next_id(
-        &mut *conn,
-        comic_id.into_inner(),
-        include_guest_comics,
-        include_non_canon_comics,
-    )
-    .await
-    .map_err(error::ErrorInternalServerError)?;
-
-    let news: Option<DatabaseNews> = if comic.is_some() {
+    if comic.is_some() {
         news_updater.check_for(comic_id);
-
-        DatabaseNews::by_comic_id(&mut *conn, comic_id.into_inner())
-            .await
-            .map_err(error::ErrorInternalServerError)?
-    } else {
-        None
-    };
+    }
 
     let editor_data = if auth.has_authority(token_permissions::HAS_VALID_TOKEN) {
         Some(fetch_editor_data_for_comic(&mut conn, comic_id).await?)
@@ -152,12 +133,14 @@ pub(crate) async fn by_id(
                 has_no_storyline: comic.has_no_storyline != 0,
                 has_no_title: comic.has_no_title != 0,
                 has_no_tagline: comic.has_no_tagline != 0,
-                news: news.map(|n| n.news),
-                previous: previous
+                news: comic.news,
+                previous: comic
+                    .prev_id
                     .map(TryInto::try_into)
                     .transpose()
                     .expect("database has valid comicIds"),
-                next: next
+                next: comic
+                    .next_id
                     .map(TryInto::try_into)
                     .transpose()
                     .expect("database has valid comicIds"),
