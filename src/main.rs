@@ -2,7 +2,7 @@
 
 use crate::models::Token;
 use crate::util::{ComicUpdater, Either, NewsUpdater};
-use actix_files::Files;
+use actix_files::{Files, NamedFile};
 use actix_http::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::web::PayloadConfig;
@@ -84,7 +84,15 @@ async fn main() -> Result<()> {
             // Any newer APIs should be mounted *inside* v1's `configure`
             a.service(web::scope("/api").configure(api::configure))
                 .service(web::scope("/releases").configure(controllers::releases::configure))
-                .service(Files::new("/", "./build/").index_file("index.html"))
+                .service(
+                    Files::new("/", "./build/")
+                        .index_file("index.html")
+                        .default_handler(web::to(|| async {
+                            NamedFile::open_async("./build/index.html")
+                                .await
+                                .map_err(error::ErrorInternalServerError)
+                        })),
+                )
         })
         .disable_signals()
         .bind(&bind_address)?

@@ -1,0 +1,64 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `i1`.`id` AS `character1_id`,\n                    `i1`.`name` AS `character1_name`,\n                    `i2`.`id` AS `character2_id`,\n                    `i2`.`name` AS `character2_name`,\n                    COUNT(*) AS `comics_together`\n                FROM `Occurrence` `o1`\n                JOIN `Occurrence` `o2`\n                    ON `o1`.`comic_id` = `o2`.`comic_id`\n                    AND `o1`.`item_id` < `o2`.`item_id`\n                JOIN `Item` `i1` ON `o1`.`item_id` = `i1`.`id`\n                JOIN `Item` `i2` ON `o2`.`item_id` = `i2`.`id`\n                WHERE `i1`.`type` = 'cast' AND `i2`.`type` = 'cast'\n                GROUP BY `o1`.`item_id`, `o2`.`item_id`\n                ORDER BY `comics_together` DESC\n                LIMIT 100\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "character1_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "character1_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "character2_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "character2_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "comics_together",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "13193bfe44193d03ff549809b54fe3d9a4fa72ed4327324249d5fbdb41aa6ea5"
+}

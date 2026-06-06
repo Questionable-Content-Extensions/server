@@ -16,6 +16,8 @@ pub use item_color::*;
 mod item_type;
 pub use item_type::*;
 
+pub mod stats;
+
 #[derive(Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]

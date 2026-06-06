@@ -26,7 +26,7 @@
         "name": "publish_date",
         "type_info": {
           "type": "Datetime",
-          "flags": "BINARY",
+          "flags": "MULTIPLE_KEY | BINARY",
           "max_size": 19
         }
       }

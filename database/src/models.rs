@@ -4,6 +4,7 @@ mod item_type;
 mod log_entry;
 mod news;
 mod occurrence;
+pub mod stats;
 mod token;
 
 use std::borrow::Borrow;

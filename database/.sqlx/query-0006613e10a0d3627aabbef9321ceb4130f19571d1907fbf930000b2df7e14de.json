@@ -1,0 +1,84 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    YEAR(`c`.`publish_date`) AS `year`,\n                    `i`.`id`,\n                    `i`.`name`,\n                    `i`.`color_red`,\n                    `i`.`color_green`,\n                    `i`.`color_blue`,\n                    COUNT(*) AS `appearances`\n                FROM `Comic` `c`\n                JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`\n                JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                WHERE `c`.`publish_date` IS NOT NULL AND `i`.`type` = 'cast'\n                GROUP BY `year`, `i`.`id`\n                ORDER BY `year`, `appearances` DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "max_size": 4
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "color_red",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 3
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "color_green",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 3
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "color_blue",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 3
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0006613e10a0d3627aabbef9321ceb4130f19571d1907fbf930000b2df7e14de"
+}

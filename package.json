@@ -8,8 +8,12 @@
         "url": ""
     },
     "dependencies": {
+        "chart.js": "^4.5.1",
+        "chartjs-plugin-annotation": "^3.1.0",
+        "d3-shape": "^3.2.0",
         "react": "^19.2.7",
-        "react-dom": "^19.2.7"
+        "react-dom": "^19.2.7",
+        "react-router-dom": "^7.17.0"
     },
     "scripts": {
         "start": "vite",
@@ -39,6 +43,7 @@
         "@tailwindcss/typography": "^0.5.19",
         "@tailwindcss/vite": "^4.3.0",
         "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+        "@types/d3-shape": "^3.1.8",
         "@types/react": "^19.2.16",
         "@types/react-dom": "^19.2.3",
         "@vitejs/plugin-react": "^6.0.2",

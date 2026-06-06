@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import ExternalLinkIcon from './ExternalLinkIcon';
 
@@ -9,12 +10,26 @@ interface NavLinkProps {
     className?: string;
 }
 
+interface InternalNavLinkProps {
+    to: string;
+    children: React.ReactNode;
+    className?: string;
+}
+
 function NavLink({ href, external, children, className }: NavLinkProps) {
     return (
         <a href={href} className={className}>
             {children}
             {external && <ExternalLinkIcon />}
         </a>
+    );
+}
+
+function InternalNavLink({ to, children, className }: InternalNavLinkProps) {
+    return (
+        <Link to={to} className={className}>
+            {children}
+        </Link>
     );
 }
 
@@ -54,15 +69,26 @@ export default function Navbar() {
                                 />
                             </svg>
                         </button>
-                        <a className="text-white font-bold text-lg" href="/">
+                        <Link to="/" className="text-white font-bold text-lg">
                             Questionable Content Extensions
-                        </a>
+                        </Link>
                     </div>
                     <ul className="hidden md:flex items-center">
                         <li>
-                            <NavLink href="/" className={desktopLinkClass}>
+                            <InternalNavLink
+                                to="/"
+                                className={desktopLinkClass}
+                            >
                                 Home
-                            </NavLink>
+                            </InternalNavLink>
+                        </li>
+                        <li>
+                            <InternalNavLink
+                                to="/stats"
+                                className={desktopLinkClass}
+                            >
+                                Statistics
+                            </InternalNavLink>
                         </li>
                         <li>
                             <NavLink
@@ -96,9 +122,20 @@ export default function Navbar() {
                     <div id="navbar">
                         <ul className="px-2 pt-2 pb-3 space-y-1">
                             <li>
-                                <NavLink href="/" className={mobileLinkClass}>
+                                <InternalNavLink
+                                    to="/"
+                                    className={mobileLinkClass}
+                                >
                                     Home
-                                </NavLink>
+                                </InternalNavLink>
+                            </li>
+                            <li>
+                                <InternalNavLink
+                                    to="/stats"
+                                    className={mobileLinkClass}
+                                >
+                                    Statistics
+                                </InternalNavLink>
                             </li>
                             <li>
                                 <NavLink
