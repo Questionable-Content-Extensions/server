@@ -13,6 +13,9 @@ use tokio::sync::broadcast;
 use tokio::time::{Duration as StdDuration, sleep};
 use tracing::{Instrument, info, info_span};
 
+static COMIC_IMAGE_SELECTOR: std::sync::LazyLock<Selector> =
+    std::sync::LazyLock::new(|| Selector::parse("img[src*=\"/comics/\"]").expect("valid selector"));
+
 const FRONT_PAGE_URL: &str = "https://questionablecontent.net/";
 const ARCHIVE_URL: &str = concatcp!(FRONT_PAGE_URL, "archive.php");
 const STARTUP_DELAY_DURATION: StdDuration = StdDuration::from_secs(15);
@@ -105,11 +108,9 @@ impl ComicUpdater {
             parse_document_span.in_scope(|| -> Result<(ComicId, i32)> {
                 let document = Html::parse_document(&qc_front_page);
 
-                let comic_image_selector =
-                    Selector::parse("img[src*=\"/comics/\"]").expect("valid selector");
                 let comic_image =
                     document
-                        .select(&comic_image_selector)
+                        .select(&COMIC_IMAGE_SELECTOR)
                         .next()
                         .ok_or_else(|| {
                             anyhow::anyhow!(
@@ -302,5 +303,29 @@ fn time_until_next_update(now: DateTime<Utc>) -> Duration {
                 NaiveTime::from_hms_opt(23, 59, 59).unwrap() - time + Duration::seconds(1)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn comic_image_selector_initializes_and_matches() {
+        let document =
+            Html::parse_document(r#"<html><body><img src="/comics/4567.png" /></body></html>"#);
+        let mut matches = document.select(&COMIC_IMAGE_SELECTOR);
+        assert!(
+            matches.next().is_some(),
+            "selector should match comic image"
+        );
+    }
+
+    #[test]
+    fn comic_image_selector_does_not_match_unrelated_images() {
+        let document =
+            Html::parse_document(r#"<html><body><img src="/other/image.png" /></body></html>"#);
+        let mut matches = document.select(&COMIC_IMAGE_SELECTOR);
+        assert!(matches.next().is_none());
     }
 }

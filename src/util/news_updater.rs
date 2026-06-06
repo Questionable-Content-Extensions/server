@@ -21,6 +21,8 @@ static REMOVE_NEWLINES: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r"\r|\n").expect("valid regex"));
 static REPLACE_HTML_NEWLINES: std::sync::LazyLock<Regex> =
     std::sync::LazyLock::new(|| Regex::new(r"<br\s*/?>").expect("valid regex"));
+static NEWS_SELECTOR: std::sync::LazyLock<Selector> =
+    std::sync::LazyLock::new(|| Selector::parse("#news,#newspost").expect("valid selector"));
 
 #[derive(Debug)]
 pub struct NewsUpdater {
@@ -197,8 +199,7 @@ impl NewsUpdater {
         let parse_document_span = info_span!("parse_comic_page_document", ?comic_id);
         let news_inner_html = parse_document_span.in_scope(|| -> Result<String> {
             let document = Html::parse_document(&qc_page);
-            let news_selector = Selector::parse("#news,#newspost").expect("valid selector");
-            let news = document.select(&news_selector).next().ok_or_else(|| {
+            let news = document.select(&NEWS_SELECTOR).next().ok_or_else(|| {
                 anyhow::anyhow!(
                     "Could not fetch news for #{comic_id}, couldn't find #news or #newspost element"
                 )
@@ -256,6 +257,30 @@ mod tests {
         updater.check_for(comic(5));
         updater.check_for(comic(5));
         assert_eq!(pending(&updater).len(), 1);
+    }
+
+    #[test]
+    fn news_selector_matches_news_id() {
+        let document =
+            Html::parse_document(r#"<html><body><div id="news">hello</div></body></html>"#);
+        let mut matches = document.select(&NEWS_SELECTOR);
+        assert!(matches.next().is_some());
+    }
+
+    #[test]
+    fn news_selector_matches_newspost_id() {
+        let document =
+            Html::parse_document(r#"<html><body><div id="newspost">hello</div></body></html>"#);
+        let mut matches = document.select(&NEWS_SELECTOR);
+        assert!(matches.next().is_some());
+    }
+
+    #[test]
+    fn news_selector_does_not_match_unrelated_elements() {
+        let document =
+            Html::parse_document(r#"<html><body><div id="content">hello</div></body></html>"#);
+        let mut matches = document.select(&NEWS_SELECTOR);
+        assert!(matches.next().is_none());
     }
 
     #[test]
