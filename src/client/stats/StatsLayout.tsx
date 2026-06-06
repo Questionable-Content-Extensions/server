@@ -1,4 +1,4 @@
-import { NavLink, Outlet, Route, Routes } from 'react-router-dom';
+import { NavLink, Route, Routes } from 'react-router-dom';
 
 import CharacterDebuts from './CharacterDebuts';
 import CharacterRankings from './CharacterRankings';
@@ -59,7 +59,6 @@ export default function StatsLayout() {
                 <Route path="co-appearances" element={<CoAppearances />} />
                 <Route path="yearly-spotlight" element={<YearlySpotlight />} />
             </Routes>
-            <Outlet />
         </div>
     );
 }

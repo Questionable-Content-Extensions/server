@@ -157,24 +157,21 @@ pub async fn random_comic(
             .await
             .map_err(error::ErrorInternalServerError)?;
 
-    if comics.len() < 2 {
+    let candidates: Vec<&ComicList> = comics
+        .iter()
+        .filter(|c| include_guest_comics.unwrap_or(true) || !c.is_guest_comic)
+        .filter(|c| include_non_canon_comics.unwrap_or(true) || !c.is_non_canon)
+        .filter(|c| c.comic.into_inner() != query.current_comic)
+        .collect();
+
+    if candidates.is_empty() {
         return Ok(HttpResponse::Ok().json(()));
     }
 
     let mut thread_rng = rand::rng();
-    let comic = loop {
-        let comic = comics.choose(&mut thread_rng).unwrap();
-        if !include_guest_comics.unwrap_or(true) && comic.is_guest_comic {
-            continue;
-        }
-        if !include_non_canon_comics.unwrap_or(true) && comic.is_non_canon {
-            continue;
-        }
-        if comic.comic.into_inner() == query.current_comic {
-            continue;
-        }
-        break comic;
-    };
+    let comic = candidates
+        .choose(&mut thread_rng)
+        .ok_or_else(|| error::ErrorInternalServerError(anyhow!("No comics match the query")))?;
 
     Ok(HttpResponse::Ok().json(comic.comic))
 }

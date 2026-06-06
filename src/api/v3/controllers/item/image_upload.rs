@@ -122,6 +122,6 @@ async fn get_form_data(mut image_upload_form: Multipart) -> Result<FormData, act
     }
 
     let token = token.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"token\"")))?;
-    let image = image.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"Image\"")))?;
+    let image = image.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"image\"")))?;
     Ok(FormData { token, image })
 }

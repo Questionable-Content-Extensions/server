@@ -11,6 +11,18 @@ use shared::token_permissions;
 use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
+fn detect_mime_type(bytes: &[u8]) -> &'static str {
+    if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+        "image/png"
+    } else if bytes.starts_with(b"\xff\xd8\xff") {
+        "image/jpeg"
+    } else if bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a") {
+        "image/gif"
+    } else {
+        "application/octet-stream"
+    }
+}
+
 #[tracing::instrument(skip(pool))]
 pub async fn images(pool: web::Data<DbPool>, item_id: web::Path<u16>) -> Result<HttpResponse> {
     let item_image_list =
@@ -30,7 +42,8 @@ pub async fn image(pool: web::Data<DbPool>, image_id: web::Path<u32>) -> Result<
             error::ErrorNotFound(anyhow!("No item image with id {} exists", *image_id))
         })?;
 
-    Ok(HttpResponse::Ok().content_type("image/png").body(image))
+    let content_type = detect_mime_type(&image);
+    Ok(HttpResponse::Ok().content_type(content_type).body(image))
 }
 
 #[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
@@ -100,26 +113,33 @@ pub async fn set_primary(
         .map_err(error::ErrorInternalServerError)?;
 
     let item_id = item_id.into_inner();
+    let image_id = request.image_id.into_inner();
 
-    let result =
-        DatabaseItem::set_primary_image(&mut *transaction, item_id, request.image_id.into_inner())
-            .await
-            .map_err(error::ErrorInternalServerError)?;
+    let owner_item_id = DatabaseItem::item_id_by_image_id(&mut *transaction, image_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?
+        .ok_or_else(|| error::ErrorNotFound(anyhow!("No item image with id {image_id} exists")))?;
+
+    if owner_item_id != item_id {
+        return Err(error::ErrorBadRequest(anyhow!(
+            "Image #{image_id} does not belong to item #{item_id}"
+        )));
+    }
+
+    let result = DatabaseItem::set_primary_image(&mut *transaction, item_id, image_id)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
 
     if result.rows_affected() != 1 {
         return Err(error::ErrorNotFound(format!(
-            "Could not set image #{} as primary for item #{}",
-            request.image_id, item_id
+            "Could not set image #{image_id} as primary for item #{item_id}"
         )));
     }
 
     LogEntry::log_action(
         &mut *transaction,
         request.token.to_string(),
-        format!(
-            "Set image #{} as primary for item #{}",
-            request.image_id, item_id
-        ),
+        format!("Set image #{image_id} as primary for item #{item_id}"),
         None,
         Some(item_id),
     )

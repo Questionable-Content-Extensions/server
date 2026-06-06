@@ -56,7 +56,7 @@ impl NewsUpdater {
 
             if !update_entries.is_empty() {
                 info!("Running background news update...");
-                self.run_news_update(db_pool, &update_entries).await?;
+                self.run_news_update(db_pool, update_entries.iter()).await?;
             }
 
             self.remove_pending_update_entries(update_entries).await;
@@ -76,12 +76,16 @@ impl NewsUpdater {
     }
 
     #[tracing::instrument(skip(db_pool))]
-    async fn run_news_update(&self, db_pool: &DbPool, update_entries: &[ComicId]) -> Result<()> {
+    async fn run_news_update(
+        &self,
+        db_pool: &DbPool,
+        update_entries: impl Iterator<Item = &ComicId> + std::fmt::Debug,
+    ) -> Result<()> {
         let mut transaction = db_pool
             .begin()
             .instrument(info_span!("Pool::begin"))
             .await?;
-        for comic_id in update_entries.iter().copied() {
+        for comic_id in update_entries.copied() {
             let comic_exists =
                 Comic::exists_by_id(&mut *transaction, comic_id.into_inner()).await?;
 
@@ -165,12 +169,12 @@ impl NewsUpdater {
         Ok(())
     }
 
-    pub async fn get_pending_update_entries(&self) -> Vec<ComicId> {
+    pub async fn get_pending_update_entries(&self) -> HashSet<ComicId> {
         let update_set = self.update_set.lock().await;
-        update_set.iter().copied().collect()
+        update_set.clone()
     }
 
-    pub async fn remove_pending_update_entries(&self, updated_entries: Vec<ComicId>) {
+    pub async fn remove_pending_update_entries(&self, updated_entries: HashSet<ComicId>) {
         let mut update_set = self.update_set.lock().await;
         update_set.retain(|e| !updated_entries.contains(e));
     }
