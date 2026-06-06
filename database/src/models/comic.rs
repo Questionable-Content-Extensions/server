@@ -757,18 +757,15 @@ impl Comic {
             r#"
                 SELECT `c`.`id`
                 FROM `Comic` `c`
-                WHERE `c`.`id` NOT IN
-                    (
-                        SELECT `o`.`comic_id`
-                        FROM `Occurrence` `o`
-                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
-                        WHERE `i`.`type` = ?
-                        AND `o`.`comic_id` = `c`.`id`
-                        GROUP BY `o`.`comic_id`
-                    )
-                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
-                    AND (? <> 'location' OR NOT `c`.`has_no_location`)
-                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM `Occurrence` `o`
+                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                    WHERE `i`.`type` = ?
+                    AND `o`.`comic_id` = `c`.`id`
+                )
+                AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
+                AND (? <> 'location' OR NOT `c`.`has_no_location`)
+                AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
                 ORDER BY `c`.`id` ASC
                 LIMIT 1
             "#,
@@ -798,20 +795,17 @@ impl Comic {
             r#"
                 SELECT `c`.`id`
                 FROM `Comic` `c`
-                WHERE `c`.`id` NOT IN
-                    (
-                        SELECT `o`.`comic_id`
-                        FROM `Occurrence` `o`
-                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
-                        WHERE `i`.`type` = ?
-                        AND `o`.`comic_id` = `c`.`id`
-                        GROUP BY `o`.`comic_id`
-                    )
-                    AND `c`.`id` < ?
-                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
-                    AND (? <> 'location' OR NOT `c`.`has_no_location`)
-                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
-                ORDER BY c.id DESC
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM `Occurrence` `o`
+                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                    WHERE `i`.`type` = ?
+                    AND `o`.`comic_id` = `c`.`id`
+                )
+                AND `c`.`id` < ?
+                AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
+                AND (? <> 'location' OR NOT `c`.`has_no_location`)
+                AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
+                ORDER BY `c`.`id` DESC
                 LIMIT 1
             "#,
             r#type,
@@ -841,19 +835,16 @@ impl Comic {
             r#"
                 SELECT `c`.`id`
                 FROM `Comic` `c`
-                WHERE `c`.`id` NOT IN
-                    (
-                        SELECT `o`.`comic_id`
-                        FROM `Occurrence` `o`
-                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
-                        WHERE `i`.`type` = ?
-                        AND `o`.`comic_id` = `c`.`id`
-                        GROUP BY `o`.`comic_id`
-                    )
-                    AND `c`.`id` > ?
-                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
-                    AND (? <> 'location' OR NOT `c`.`has_no_location`)
-                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM `Occurrence` `o`
+                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                    WHERE `i`.`type` = ?
+                    AND `o`.`comic_id` = `c`.`id`
+                )
+                AND `c`.`id` > ?
+                AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
+                AND (? <> 'location' OR NOT `c`.`has_no_location`)
+                AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
                 ORDER BY `c`.`id` ASC
                 LIMIT 1
             "#,
@@ -883,18 +874,15 @@ impl Comic {
             r#"
                 SELECT `c`.`id`
                 FROM `Comic` `c`
-                WHERE `c`.`id` NOT IN
-                    (
-                        SELECT `o`.`comic_id`
-                        FROM `Occurrence` `o`
-                        LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
-                        WHERE `i`.`type` = ?
-                        AND `o`.`comic_id` = `c`.`id`
-                        GROUP BY `o`.`comic_id`
-                    )
-                    AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
-                    AND (? <> 'location' OR NOT `c`.`has_no_location`)
-                    AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM `Occurrence` `o`
+                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                    WHERE `i`.`type` = ?
+                    AND `o`.`comic_id` = `c`.`id`
+                )
+                AND (? <> 'cast' OR NOT `c`.`has_no_cast`)
+                AND (? <> 'location' OR NOT `c`.`has_no_location`)
+                AND (? <> 'storyline' OR NOT `c`.`has_no_storyline`)
                 ORDER BY `c`.`id` DESC
                 LIMIT 1
             "#,
