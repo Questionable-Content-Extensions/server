@@ -78,7 +78,7 @@ async fn fetch_asset_and_update_cache(
     cache_expired: bool,
     cache: arc_swap::Guard<Arc<ScriptCache>>,
 ) -> Result<(Asset, String), actix_web::Error> {
-    let releases_response = Client::new()
+    let releases_response = GITHUB_CLIENT
         .get("https://api.github.com/repos/Questionable-Content-Extensions/client/releases/latest")
         .header(
             "User-Agent",
@@ -104,7 +104,7 @@ async fn fetch_asset_and_update_cache(
             ))
         })?;
     debug!(?requested_asset);
-    let asset_response = Client::new()
+    let asset_response = GITHUB_CLIENT
         .get(&requested_asset.browser_download_url)
         .header(
             "User-Agent",
@@ -252,3 +252,34 @@ static SCRIPT_CACHE: std::sync::LazyLock<ArcSwap<ScriptCache>> = std::sync::Lazy
         meta: None,
     })
 });
+
+static GITHUB_CLIENT: std::sync::LazyLock<Client> = std::sync::LazyLock::new(Client::new);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn script_file_from_request_known_files() {
+        assert_eq!(
+            ScriptFile::from_request("qc-ext.latest.user.js"),
+            Some(ScriptFile::User)
+        );
+        assert_eq!(
+            ScriptFile::from_request("qc-ext.latest.meta.js"),
+            Some(ScriptFile::Meta)
+        );
+    }
+
+    #[test]
+    fn script_file_from_request_unknown_returns_none() {
+        assert_eq!(ScriptFile::from_request("unknown.js"), None);
+        assert_eq!(ScriptFile::from_request(""), None);
+    }
+
+    #[test]
+    fn script_file_github_filename() {
+        assert_eq!(ScriptFile::User.github_filename(), "qc-ext.user.js");
+        assert_eq!(ScriptFile::Meta.github_filename(), "qc-ext.meta.js");
+    }
+}
