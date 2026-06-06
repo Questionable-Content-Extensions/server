@@ -1,9 +1,11 @@
+import { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 import ExternalLinkIcon from './ExternalLinkIcon';
 import Navbar from './Navbar';
 import s from './screenshot.png';
-import StatsLayout from './stats/StatsLayout';
+
+const StatsLayout = lazy(() => import('./stats/StatsLayout'));
 
 function HomePage() {
     return (
@@ -62,7 +64,14 @@ export default function App() {
             <main className="mx-auto max-w-7xl px-4">
                 <Routes>
                     <Route path="/" element={<HomePage />} />
-                    <Route path="/stats/*" element={<StatsLayout />} />
+                    <Route
+                        path="/stats/*"
+                        element={
+                            <Suspense>
+                                <StatsLayout />
+                            </Suspense>
+                        }
+                    />
                 </Routes>
             </main>
         </>
