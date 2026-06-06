@@ -3,8 +3,8 @@ use crate::api::v3::controllers::comic::navigation_data::{
     ItemNavigationDataSorting, fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
 };
 use crate::api::v3::models::{
-    Comic, ComicData, EditorData, Exclusion, Inclusion, ItemNavigationData, MissingComic,
-    MissingEditorData, PresentComic, Sorting,
+    Comic, ComicData, EditorData, Exclusion, ImageType, Inclusion, ItemNavigationData,
+    MissingComic, MissingEditorData, PresentComic, Sorting,
 };
 use crate::models::{ComicId, False, Token, True};
 use crate::util::NewsUpdater;
@@ -136,7 +136,7 @@ pub async fn by_id(
             all_items: all_navigation_items,
             data: ComicData::Present(PresentComic {
                 has_data: True::default(),
-                image_type: Some(comic.image_type.into()),
+                image_type: Some(ImageType::from_trusted(comic.image_type)),
                 publish_date: comic.publish_date.map(|nd| Utc.from_utc_datetime(&nd)),
                 is_accurate_publish_date: comic.is_accurate_publish_date != 0,
                 title: comic.title,

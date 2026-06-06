@@ -12,15 +12,14 @@ pub enum ImageType {
     Jpeg = 3,
 }
 
-impl From<i32> for ImageType {
-    #[inline]
-    fn from(image_type: i32) -> Self {
-        match image_type {
+impl ImageType {
+    pub fn from_trusted(trusted_image_type: i32) -> Self {
+        match trusted_image_type {
             0 => Self::Unknown,
             1 => Self::Png,
             2 => Self::Gif,
             3 => Self::Jpeg,
-            _ => unreachable!("Invalid image type value: {}", image_type),
+            _ => unreachable!("Invalid image type value: {trusted_image_type}"),
         }
     }
 }
