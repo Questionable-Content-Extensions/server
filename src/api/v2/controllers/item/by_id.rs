@@ -6,7 +6,6 @@ use database::DbPool;
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, RelatedItem as RelatedDatabaseItem,
 };
-use rand::prelude::IndexedRandom;
 use serde::Deserialize;
 use std::convert::{TryFrom, TryInto};
 use tracing::{Instrument, info_span};
@@ -149,6 +148,15 @@ pub(crate) async fn comics(
     Ok(HttpResponse::Ok().json(comics))
 }
 
+#[inline]
+const fn exclusion_to_filter_options(exclude: Option<Exclusion>) -> (Option<bool>, Option<bool>) {
+    match exclude {
+        None => (None, None),
+        Some(Exclusion::Guest) => (Some(false), None),
+        Some(Exclusion::NonCanon) => (None, Some(false)),
+    }
+}
+
 #[tracing::instrument(skip(pool))]
 pub(crate) async fn random_comic(
     pool: web::Data<DbPool>,
@@ -156,38 +164,46 @@ pub(crate) async fn random_comic(
     query: web::Query<RandomItemComicQuery>,
 ) -> Result<HttpResponse> {
     let item_id = item_id.into_inner();
+    let (include_guest_comics, include_non_canon_comics) =
+        exclusion_to_filter_options(query.exclude);
 
-    let (include_guest_comics, include_non_canon_comics) = match query.exclude {
-        None => (None, None),
-        Some(Exclusion::Guest) => (Some(false), None),
-        Some(Exclusion::NonCanon) => (None, Some(false)),
-    };
+    let comic_id = DatabaseComic::random_comic_id_with_item_id(
+        &***pool,
+        item_id,
+        query.current_comic,
+        include_guest_comics,
+        include_non_canon_comics,
+    )
+    .await
+    .map_err(error::ErrorInternalServerError)?;
 
-    let comics: Vec<ComicList> =
-        DatabaseComic::all_with_item_id_mapped(&***pool, item_id, From::from)
-            .await
-            .map_err(error::ErrorInternalServerError)?;
+    Ok(HttpResponse::Ok().json(comic_id))
+}
 
-    if comics.len() < 2 {
-        return Ok(HttpResponse::Ok().json(()));
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_exclusion_returns_all_nones() {
+        assert_eq!(exclusion_to_filter_options(None), (None, None));
     }
 
-    let mut thread_rng = rand::rng();
-    let comic = loop {
-        let comic = comics.choose(&mut thread_rng).unwrap();
-        if !include_guest_comics.unwrap_or(true) && comic.is_guest_comic {
-            continue;
-        }
-        if !include_non_canon_comics.unwrap_or(true) && comic.is_non_canon {
-            continue;
-        }
-        if comic.comic.into_inner() == query.current_comic {
-            continue;
-        }
-        break comic;
-    };
+    #[test]
+    fn guest_exclusion_excludes_guest_comics() {
+        assert_eq!(
+            exclusion_to_filter_options(Some(Exclusion::Guest)),
+            (Some(false), None)
+        );
+    }
 
-    Ok(HttpResponse::Ok().json(comic.comic))
+    #[test]
+    fn non_canon_exclusion_excludes_non_canon_comics() {
+        assert_eq!(
+            exclusion_to_filter_options(Some(Exclusion::NonCanon)),
+            (None, Some(false))
+        );
+    }
 }
 
 #[derive(Debug, Deserialize)]

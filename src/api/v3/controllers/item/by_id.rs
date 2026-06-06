@@ -6,7 +6,6 @@ use database::DbPool;
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, RelatedItem as RelatedDatabaseItem,
 };
-use rand::prelude::IndexedRandom;
 use serde::Deserialize;
 use std::convert::{TryFrom, TryInto};
 use tracing::{Instrument, info_span};
@@ -138,6 +137,14 @@ pub async fn comics(pool: web::Data<DbPool>, item_id: web::Path<u16>) -> Result<
     Ok(HttpResponse::Ok().json(comics))
 }
 
+const fn exclusion_to_filter_options(exclude: Option<Exclusion>) -> (Option<bool>, Option<bool>) {
+    match exclude {
+        None => (None, None),
+        Some(Exclusion::Guest) => (Some(false), None),
+        Some(Exclusion::NonCanon) => (None, Some(false)),
+    }
+}
+
 #[tracing::instrument(skip(pool))]
 pub async fn random_comic(
     pool: web::Data<DbPool>,
@@ -145,35 +152,46 @@ pub async fn random_comic(
     query: web::Query<RandomItemComicQuery>,
 ) -> Result<HttpResponse> {
     let item_id = item_id.into_inner();
+    let (include_guest_comics, include_non_canon_comics) =
+        exclusion_to_filter_options(query.exclude);
 
-    let (include_guest_comics, include_non_canon_comics) = match query.exclude {
-        None => (None, None),
-        Some(Exclusion::Guest) => (Some(false), None),
-        Some(Exclusion::NonCanon) => (None, Some(false)),
-    };
+    let comic_id = DatabaseComic::random_comic_id_with_item_id(
+        &***pool,
+        item_id,
+        query.current_comic,
+        include_guest_comics,
+        include_non_canon_comics,
+    )
+    .await
+    .map_err(error::ErrorInternalServerError)?;
 
-    let comics: Vec<ComicList> =
-        DatabaseComic::all_with_item_id_mapped(&***pool, item_id, From::from)
-            .await
-            .map_err(error::ErrorInternalServerError)?;
+    Ok(HttpResponse::Ok().json(comic_id))
+}
 
-    let candidates: Vec<&ComicList> = comics
-        .iter()
-        .filter(|c| include_guest_comics.unwrap_or(true) || !c.is_guest_comic)
-        .filter(|c| include_non_canon_comics.unwrap_or(true) || !c.is_non_canon)
-        .filter(|c| c.comic.into_inner() != query.current_comic)
-        .collect();
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    if candidates.is_empty() {
-        return Ok(HttpResponse::Ok().json(()));
+    #[test]
+    fn no_exclusion_returns_all_nones() {
+        assert_eq!(exclusion_to_filter_options(None), (None, None));
     }
 
-    let mut thread_rng = rand::rng();
-    let comic = candidates
-        .choose(&mut thread_rng)
-        .ok_or_else(|| error::ErrorInternalServerError(anyhow!("No comics match the query")))?;
+    #[test]
+    fn guest_exclusion_excludes_guest_comics() {
+        assert_eq!(
+            exclusion_to_filter_options(Some(Exclusion::Guest)),
+            (Some(false), None)
+        );
+    }
 
-    Ok(HttpResponse::Ok().json(comic.comic))
+    #[test]
+    fn non_canon_exclusion_excludes_non_canon_comics() {
+        assert_eq!(
+            exclusion_to_filter_options(Some(Exclusion::NonCanon)),
+            (None, Some(false))
+        );
+    }
 }
 
 #[derive(Debug, Deserialize, TS)]

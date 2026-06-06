@@ -238,6 +238,42 @@ impl Comic {
     ///
     /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
+    pub async fn random_comic_id_with_item_id<'e, 'c: 'e, E>(
+        executor: E,
+        item_id: u16,
+        current_comic: u16,
+        include_guest_comics: Option<bool>,
+        include_non_canon_comics: Option<bool>,
+    ) -> sqlx::Result<Option<u16>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_scalar!(
+            r#"
+                SELECT c.`id` FROM `Comic` c
+                JOIN `Occurrence` o ON o.`comic_id` = c.`id`
+                WHERE o.`item_id` = ?
+                    AND c.`id` != ?
+                    AND (? IS NULL OR c.`is_guest_comic` = ?)
+                    AND (? IS NULL OR c.`is_non_canon` = ?)
+                ORDER BY RAND()
+                LIMIT 1
+            "#,
+            item_id,
+            current_comic,
+            include_guest_comics,
+            include_guest_comics,
+            include_non_canon_comics,
+            include_non_canon_comics,
+        )
+        .fetch_optional(executor)
+        .await
+    }
+
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
     pub async fn previous_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
