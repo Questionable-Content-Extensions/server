@@ -11,9 +11,11 @@ use std::task::{Context, Poll};
 
 pub use comic_updater::*;
 pub use news_updater::*;
+pub use token_cache::TokenPermissionsCache;
 
 mod comic_updater;
 mod news_updater;
+mod token_cache;
 
 pub mod environment {
     use ilyvion_util::environment::define_environment;

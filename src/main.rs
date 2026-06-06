@@ -1,7 +1,7 @@
 //! Questionable Content Extensions server.
 
 use crate::models::Token;
-use crate::util::{ComicUpdater, Either, NewsUpdater};
+use crate::util::{ComicUpdater, Either, NewsUpdater, TokenPermissionsCache};
 use actix_files::{Files, NamedFile};
 use actix_http::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
@@ -66,6 +66,9 @@ async fn main() -> Result<()> {
     let http_news_updater: web::Data<NewsUpdater> = web::Data::new(NewsUpdater::new());
     let news_updater = Arc::clone(&http_news_updater);
 
+    let http_token_cache: web::Data<TokenPermissionsCache> =
+        web::Data::new(TokenPermissionsCache::new());
+
     // Start HTTP server
     let start_http_server = move || -> Result<actix_web::dev::Server> {
         Ok(HttpServer::new(move || {
@@ -73,6 +76,7 @@ async fn main() -> Result<()> {
             let a = App::new()
                 .app_data(web::Data::new(http_db_pool.clone()))
                 .app_data(http_news_updater.clone())
+                .app_data(http_token_cache.clone())
                 .app_data(PayloadConfig::new(1_048_576))
                 .wrap(auth)
                 .wrap(actix_web::middleware::Compress::default()).wrap(actix_web::middleware::Logger::new(
@@ -248,6 +252,17 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<HashSet<Str
         }
     };
 
+    let token_str = token.to_string();
+
+    let cache = request
+        .app_data::<web::Data<TokenPermissionsCache>>()
+        .ok_or_else(|| anyhow!("Could not get TokenPermissionsCache from request"))
+        .map_err(error::ErrorInternalServerError)?;
+
+    if let Some(permissions) = cache.get(&token_str) {
+        return Ok(permissions);
+    }
+
     let pool = request
         .app_data::<web::Data<DbPool>>()
         .ok_or_else(|| anyhow!("Could not get DbPool from request"))
@@ -257,9 +272,13 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<HashSet<Str
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    DatabaseToken::get_permissions_for_token(&mut *conn, token.to_string())
+    let permissions = DatabaseToken::get_permissions_for_token(&mut *conn, token_str.clone())
         .await
-        .map_err(error::ErrorInternalServerError)
+        .map_err(error::ErrorInternalServerError)?;
+
+    cache.set(token_str, permissions.clone());
+
+    Ok(permissions)
 }
 
 fn init_tracer() -> Result<Tracer, TraceError> {
