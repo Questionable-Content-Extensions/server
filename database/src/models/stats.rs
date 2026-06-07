@@ -1211,7 +1211,7 @@ impl CharacterHomeTurfRow {
                     GROUP BY `item_id`
                 ) `char_app` ON `char_app`.`item_id` = `ranked`.`item_id`
                 WHERE `ranked`.`rnk` = 1 AND `char_app`.`total` >= 10
-                ORDER BY CAST(`ranked`.`cnt` AS DOUBLE) / `char_app`.`total` DESC
+                ORDER BY CAST(`ranked`.`cnt` AS DOUBLE) / `char_app`.`total` DESC, `ranked`.`item_id` ASC
             "#,
         )
         .fetch_all(executor)

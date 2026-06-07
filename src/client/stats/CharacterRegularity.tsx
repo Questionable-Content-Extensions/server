@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { CharacterRegularity } from '../../../bindings/CharacterRegularity';
+import ItemDetailsModal from './ItemDetailsModal';
 
 type SortKey = 'stddev' | 'avg' | 'name' | 'appearances';
 type SortDir = 'asc' | 'desc';
@@ -52,6 +53,7 @@ export default function CharacterRegularityPage() {
         key: 'stddev',
         dir: 'asc',
     });
+    const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
         fetch('/api/v3/stats/character-regularity')
@@ -98,75 +100,95 @@ export default function CharacterRegularityPage() {
     }
 
     return (
-        <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                Character Regularity
-            </h2>
-            <p className="text-sm text-gray-500 mb-4">
-                For characters with at least 10 dated appearances, the standard
-                deviation of days between consecutive appearances. Low std dev
-                means very consistent; high means bursty or arc-driven. Click
-                any column header to sort. "Dated appearances" counts only
-                comics with a known publish date.
-            </p>
-            <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                    <thead>
-                        <tr className="border-b border-gray-200 text-left text-gray-600">
-                            <th className="py-2 pr-4 font-medium w-12">#</th>
-                            <SortHeader
-                                label="Name"
-                                sortKey="name"
-                                current={sort}
-                                onSort={handleSort}
-                                align="left"
-                            />
-                            <SortHeader
-                                label="Dated appearances"
-                                sortKey="appearances"
-                                current={sort}
-                                onSort={handleSort}
-                            />
-                            <SortHeader
-                                label="Avg gap"
-                                sortKey="avg"
-                                current={sort}
-                                onSort={handleSort}
-                            />
-                            <SortHeader
-                                label="Std dev"
-                                sortKey="stddev"
-                                current={sort}
-                                onSort={handleSort}
-                            />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sorted.map((row, i) => (
-                            <tr
-                                key={row.id}
-                                className="border-b border-gray-100 hover:bg-gray-50"
-                            >
-                                <td className="py-2 pr-4 text-gray-400">
-                                    {i + 1}
-                                </td>
-                                <td className="py-2 pr-4 font-medium text-gray-900">
-                                    {row.name}
-                                </td>
-                                <td className="py-2 pr-4 text-right text-gray-700">
-                                    {row.appearances.toLocaleString()}
-                                </td>
-                                <td className="py-2 pr-4 text-right text-gray-700">
-                                    {formatDays(row.avgGapDays)}
-                                </td>
-                                <td className="py-2 text-right font-medium text-gray-800">
-                                    {formatDays(row.stddevGapDays)}
-                                </td>
+        <>
+            {selectedItemId !== null && (
+                <ItemDetailsModal
+                    initialItemId={selectedItemId}
+                    onClose={() => {
+                        setSelectedItemId(null);
+                    }}
+                />
+            )}
+            <div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-1">
+                    Character Regularity
+                </h2>
+                <p className="text-sm text-gray-500 mb-4">
+                    For characters with at least 10 dated appearances, the
+                    standard deviation of days between consecutive appearances.
+                    Low std dev means very consistent; high means bursty or
+                    arc-driven. Click any column header to sort. "Dated
+                    appearances" counts only comics with a known publish date.
+                </p>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-gray-200 text-left text-gray-600">
+                                <th className="py-2 pr-4 font-medium w-12">
+                                    #
+                                </th>
+                                <SortHeader
+                                    label="Name"
+                                    sortKey="name"
+                                    current={sort}
+                                    onSort={handleSort}
+                                    align="left"
+                                />
+                                <SortHeader
+                                    label="Dated appearances"
+                                    sortKey="appearances"
+                                    current={sort}
+                                    onSort={handleSort}
+                                />
+                                <SortHeader
+                                    label="Avg gap"
+                                    sortKey="avg"
+                                    current={sort}
+                                    onSort={handleSort}
+                                />
+                                <SortHeader
+                                    label="Std dev"
+                                    sortKey="stddev"
+                                    current={sort}
+                                    onSort={handleSort}
+                                />
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {sorted.map((row, i) => (
+                                <tr
+                                    key={row.id}
+                                    className="border-b border-gray-100 hover:bg-gray-50"
+                                >
+                                    <td className="py-2 pr-4 text-gray-400">
+                                        {i + 1}
+                                    </td>
+                                    <td className="py-2 pr-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedItemId(row.id);
+                                            }}
+                                            className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
+                                        >
+                                            {row.name}
+                                        </button>
+                                    </td>
+                                    <td className="py-2 pr-4 text-right text-gray-700">
+                                        {row.appearances.toLocaleString()}
+                                    </td>
+                                    <td className="py-2 pr-4 text-right text-gray-700">
+                                        {formatDays(row.avgGapDays)}
+                                    </td>
+                                    <td className="py-2 text-right font-medium text-gray-800">
+                                        {formatDays(row.stddevGapDays)}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        </>
     );
 }

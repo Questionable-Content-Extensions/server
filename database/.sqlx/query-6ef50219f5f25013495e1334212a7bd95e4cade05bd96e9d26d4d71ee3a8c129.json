@@ -1,0 +1,74 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `ranked`.`item_id` AS `character_id`,\n                    `ic`.`name` AS `character_name`,\n                    `ranked`.`loc_id` AS `location_id`,\n                    `il`.`name` AS `location_name`,\n                    `ranked`.`cnt` AS `comics_together`,\n                    `char_app`.`total` AS `character_appearances`\n                FROM (\n                    SELECT\n                        `oc`.`item_id`,\n                        `ol`.`item_id` AS `loc_id`,\n                        COUNT(*) AS `cnt`,\n                        RANK() OVER (PARTITION BY `oc`.`item_id` ORDER BY COUNT(*) DESC) AS `rnk`\n                    FROM `Occurrence` `oc`\n                    JOIN `Item` `ic2` ON `oc`.`item_id` = `ic2`.`id` AND `ic2`.`type` = 'cast'\n                    JOIN `Occurrence` `ol` ON `ol`.`comic_id` = `oc`.`comic_id`\n                    JOIN `Item` `il2` ON `ol`.`item_id` = `il2`.`id` AND `il2`.`type` = 'location'\n                    GROUP BY `oc`.`item_id`, `ol`.`item_id`\n                ) `ranked`\n                JOIN `Item` `ic` ON `ic`.`id` = `ranked`.`item_id`\n                JOIN `Item` `il` ON `il`.`id` = `ranked`.`loc_id`\n                JOIN (\n                    SELECT `item_id`, COUNT(*) AS `total`\n                    FROM `Occurrence`\n                    JOIN `Item` ON `Occurrence`.`item_id` = `Item`.`id` AND `Item`.`type` = 'cast'\n                    GROUP BY `item_id`\n                ) `char_app` ON `char_app`.`item_id` = `ranked`.`item_id`\n                WHERE `ranked`.`rnk` = 1 AND `char_app`.`total` >= 10\n                ORDER BY CAST(`ranked`.`cnt` AS DOUBLE) / `char_app`.`total` DESC, `ranked`.`item_id` ASC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "character_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "character_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "location_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "location_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "comics_together",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "character_appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6ef50219f5f25013495e1334212a7bd95e4cade05bd96e9d26d4d71ee3a8c129"
+}

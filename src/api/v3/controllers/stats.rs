@@ -6,12 +6,12 @@ use crate::api::v3::models::stats::{
     CharacterHomeTurfEntry, CharacterMeta, CharacterRegularity, CharacterSeasonEntry,
     CoAppearanceCharacterMeta, CoAppearancePair, CoAppearancesResponse, ComebackCharacter,
     CrowdedComicsResponse, DailyComics, DebutCharacter, DebutYear, DebutsPerYear, EnsembleRatio,
-    ItemStats, LocationAffinity, LocationAffinityCharacter, LocationCoOccurrenceEntry,
-    LocationCoOccurrencePair, LocationCoOccurrenceResponse, LocationSpotlightResponse,
-    LocationSpotlightYear, LonerEntry, MilestoneComic, MonthlyComics, MonthlyHeatmapEntry,
-    MostCrowdedComic, NeverMetPair, PairEvolutionYear, PublicationCalendar, PublicationGap,
-    PublicationStreak, PublishTimeYear, ScheduleEvolutionYear, SocialHubEntry, TrendingItem,
-    YearlyOverview, YearlyRankEntry, YearlySpotlightResponse, YearlySpotlightYear,
+    HomeTurfLocation, ItemStats, LocationAffinity, LocationAffinityCharacter,
+    LocationCoOccurrenceEntry, LocationCoOccurrencePair, LocationCoOccurrenceResponse,
+    LocationSpotlightResponse, LocationSpotlightYear, LonerEntry, MilestoneComic, MonthlyComics,
+    MonthlyHeatmapEntry, MostCrowdedComic, NeverMetPair, PairEvolutionYear, PublicationCalendar,
+    PublicationGap, PublicationStreak, PublishTimeYear, ScheduleEvolutionYear, SocialHubEntry,
+    TrendingItem, YearlyOverview, YearlyRankEntry, YearlySpotlightResponse, YearlySpotlightYear,
 };
 use crate::models::{ComicId, ItemId};
 use crate::util::environment;
@@ -810,17 +810,26 @@ async fn character_home_turf(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    let result: Vec<CharacterHomeTurfEntry> = rows
-        .into_iter()
-        .map(|r| CharacterHomeTurfEntry {
-            character_id: ItemId::from(r.character_id),
-            character_name: r.character_name,
+    let mut result: Vec<CharacterHomeTurfEntry> = Vec::new();
+    for r in rows {
+        let location = HomeTurfLocation {
             location_id: ItemId::from(r.location_id),
             location_name: r.location_name,
             comics_together: u32::try_from(r.comics_together).unwrap_or(u32::MAX),
+        };
+        if let Some(last) = result.last_mut() {
+            if last.character_id == ItemId::from(r.character_id) {
+                last.locations.push(location);
+                continue;
+            }
+        }
+        result.push(CharacterHomeTurfEntry {
+            character_id: ItemId::from(r.character_id),
+            character_name: r.character_name,
+            locations: vec![location],
             character_appearances: u32::try_from(r.character_appearances).unwrap_or(u32::MAX),
-        })
-        .collect();
+        });
+    }
     Ok(HttpResponse::Ok().json(result))
 }
 

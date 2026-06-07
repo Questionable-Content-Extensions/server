@@ -136,14 +136,7 @@ function PublishTimeHeatmap({ data }: PublishTimeHeatmapProps) {
         ctx.textAlign = 'right';
         for (let h = 0; h < HOURS; h++) {
             const y = LABEL_H + h * CELL_H + CELL_H / 2;
-            const label =
-                h === 0
-                    ? '12am'
-                    : h < 12
-                      ? `${String(h)}am`
-                      : h === 12
-                        ? '12pm'
-                        : `${String(h - 12)}pm`;
+            const label = String(h).padStart(2, '0');
             ctx.fillText(label, LABEL_W - 4, y);
         }
 

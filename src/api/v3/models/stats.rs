@@ -332,12 +332,19 @@ pub struct BreakoutYear {
 #[derive(Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
-pub struct CharacterHomeTurfEntry {
-    pub character_id: ItemId,
-    pub character_name: String,
+pub struct HomeTurfLocation {
     pub location_id: ItemId,
     pub location_name: String,
     pub comics_together: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CharacterHomeTurfEntry {
+    pub character_id: ItemId,
+    pub character_name: String,
+    pub locations: Vec<HomeTurfLocation>,
     pub character_appearances: u32,
 }
 

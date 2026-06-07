@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { TrendingItem } from '../../../bindings/TrendingItem';
+import ItemDetailsModal from './ItemDetailsModal';
 
 type SortKey = 'recent' | 'total' | 'ratio' | 'name';
 type SortDir = 'asc' | 'desc';
@@ -49,6 +50,7 @@ export default function TrendingLocations() {
     const [data, setData] = useState<TrendingItem[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [sort, setSort] = useState<SortState>({ key: 'ratio', dir: 'desc' });
+    const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
         fetch('/api/v3/stats/trending-locations')
@@ -91,83 +93,104 @@ export default function TrendingLocations() {
     if (!sorted) return <p className="text-gray-500">Loading…</p>;
 
     return (
-        <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                Trending Locations
-            </h2>
-            <p className="text-sm text-gray-500 mb-4">
-                Locations whose appearances in the last 12 months are high
-                relative to their historical average per year. A ratio above
-                1.0× means the location is appearing more than usual recently.
-                Only locations with at least 5 career appearances are shown.
-            </p>
-            <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                    <thead>
-                        <tr className="border-b border-gray-200 text-left text-gray-600">
-                            <th className="py-2 pr-4 font-medium w-12">#</th>
-                            <SortHeader
-                                label="Name"
-                                sortKey="name"
-                                current={sort}
-                                onSort={handleSort}
-                                align="left"
-                            />
-                            <SortHeader
-                                label="Recent (12 mo)"
-                                sortKey="recent"
-                                current={sort}
-                                onSort={handleSort}
-                            />
-                            <SortHeader
-                                label="Career avg/yr"
-                                sortKey="total"
-                                current={sort}
-                                onSort={handleSort}
-                            />
-                            <SortHeader
-                                label="Trend ratio"
-                                sortKey="ratio"
-                                current={sort}
-                                onSort={handleSort}
-                            />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sorted.map((row, i) => {
-                            const avgPerYear =
-                                row.careerYears > 0
-                                    ? row.totalAppearances / row.careerYears
-                                    : 0;
-                            const ratio = trendRatio(row);
-                            return (
-                                <tr
-                                    key={row.id}
-                                    className="border-b border-gray-100 hover:bg-gray-50"
-                                >
-                                    <td className="py-2 pr-4 text-gray-400">
-                                        {i + 1}
-                                    </td>
-                                    <td className="py-2 pr-4 font-medium text-gray-900">
-                                        {row.name}
-                                    </td>
-                                    <td className="py-2 pr-4 text-right font-medium text-indigo-700">
-                                        {row.recentAppearances.toLocaleString()}
-                                    </td>
-                                    <td className="py-2 pr-4 text-right text-gray-500">
-                                        {avgPerYear.toFixed(1)}
-                                    </td>
-                                    <td
-                                        className={`py-2 text-right font-medium ${ratio >= 1.5 ? 'text-green-600' : ratio >= 1 ? 'text-indigo-700' : 'text-gray-500'}`}
+        <>
+            {selectedItemId !== null && (
+                <ItemDetailsModal
+                    initialItemId={selectedItemId}
+                    onClose={() => {
+                        setSelectedItemId(null);
+                    }}
+                />
+            )}
+            <div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-1">
+                    Trending Locations
+                </h2>
+                <p className="text-sm text-gray-500 mb-4">
+                    Locations whose appearances in the last 12 months are high
+                    relative to their historical average per year. A ratio above
+                    1.0× means the location is appearing more than usual
+                    recently. Only locations with at least 5 career appearances
+                    are shown.
+                </p>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                        <thead>
+                            <tr className="border-b border-gray-200 text-left text-gray-600">
+                                <th className="py-2 pr-4 font-medium w-12">
+                                    #
+                                </th>
+                                <SortHeader
+                                    label="Name"
+                                    sortKey="name"
+                                    current={sort}
+                                    onSort={handleSort}
+                                    align="left"
+                                />
+                                <SortHeader
+                                    label="Recent (12 mo)"
+                                    sortKey="recent"
+                                    current={sort}
+                                    onSort={handleSort}
+                                />
+                                <SortHeader
+                                    label="Career avg/yr"
+                                    sortKey="total"
+                                    current={sort}
+                                    onSort={handleSort}
+                                />
+                                <SortHeader
+                                    label="Trend ratio"
+                                    sortKey="ratio"
+                                    current={sort}
+                                    onSort={handleSort}
+                                />
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sorted.map((row, i) => {
+                                const avgPerYear =
+                                    row.careerYears > 0
+                                        ? row.totalAppearances / row.careerYears
+                                        : 0;
+                                const ratio = trendRatio(row);
+                                return (
+                                    <tr
+                                        key={row.id}
+                                        className="border-b border-gray-100 hover:bg-gray-50"
                                     >
-                                        {ratio.toFixed(2)}×
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                                        <td className="py-2 pr-4 text-gray-400">
+                                            {i + 1}
+                                        </td>
+                                        <td className="py-2 pr-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedItemId(row.id);
+                                                }}
+                                                className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
+                                            >
+                                                {row.name}
+                                            </button>
+                                        </td>
+                                        <td className="py-2 pr-4 text-right font-medium text-indigo-700">
+                                            {row.recentAppearances.toLocaleString()}
+                                        </td>
+                                        <td className="py-2 pr-4 text-right text-gray-500">
+                                            {avgPerYear.toFixed(1)}
+                                        </td>
+                                        <td
+                                            className={`py-2 text-right font-medium ${ratio >= 1.5 ? 'text-green-600' : ratio >= 1 ? 'text-indigo-700' : 'text-gray-500'}`}
+                                        >
+                                            {ratio.toFixed(2)}×
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
+        </>
     );
 }

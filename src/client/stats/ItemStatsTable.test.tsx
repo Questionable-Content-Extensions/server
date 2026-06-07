@@ -1,10 +1,15 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { ItemStats } from '../../../bindings/ItemStats';
+import { _resetItemsCache } from './ItemDetailsModal';
 import ItemStatsTable from './ItemStatsTable';
 
-afterEach(cleanup);
+afterEach(() => {
+    cleanup();
+    _resetItemsCache();
+    vi.unstubAllGlobals();
+});
 
 const ROWS: ItemStats[] = [
     { id: 1, name: 'Alice', appearances: 50, firstComic: 3, lastComic: 100 },
@@ -102,5 +107,28 @@ describe('ItemStatsTable with sharedData', () => {
         );
 
         expect(rows.map((r) => r.id)).toEqual(originalOrder);
+    });
+
+    it('opens the item details modal when a name is clicked', () => {
+        vi.stubGlobal(
+            'fetch',
+            vi.fn().mockReturnValue(new Promise(() => undefined)),
+        );
+
+        render(
+            <ItemStatsTable
+                endpoint="/api/v3/stats/cast"
+                title="Character Rankings"
+                description="Ranked by appearances."
+                sortBy="appearances"
+                sharedData={ROWS}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Alice' }));
+        // The modal header shows "Loading…" as a heading
+        expect(
+            screen.getByRole('heading', { name: 'Loading…' }),
+        ).toBeInTheDocument();
     });
 });
