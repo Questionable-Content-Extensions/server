@@ -2,11 +2,16 @@ import { useEffect, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 
 import type { ItemStats } from '../../../bindings/ItemStats';
+import AppearanceDistribution from './AppearanceDistribution';
 import BestFriendScore from './BestFriendScore';
+import BreakoutYears from './BreakoutYears';
+import CastTurnover from './CastTurnover';
 import CharacterDebuts from './CharacterDebuts';
+import CharacterHomeTurf from './CharacterHomeTurf';
 import CharacterLongevity from './CharacterLongevity';
 import CharacterRankings from './CharacterRankings';
 import CharacterRegularity from './CharacterRegularity';
+import CharacterSeasons from './CharacterSeasons';
 import CoAppearances from './CoAppearances';
 import ComebackCharacters from './ComebackCharacters';
 import DebutClusters from './DebutClusters';
@@ -15,13 +20,24 @@ import EnsembleRatio from './EnsembleRatio';
 import LocationAffinity from './LocationAffinity';
 import LocationCoOccurrences from './LocationCoOccurrences';
 import LocationDebuts from './LocationDebuts';
+import LocationLifespan from './LocationLifespan';
 import LocationStats from './LocationStats';
 import LocationYearlySpotlight from './LocationYearlySpotlight';
+import LonerIndex from './LonerIndex';
+import MilestoneTracker from './MilestoneTracker';
+import MonthlyHeatmap from './MonthlyHeatmap';
 import MostCrowdedComics from './MostCrowdedComics';
+import NeverMet from './NeverMet';
 import OneHitWonders from './OneHitWonders';
+import PairEvolution from './PairEvolution';
 import PublicationCalendar from './PublicationCalendar';
 import PublicationGaps from './PublicationGaps';
+import PublicationStreaks from './PublicationStreaks';
 import RetiredCharacters from './RetiredCharacters';
+import ScheduleEvolution from './ScheduleEvolution';
+import SocialHub from './SocialHub';
+import TrendingCharacters from './TrendingCharacters';
+import TrendingLocations from './TrendingLocations';
 import YearlyOverview from './YearlyOverview';
 import YearlySpotlight from './YearlySpotlight';
 
@@ -79,6 +95,14 @@ function StatsNav() {
                     Retired Characters
                 </TabLink>
                 <TabLink to="/stats/character-regularity">Regularity</TabLink>
+                <TabLink to="/stats/social-hub">Social Hub</TabLink>
+                <TabLink to="/stats/trending-characters">Trending</TabLink>
+                <TabLink to="/stats/cast-turnover">Cast Turnover</TabLink>
+                <TabLink to="/stats/character-seasons">Seasons</TabLink>
+                <TabLink to="/stats/breakout-years">Breakout Years</TabLink>
+                <TabLink to="/stats/appearance-distribution">
+                    Appearance Distribution
+                </TabLink>
             </NavRow>
             <NavRow label="Locations">
                 <TabLink to="/stats/locations">Location Stats</TabLink>
@@ -90,6 +114,8 @@ function StatsNav() {
                     Co-Occurrences
                 </TabLink>
                 <TabLink to="/stats/location-affinity">Affinity</TabLink>
+                <TabLink to="/stats/location-lifespan">Lifespan</TabLink>
+                <TabLink to="/stats/trending-locations">Trending</TabLink>
             </NavRow>
             <NavRow label="Relationships">
                 <TabLink to="/stats/co-appearances">
@@ -99,6 +125,10 @@ function StatsNav() {
                     Best Friend Score
                 </TabLink>
                 <TabLink to="/stats/ensemble-ratio">Ensemble Ratio</TabLink>
+                <TabLink to="/stats/character-home-turf">Home Turf</TabLink>
+                <TabLink to="/stats/pair-evolution">Pair Evolution</TabLink>
+                <TabLink to="/stats/loner-index">Loner Index</TabLink>
+                <TabLink to="/stats/never-met">Never Met</TabLink>
             </NavRow>
             <NavRow label="Publication & Time">
                 <TabLink to="/stats/yearly-spotlight">Yearly Spotlight</TabLink>
@@ -110,6 +140,14 @@ function StatsNav() {
                 </TabLink>
                 {/* <TabLink to="/stats/publication-gaps">Publication Gaps</TabLink> */}
                 <TabLink to="/stats/crowded-comics">Crowded Comics</TabLink>
+                <TabLink to="/stats/schedule-evolution">
+                    Schedule Evolution
+                </TabLink>
+                <TabLink to="/stats/publication-streaks">
+                    Publication Streaks
+                </TabLink>
+                <TabLink to="/stats/monthly-heatmap">Monthly Heatmap</TabLink>
+                <TabLink to="/stats/milestones">Milestones</TabLink>
             </NavRow>
         </nav>
     );
@@ -252,6 +290,64 @@ export default function StatsLayout() {
                     path="location-co-occurrences"
                     element={<LocationCoOccurrences />}
                 />
+                <Route path="social-hub" element={<SocialHub />} />
+                <Route
+                    path="trending-characters"
+                    element={<TrendingCharacters />}
+                />
+                <Route path="cast-turnover" element={<CastTurnover />} />
+                <Route
+                    path="character-seasons"
+                    element={<CharacterSeasons />}
+                />
+                <Route path="breakout-years" element={<BreakoutYears />} />
+                <Route
+                    path="appearance-distribution"
+                    element={
+                        <AppearanceDistribution
+                            castData={castData}
+                            castError={castError}
+                        />
+                    }
+                />
+                <Route
+                    path="location-lifespan"
+                    element={
+                        <LocationLifespan
+                            locationsData={locationsData}
+                            locationsError={locationsError}
+                        />
+                    }
+                />
+                <Route
+                    path="trending-locations"
+                    element={<TrendingLocations />}
+                />
+                <Route
+                    path="character-home-turf"
+                    element={<CharacterHomeTurf />}
+                />
+                <Route
+                    path="pair-evolution"
+                    element={
+                        <PairEvolution
+                            castData={castData}
+                            castError={castError}
+                        />
+                    }
+                />
+                <Route path="loner-index" element={<LonerIndex />} />
+                <Route path="never-met" element={<NeverMet />} />
+                <Route
+                    path="schedule-evolution"
+                    element={<ScheduleEvolution />}
+                />
+                <Route
+                    path="publication-streaks"
+                    element={<PublicationStreaks />}
+                />
+                <Route path="monthly-heatmap" element={<MonthlyHeatmap />} />
+                <Route path="milestones" element={<MilestoneTracker />} />
             </Routes>
         </div>
     );

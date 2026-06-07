@@ -869,3 +869,677 @@ impl CoAppearance {
         .await
     }
 }
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct SocialHubRow {
+    pub id: u16,
+    pub name: String,
+    pub appearances: i64,
+    pub distinct_partners: i64,
+}
+
+impl SocialHubRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`name`,
+                    `app`.`total` AS `appearances`,
+                    COUNT(DISTINCT `o2`.`item_id`) AS `distinct_partners`
+                FROM `Item` `i`
+                JOIN (
+                    SELECT `item_id`, COUNT(*) AS `total`
+                    FROM `Occurrence`
+                    GROUP BY `item_id`
+                ) `app` ON `app`.`item_id` = `i`.`id`
+                JOIN `Occurrence` `o1` ON `o1`.`item_id` = `i`.`id`
+                JOIN `Occurrence` `o2`
+                    ON `o2`.`comic_id` = `o1`.`comic_id`
+                    AND `o2`.`item_id` != `o1`.`item_id`
+                JOIN `Item` `i2` ON `i2`.`id` = `o2`.`item_id` AND `i2`.`type` = 'cast'
+                WHERE `i`.`type` = 'cast'
+                GROUP BY `i`.`id`
+                HAVING COUNT(DISTINCT `o2`.`item_id`) > 0
+                ORDER BY `distinct_partners` DESC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct TrendingItemRow {
+    pub id: u16,
+    pub name: String,
+    pub total_appearances: i64,
+    pub recent_appearances: i64,
+    pub career_years: Option<f64>,
+}
+
+impl TrendingItemRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn cast_trending<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`name`,
+                    COUNT(*) AS `total_appearances`,
+                    COUNT(CASE WHEN `c`.`publish_date` >= DATE_SUB(
+                        (SELECT MAX(`publish_date`) FROM `Comic`), INTERVAL 365 DAY
+                    ) THEN 1 END) AS `recent_appearances`,
+                    CAST(
+                        DATEDIFF(MAX(`c`.`publish_date`), MIN(`c`.`publish_date`)) / 365.25
+                    AS DOUBLE) AS `career_years`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
+                GROUP BY `i`.`id`
+                HAVING COUNT(*) >= 5
+                ORDER BY `recent_appearances` DESC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn location_trending<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`name`,
+                    COUNT(*) AS `total_appearances`,
+                    COUNT(CASE WHEN `c`.`publish_date` >= DATE_SUB(
+                        (SELECT MAX(`publish_date`) FROM `Comic`), INTERVAL 365 DAY
+                    ) THEN 1 END) AS `recent_appearances`,
+                    CAST(
+                        DATEDIFF(MAX(`c`.`publish_date`), MIN(`c`.`publish_date`)) / 365.25
+                    AS DOUBLE) AS `career_years`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
+                GROUP BY `i`.`id`
+                HAVING COUNT(*) >= 5
+                ORDER BY `recent_appearances` DESC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Copy, Clone, Debug, sqlx::FromRow)]
+pub struct CastTurnoverRow {
+    pub year: Option<i32>,
+    pub new_chars: i64,
+    pub continuing_chars: i64,
+    pub returning_chars: i64,
+    pub dropped_chars: Option<i64>,
+}
+
+impl CastTurnoverRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                WITH `char_yr` AS (
+                    SELECT DISTINCT YEAR(`c`.`publish_date`) AS `yr`, `o`.`item_id`
+                    FROM `Occurrence` `o`
+                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                    WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
+                ),
+                `char_first` AS (
+                    SELECT `item_id`, MIN(`yr`) AS `first_yr`
+                    FROM `char_yr`
+                    GROUP BY `item_id`
+                )
+                SELECT
+                    `cur`.`yr` AS `year`,
+                    COUNT(CASE WHEN `first`.`first_yr` = `cur`.`yr` THEN 1 END) AS `new_chars`,
+                    COUNT(CASE WHEN `first`.`first_yr` < `cur`.`yr` AND `prev`.`item_id` IS NOT NULL THEN 1 END) AS `continuing_chars`,
+                    COUNT(CASE WHEN `first`.`first_yr` < `cur`.`yr` AND `prev`.`item_id` IS NULL THEN 1 END) AS `returning_chars`,
+                    (
+                        SELECT COUNT(DISTINCT `p`.`item_id`)
+                        FROM `char_yr` `p`
+                        WHERE `p`.`yr` = `cur`.`yr` - 1
+                          AND NOT EXISTS (
+                            SELECT 1 FROM `char_yr` `n`
+                            WHERE `n`.`item_id` = `p`.`item_id` AND `n`.`yr` = `cur`.`yr`
+                          )
+                    ) AS `dropped_chars`
+                FROM `char_yr` `cur`
+                JOIN `char_first` `first` ON `first`.`item_id` = `cur`.`item_id`
+                LEFT JOIN `char_yr` `prev`
+                    ON `prev`.`item_id` = `cur`.`item_id` AND `prev`.`yr` = `cur`.`yr` - 1
+                GROUP BY `cur`.`yr`
+                ORDER BY `cur`.`yr`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct CharacterSeasonRow {
+    pub id: u16,
+    pub name: String,
+    pub month: Option<i32>,
+    pub appearances: i64,
+}
+
+impl CharacterSeasonRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`name`,
+                    MONTH(`c`.`publish_date`) AS `month`,
+                    COUNT(*) AS `appearances`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
+                  AND `i`.`id` IN (
+                    SELECT `item_id` FROM `Occurrence`
+                    GROUP BY `item_id`
+                    HAVING COUNT(*) >= 50
+                  )
+                GROUP BY `i`.`id`, MONTH(`c`.`publish_date`)
+                ORDER BY `i`.`id`, `month`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct BreakoutYearRow {
+    pub id: u16,
+    pub name: String,
+    pub breakout_years: Option<String>,
+    pub breakout_count: i64,
+    pub avg_per_year: Option<f64>,
+}
+
+impl BreakoutYearRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `ranked`.`item_id` AS `id`,
+                    `i`.`name`,
+                    GROUP_CONCAT(DISTINCT `ranked`.`yr` ORDER BY `ranked`.`yr` SEPARATOR ',') AS `breakout_years`,
+                    `ranked`.`cnt` AS `breakout_count`,
+                    CAST(SUM(`yr_counts`.`cnt`) AS DOUBLE) / NULLIF(COUNT(DISTINCT `yr_counts`.`yr`), 0) AS `avg_per_year`
+                FROM (
+                    SELECT
+                        `o`.`item_id`,
+                        YEAR(`c`.`publish_date`) AS `yr`,
+                        COUNT(*) AS `cnt`,
+                        RANK() OVER (PARTITION BY `o`.`item_id` ORDER BY COUNT(*) DESC) AS `rnk`
+                    FROM `Occurrence` `o`
+                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
+                    WHERE `i2`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
+                    GROUP BY `o`.`item_id`, YEAR(`c`.`publish_date`)
+                ) `ranked`
+                JOIN `Item` `i` ON `i`.`id` = `ranked`.`item_id`
+                JOIN (
+                    SELECT
+                        `o`.`item_id`,
+                        YEAR(`c`.`publish_date`) AS `yr`,
+                        COUNT(*) AS `cnt`
+                    FROM `Occurrence` `o`
+                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
+                    WHERE `i2`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
+                    GROUP BY `o`.`item_id`, YEAR(`c`.`publish_date`)
+                ) `yr_counts` ON `yr_counts`.`item_id` = `ranked`.`item_id`
+                WHERE `ranked`.`rnk` = 1
+                GROUP BY `ranked`.`item_id`, `ranked`.`cnt`
+                HAVING COUNT(DISTINCT `yr_counts`.`yr`) >= 2
+                ORDER BY `ranked`.`cnt` DESC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct CharacterHomeTurfRow {
+    pub character_id: u16,
+    pub character_name: String,
+    pub location_id: u16,
+    pub location_name: String,
+    pub comics_together: i64,
+    pub character_appearances: i64,
+}
+
+impl CharacterHomeTurfRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `ranked`.`item_id` AS `character_id`,
+                    `ic`.`name` AS `character_name`,
+                    `ranked`.`loc_id` AS `location_id`,
+                    `il`.`name` AS `location_name`,
+                    `ranked`.`cnt` AS `comics_together`,
+                    `char_app`.`total` AS `character_appearances`
+                FROM (
+                    SELECT
+                        `oc`.`item_id`,
+                        `ol`.`item_id` AS `loc_id`,
+                        COUNT(*) AS `cnt`,
+                        RANK() OVER (PARTITION BY `oc`.`item_id` ORDER BY COUNT(*) DESC) AS `rnk`
+                    FROM `Occurrence` `oc`
+                    JOIN `Item` `ic2` ON `oc`.`item_id` = `ic2`.`id` AND `ic2`.`type` = 'cast'
+                    JOIN `Occurrence` `ol` ON `ol`.`comic_id` = `oc`.`comic_id`
+                    JOIN `Item` `il2` ON `ol`.`item_id` = `il2`.`id` AND `il2`.`type` = 'location'
+                    GROUP BY `oc`.`item_id`, `ol`.`item_id`
+                ) `ranked`
+                JOIN `Item` `ic` ON `ic`.`id` = `ranked`.`item_id`
+                JOIN `Item` `il` ON `il`.`id` = `ranked`.`loc_id`
+                JOIN (
+                    SELECT `item_id`, COUNT(*) AS `total`
+                    FROM `Occurrence`
+                    JOIN `Item` ON `Occurrence`.`item_id` = `Item`.`id` AND `Item`.`type` = 'cast'
+                    GROUP BY `item_id`
+                ) `char_app` ON `char_app`.`item_id` = `ranked`.`item_id`
+                WHERE `ranked`.`rnk` = 1 AND `char_app`.`total` >= 10
+                ORDER BY CAST(`ranked`.`cnt` AS DOUBLE) / `char_app`.`total` DESC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Copy, Clone, Debug, sqlx::FromRow)]
+pub struct PairEvolutionRow {
+    pub year: Option<i32>,
+    pub comics_together: i64,
+}
+
+impl PairEvolutionRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn for_pair<'e, 'c: 'e, E>(
+        executor: E,
+        char1: u16,
+        char2: u16,
+    ) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    YEAR(`c`.`publish_date`) AS `year`,
+                    COUNT(*) AS `comics_together`
+                FROM `Occurrence` `o1`
+                JOIN `Occurrence` `o2`
+                    ON `o1`.`comic_id` = `o2`.`comic_id`
+                    AND `o2`.`item_id` = ?
+                JOIN `Comic` `c` ON `o1`.`comic_id` = `c`.`id`
+                WHERE `o1`.`item_id` = ? AND `c`.`publish_date` IS NOT NULL
+                GROUP BY YEAR(`c`.`publish_date`)
+                ORDER BY `year`
+            "#,
+            char2,
+            char1,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct LonerIndexRow {
+    pub id: u16,
+    pub name: String,
+    pub appearances: i64,
+    pub avg_co_cast: Option<f64>,
+}
+
+impl LonerIndexRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`name`,
+                    COUNT(*) AS `appearances`,
+                    CAST(AVG(GREATEST(0, `cast_count`.`cnt` - 1)) AS DOUBLE) AS `avg_co_cast`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN (
+                    SELECT `o2`.`comic_id`, COUNT(*) AS `cnt`
+                    FROM `Occurrence` `o2`
+                    JOIN `Item` `i2` ON `o2`.`item_id` = `i2`.`id` AND `i2`.`type` = 'cast'
+                    GROUP BY `o2`.`comic_id`
+                ) `cast_count` ON `cast_count`.`comic_id` = `o`.`comic_id`
+                WHERE `i`.`type` = 'cast'
+                GROUP BY `i`.`id`
+                HAVING COUNT(*) >= 10
+                ORDER BY `avg_co_cast` ASC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct NeverMetRow {
+    pub character1_id: u16,
+    pub character1_name: String,
+    pub character1_appearances: i64,
+    pub character2_id: u16,
+    pub character2_name: String,
+    pub character2_appearances: i64,
+    pub comics_together: Option<i64>,
+}
+
+impl NeverMetRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `c1`.`id` AS `character1_id`,
+                    `c1`.`name` AS `character1_name`,
+                    `c1`.`appearances` AS `character1_appearances`,
+                    `c2`.`id` AS `character2_id`,
+                    `c2`.`name` AS `character2_name`,
+                    `c2`.`appearances` AS `character2_appearances`,
+                    COALESCE(`ca`.`comics_together`, 0) AS `comics_together`
+                FROM (
+                    SELECT `i`.`id`, `i`.`name`, COUNT(*) AS `appearances`
+                    FROM `Item` `i`
+                    JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                    WHERE `i`.`type` = 'cast'
+                    GROUP BY `i`.`id`
+                    ORDER BY `appearances` DESC
+                    LIMIT 100
+                ) `c1`
+                JOIN (
+                    SELECT `i`.`id`, `i`.`name`, COUNT(*) AS `appearances`
+                    FROM `Item` `i`
+                    JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                    WHERE `i`.`type` = 'cast'
+                    GROUP BY `i`.`id`
+                    ORDER BY `appearances` DESC
+                    LIMIT 100
+                ) `c2` ON `c1`.`id` < `c2`.`id`
+                LEFT JOIN (
+                    SELECT
+                        `o1`.`item_id` AS `char1_id`,
+                        `o2`.`item_id` AS `char2_id`,
+                        COUNT(*) AS `comics_together`
+                    FROM `Occurrence` `o1`
+                    JOIN `Occurrence` `o2`
+                        ON `o1`.`comic_id` = `o2`.`comic_id`
+                        AND `o1`.`item_id` < `o2`.`item_id`
+                    GROUP BY `o1`.`item_id`, `o2`.`item_id`
+                ) `ca` ON `ca`.`char1_id` = `c1`.`id` AND `ca`.`char2_id` = `c2`.`id`
+                WHERE COALESCE(`ca`.`comics_together`, 0) <= 2
+                ORDER BY `c1`.`appearances` + `c2`.`appearances` DESC
+                LIMIT 200
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Copy, Clone, Debug, sqlx::FromRow)]
+pub struct PublishTimeRow {
+    pub year: Option<i32>,
+    pub hour: Option<i32>,
+    pub comics: i64,
+}
+
+impl PublishTimeRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    YEAR(`publish_date`) AS `year`,
+                    HOUR(`publish_date`) AS `hour`,
+                    COUNT(*) AS `comics`
+                FROM `Comic`
+                WHERE `publish_date` IS NOT NULL
+                GROUP BY YEAR(`publish_date`), HOUR(`publish_date`)
+                ORDER BY `year`, `hour`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Copy, Clone, Debug, sqlx::FromRow)]
+pub struct ScheduleEvolutionRow {
+    pub year: Option<i32>,
+    pub dow: Option<i32>,
+    pub comics: i64,
+}
+
+impl ScheduleEvolutionRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    YEAR(`publish_date`) AS `year`,
+                    DAYOFWEEK(`publish_date`) AS `dow`,
+                    COUNT(*) AS `comics`
+                FROM `Comic`
+                WHERE `publish_date` IS NOT NULL
+                GROUP BY YEAR(`publish_date`), DAYOFWEEK(`publish_date`)
+                ORDER BY `year`, `dow`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct PublishedDateRow {
+    pub pub_date: Option<String>,
+}
+
+impl PublishedDateRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all_distinct<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT DISTINCT DATE_FORMAT(DATE(`publish_date`), '%Y-%m-%d') AS `pub_date`
+                FROM `Comic`
+                WHERE `publish_date` IS NOT NULL
+                ORDER BY `pub_date`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Copy, Clone, Debug, sqlx::FromRow)]
+pub struct MonthlyHeatmapRow {
+    pub year: Option<i32>,
+    pub month: Option<i32>,
+    pub comics: i64,
+}
+
+impl MonthlyHeatmapRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    YEAR(`publish_date`) AS `year`,
+                    MONTH(`publish_date`) AS `month`,
+                    COUNT(*) AS `comics`
+                FROM `Comic`
+                WHERE `publish_date` IS NOT NULL
+                GROUP BY YEAR(`publish_date`), MONTH(`publish_date`)
+                ORDER BY `year`, `month`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct MilestoneComicRow {
+    pub comic_id: u16,
+    pub title: String,
+    pub pub_date: Option<String>,
+    pub is_guest_comic: u8,
+    pub is_non_canon: u8,
+}
+
+impl MilestoneComicRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `id` AS `comic_id`,
+                    `title`,
+                    DATE_FORMAT(`publish_date`, '%Y-%m-%d') AS `pub_date`,
+                    `is_guest_comic`,
+                    `is_non_canon`
+                FROM `Comic`
+                WHERE `id` = 1
+                   OR (`id` >= 100 AND `id` <= 1000 AND `id` % 100 = 0)
+                   OR (`id` > 1000 AND `id` % 500 = 0)
+                ORDER BY `id`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}

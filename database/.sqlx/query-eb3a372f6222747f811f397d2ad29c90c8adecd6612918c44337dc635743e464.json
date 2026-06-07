@@ -1,0 +1,44 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    YEAR(`publish_date`) AS `year`,\n                    HOUR(`publish_date`) AS `hour`,\n                    COUNT(*) AS `comics`\n                FROM `Comic`\n                WHERE `publish_date` IS NOT NULL\n                GROUP BY YEAR(`publish_date`), HOUR(`publish_date`)\n                ORDER BY `year`, `hour`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "max_size": 4
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "hour",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "max_size": 2
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "comics",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "eb3a372f6222747f811f397d2ad29c90c8adecd6612918c44337dc635743e464"
+}

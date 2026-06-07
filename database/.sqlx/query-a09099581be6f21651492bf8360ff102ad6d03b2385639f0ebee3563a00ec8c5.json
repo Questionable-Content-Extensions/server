@@ -1,0 +1,54 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`name`,\n                    COUNT(*) AS `appearances`,\n                    CAST(AVG(GREATEST(0, `cast_count`.`cnt` - 1)) AS DOUBLE) AS `avg_co_cast`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN (\n                    SELECT `o2`.`comic_id`, COUNT(*) AS `cnt`\n                    FROM `Occurrence` `o2`\n                    JOIN `Item` `i2` ON `o2`.`item_id` = `i2`.`id` AND `i2`.`type` = 'cast'\n                    GROUP BY `o2`.`comic_id`\n                ) `cast_count` ON `cast_count`.`comic_id` = `o`.`comic_id`\n                WHERE `i`.`type` = 'cast'\n                GROUP BY `i`.`id`\n                HAVING COUNT(*) >= 10\n                ORDER BY `avg_co_cast` ASC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "avg_co_cast",
+        "type_info": {
+          "type": "Double",
+          "flags": "BINARY",
+          "max_size": 22
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "a09099581be6f21651492bf8360ff102ad6d03b2385639f0ebee3563a00ec8c5"
+}

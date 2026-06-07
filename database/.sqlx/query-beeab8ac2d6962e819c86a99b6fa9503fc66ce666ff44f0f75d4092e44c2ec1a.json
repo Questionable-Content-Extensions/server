@@ -1,0 +1,44 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    YEAR(`publish_date`) AS `year`,\n                    MONTH(`publish_date`) AS `month`,\n                    COUNT(*) AS `comics`\n                FROM `Comic`\n                WHERE `publish_date` IS NOT NULL\n                GROUP BY YEAR(`publish_date`), MONTH(`publish_date`)\n                ORDER BY `year`, `month`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "max_size": 4
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "month",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "max_size": 2
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "comics",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "beeab8ac2d6962e819c86a99b6fa9503fc66ce666ff44f0f75d4092e44c2ec1a"
+}

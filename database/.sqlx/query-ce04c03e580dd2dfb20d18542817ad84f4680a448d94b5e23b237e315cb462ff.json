@@ -1,0 +1,84 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `c1`.`id` AS `character1_id`,\n                    `c1`.`name` AS `character1_name`,\n                    `c1`.`appearances` AS `character1_appearances`,\n                    `c2`.`id` AS `character2_id`,\n                    `c2`.`name` AS `character2_name`,\n                    `c2`.`appearances` AS `character2_appearances`,\n                    COALESCE(`ca`.`comics_together`, 0) AS `comics_together`\n                FROM (\n                    SELECT `i`.`id`, `i`.`name`, COUNT(*) AS `appearances`\n                    FROM `Item` `i`\n                    JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                    WHERE `i`.`type` = 'cast'\n                    GROUP BY `i`.`id`\n                    ORDER BY `appearances` DESC\n                    LIMIT 100\n                ) `c1`\n                JOIN (\n                    SELECT `i`.`id`, `i`.`name`, COUNT(*) AS `appearances`\n                    FROM `Item` `i`\n                    JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                    WHERE `i`.`type` = 'cast'\n                    GROUP BY `i`.`id`\n                    ORDER BY `appearances` DESC\n                    LIMIT 100\n                ) `c2` ON `c1`.`id` < `c2`.`id`\n                LEFT JOIN (\n                    SELECT\n                        `o1`.`item_id` AS `char1_id`,\n                        `o2`.`item_id` AS `char2_id`,\n                        COUNT(*) AS `comics_together`\n                    FROM `Occurrence` `o1`\n                    JOIN `Occurrence` `o2`\n                        ON `o1`.`comic_id` = `o2`.`comic_id`\n                        AND `o1`.`item_id` < `o2`.`item_id`\n                    GROUP BY `o1`.`item_id`, `o2`.`item_id`\n                ) `ca` ON `ca`.`char1_id` = `c1`.`id` AND `ca`.`char2_id` = `c2`.`id`\n                WHERE COALESCE(`ca`.`comics_together`, 0) <= 2\n                ORDER BY `c1`.`appearances` + `c2`.`appearances` DESC\n                LIMIT 200\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "character1_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "character1_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "character1_appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "character2_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "character2_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "character2_appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "comics_together",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "ce04c03e580dd2dfb20d18542817ad84f4680a448d94b5e23b237e315cb462ff"
+}

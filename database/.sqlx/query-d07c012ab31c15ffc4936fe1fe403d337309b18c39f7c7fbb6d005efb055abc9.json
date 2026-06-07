@@ -1,0 +1,64 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `id` AS `comic_id`,\n                    `title`,\n                    DATE_FORMAT(`publish_date`, '%Y-%m-%d') AS `pub_date`,\n                    `is_guest_comic`,\n                    `is_non_canon`\n                FROM `Comic`\n                WHERE `id` = 1\n                   OR (`id` >= 100 AND `id` <= 1000 AND `id` % 100 = 0)\n                   OR (`id` > 1000 AND `id` % 500 = 0)\n                ORDER BY `id`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "comic_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "pub_date",
+        "type_info": {
+          "type": "VarString",
+          "flags": "",
+          "max_size": 40
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "is_guest_comic",
+        "type_info": {
+          "type": "Bit",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 1
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "is_non_canon",
+        "type_info": {
+          "type": "Bit",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 1
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "d07c012ab31c15ffc4936fe1fe403d337309b18c39f7c7fbb6d005efb055abc9"
+}

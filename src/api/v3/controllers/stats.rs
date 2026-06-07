@@ -2,29 +2,40 @@ use std::collections::HashMap;
 
 use crate::api::v3::models::ItemColor;
 use crate::api::v3::models::stats::{
-    AvgCastPerYear, BestFriendPair, BestFriendResponse, CharacterMeta, CharacterRegularity,
+    AvgCastPerYear, BestFriendPair, BestFriendResponse, BreakoutYear, CastTurnoverYear,
+    CharacterHomeTurfEntry, CharacterMeta, CharacterRegularity, CharacterSeasonEntry,
     CoAppearanceCharacterMeta, CoAppearancePair, CoAppearancesResponse, ComebackCharacter,
     CrowdedComicsResponse, DailyComics, DebutCharacter, DebutYear, DebutsPerYear, EnsembleRatio,
     ItemStats, LocationAffinity, LocationAffinityCharacter, LocationCoOccurrenceEntry,
     LocationCoOccurrencePair, LocationCoOccurrenceResponse, LocationSpotlightResponse,
-    LocationSpotlightYear, MonthlyComics, MostCrowdedComic, PublicationCalendar, PublicationGap,
+    LocationSpotlightYear, LonerEntry, MilestoneComic, MonthlyComics, MonthlyHeatmapEntry,
+    MostCrowdedComic, NeverMetPair, PairEvolutionYear, PublicationCalendar, PublicationGap,
+    PublicationStreak, PublishTimeYear, ScheduleEvolutionYear, SocialHubEntry, TrendingItem,
     YearlyOverview, YearlyRankEntry, YearlySpotlightResponse, YearlySpotlightYear,
 };
 use crate::models::{ComicId, ItemId};
+use crate::util::environment;
 use actix_web::{HttpResponse, Result, error, web};
 use database::DbPool;
 use database::models::stats::{
-    AvgCastPerYearRow as DbAvgCastPerYearRow, CharacterRegularityRow as DbCharacterRegularityRow,
+    AvgCastPerYearRow as DbAvgCastPerYearRow, BreakoutYearRow as DbBreakoutYearRow,
+    CastTurnoverRow as DbCastTurnoverRow, CharacterHomeTurfRow as DbCharacterHomeTurfRow,
+    CharacterRegularityRow as DbCharacterRegularityRow, CharacterSeasonRow as DbCharacterSeasonRow,
     CoAppearance as DbCoAppearance, ComebackCharacterRow as DbComebackCharacterRow,
     CrowdedComicRow as DbCrowdedComicRow, DebutDetailRow as DbDebutDetailRow,
     DebutsPerYearRow as DbDebutsPerYearRow, EnsembleRatioRow as DbEnsembleRatioRow,
     ItemStats as DbItemStats, LocationAffinityRow as DbLocationAffinityRow,
     LocationCoOccurrenceRow as DbLocationCoOccurrenceRow,
-    LocationYearlyAppearanceRow as DbLocationYearlyAppearanceRow,
+    LocationYearlyAppearanceRow as DbLocationYearlyAppearanceRow, LonerIndexRow as DbLonerIndexRow,
+    MilestoneComicRow as DbMilestoneComicRow, MonthlyHeatmapRow as DbMonthlyHeatmapRow,
+    NeverMetRow as DbNeverMetRow, PairEvolutionRow as DbPairEvolutionRow,
     PublicationDowRow as DbPublicationDowRow, PublicationGapRow as DbPublicationGapRow,
-    PublicationMonthRow as DbPublicationMonthRow, YearlyAppearanceRow as DbYearlyAppearanceRow,
-    YearlyOverviewRow as DbYearlyOverviewRow,
+    PublicationMonthRow as DbPublicationMonthRow, PublishTimeRow as DbPublishTimeRow,
+    PublishedDateRow as DbPublishedDateRow, ScheduleEvolutionRow as DbScheduleEvolutionRow,
+    SocialHubRow as DbSocialHubRow, TrendingItemRow as DbTrendingItemRow,
+    YearlyAppearanceRow as DbYearlyAppearanceRow, YearlyOverviewRow as DbYearlyOverviewRow,
 };
+use serde::Deserialize;
 use tracing::{Instrument, info_span};
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
@@ -49,7 +60,24 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(
             web::resource("/location-co-occurrences").route(web::get().to(location_co_occurrences)),
         )
-        .service(web::resource("/best-friend-score").route(web::get().to(best_friend_score)));
+        .service(web::resource("/best-friend-score").route(web::get().to(best_friend_score)))
+        .service(web::resource("/social-hub").route(web::get().to(social_hub)))
+        .service(web::resource("/trending-characters").route(web::get().to(trending_characters)))
+        .service(web::resource("/trending-locations").route(web::get().to(trending_locations)))
+        .service(web::resource("/cast-turnover").route(web::get().to(cast_turnover)))
+        .service(web::resource("/character-seasons").route(web::get().to(character_seasons)))
+        .service(web::resource("/breakout-years").route(web::get().to(breakout_years)))
+        .service(web::resource("/character-home-turf").route(web::get().to(character_home_turf)))
+        .service(web::resource("/pair-evolution").route(web::get().to(pair_evolution)))
+        .service(web::resource("/loner-index").route(web::get().to(loner_index)))
+        .service(web::resource("/never-met").route(web::get().to(never_met)))
+        .service(web::resource("/schedule-evolution").route(web::get().to(schedule_evolution)))
+        .service(
+            web::resource("/publish-time-evolution").route(web::get().to(publish_time_evolution)),
+        )
+        .service(web::resource("/publication-streaks").route(web::get().to(publication_streaks)))
+        .service(web::resource("/monthly-heatmap").route(web::get().to(monthly_heatmap)))
+        .service(web::resource("/milestones").route(web::get().to(milestones)));
 }
 
 #[tracing::instrument(skip(pool))]
@@ -633,6 +661,510 @@ fn build_best_friend_response(rows: Vec<DbCoAppearance>) -> BestFriendResponse {
     }
 
     BestFriendResponse { characters, pairs }
+}
+
+#[tracing::instrument(skip(pool))]
+async fn social_hub(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbSocialHubRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<SocialHubEntry> = rows
+        .into_iter()
+        .map(|r| SocialHubEntry {
+            id: ItemId::from(r.id),
+            name: r.name,
+            appearances: u32::try_from(r.appearances).unwrap_or(u32::MAX),
+            distinct_partners: u32::try_from(r.distinct_partners).unwrap_or(u32::MAX),
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn trending_characters(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbTrendingItemRow::cast_trending(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(build_trending_response(rows)))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn trending_locations(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbTrendingItemRow::location_trending(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(build_trending_response(rows)))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn cast_turnover(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbCastTurnoverRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<CastTurnoverYear> = rows
+        .into_iter()
+        .filter_map(|r| {
+            Some(CastTurnoverYear {
+                year: r.year?,
+                new_chars: u32::try_from(r.new_chars).unwrap_or(u32::MAX),
+                continuing_chars: u32::try_from(r.continuing_chars).unwrap_or(u32::MAX),
+                returning_chars: u32::try_from(r.returning_chars).unwrap_or(u32::MAX),
+                dropped_chars: u32::try_from(r.dropped_chars.unwrap_or(0)).unwrap_or(u32::MAX),
+            })
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn character_seasons(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbCharacterSeasonRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(build_character_seasons_response(rows)))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn breakout_years(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbBreakoutYearRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<BreakoutYear> = rows
+        .into_iter()
+        .filter_map(|r| {
+            let avg = r.avg_per_year.unwrap_or(0.0);
+            let breakout_years = r
+                .breakout_years?
+                .split(',')
+                .filter_map(|s| s.parse::<i32>().ok())
+                .collect();
+            Some(BreakoutYear {
+                id: ItemId::from(r.id),
+                name: r.name,
+                breakout_years,
+                breakout_count: u32::try_from(r.breakout_count).unwrap_or(u32::MAX),
+                avg_per_year: avg,
+                #[expect(clippy::cast_precision_loss, reason = "ratio is approximate by nature")]
+                ratio: if avg > 0.0 {
+                    r.breakout_count as f64 / avg
+                } else {
+                    0.0
+                },
+            })
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn character_home_turf(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbCharacterHomeTurfRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<CharacterHomeTurfEntry> = rows
+        .into_iter()
+        .map(|r| CharacterHomeTurfEntry {
+            character_id: ItemId::from(r.character_id),
+            character_name: r.character_name,
+            location_id: ItemId::from(r.location_id),
+            location_name: r.location_name,
+            comics_together: u32::try_from(r.comics_together).unwrap_or(u32::MAX),
+            character_appearances: u32::try_from(r.character_appearances).unwrap_or(u32::MAX),
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[derive(Debug, Deserialize)]
+struct PairEvolutionQuery {
+    char1: u16,
+    char2: u16,
+}
+
+#[tracing::instrument(skip(pool))]
+async fn pair_evolution(
+    pool: web::Data<DbPool>,
+    query: web::Query<PairEvolutionQuery>,
+) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbPairEvolutionRow::for_pair(&mut *conn, query.char1, query.char2)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<PairEvolutionYear> = rows
+        .into_iter()
+        .filter_map(|r| {
+            Some(PairEvolutionYear {
+                year: r.year?,
+                comics_together: u32::try_from(r.comics_together).unwrap_or(u32::MAX),
+            })
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn loner_index(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbLonerIndexRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<LonerEntry> = rows
+        .into_iter()
+        .map(|r| LonerEntry {
+            id: ItemId::from(r.id),
+            name: r.name,
+            appearances: u32::try_from(r.appearances).unwrap_or(u32::MAX),
+            avg_co_cast: r.avg_co_cast.unwrap_or(0.0),
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn never_met(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbNeverMetRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<NeverMetPair> = rows
+        .into_iter()
+        .map(|r| NeverMetPair {
+            character1_id: ItemId::from(r.character1_id),
+            character1_name: r.character1_name,
+            character1_appearances: u32::try_from(r.character1_appearances).unwrap_or(u32::MAX),
+            character2_id: ItemId::from(r.character2_id),
+            character2_name: r.character2_name,
+            character2_appearances: u32::try_from(r.character2_appearances).unwrap_or(u32::MAX),
+            comics_together: u32::try_from(r.comics_together.unwrap_or(0)).unwrap_or(u32::MAX),
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn schedule_evolution(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbScheduleEvolutionRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(build_schedule_evolution_response(rows)))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn publish_time_evolution(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbPublishTimeRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(build_publish_time_response(rows)))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn publication_streaks(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbPublishedDateRow::all_distinct(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let dates: Vec<String> = rows.into_iter().filter_map(|r| r.pub_date).collect();
+    Ok(HttpResponse::Ok().json(build_publication_streaks(&dates)))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn monthly_heatmap(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbMonthlyHeatmapRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<MonthlyHeatmapEntry> = rows
+        .into_iter()
+        .filter_map(|r| {
+            Some(MonthlyHeatmapEntry {
+                year: r.year?,
+                month: u8::try_from(r.month?).ok()?,
+                comics: u32::try_from(r.comics).unwrap_or(u32::MAX),
+            })
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn milestones(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbMilestoneComicRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<MilestoneComic> = rows
+        .into_iter()
+        .map(|r| MilestoneComic {
+            comic_id: ComicId::from_trusted(r.comic_id),
+            title: r.title,
+            pub_date: r.pub_date,
+            is_guest_comic: r.is_guest_comic != 0,
+            is_non_canon: r.is_non_canon != 0,
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+fn build_trending_response(rows: Vec<DbTrendingItemRow>) -> Vec<TrendingItem> {
+    rows.into_iter()
+        .map(|r| TrendingItem {
+            id: ItemId::from(r.id),
+            name: r.name,
+            total_appearances: u32::try_from(r.total_appearances).unwrap_or(u32::MAX),
+            recent_appearances: u32::try_from(r.recent_appearances).unwrap_or(u32::MAX),
+            career_years: r.career_years.unwrap_or(0.0),
+        })
+        .collect()
+}
+
+fn build_character_seasons_response(rows: Vec<DbCharacterSeasonRow>) -> Vec<CharacterSeasonEntry> {
+    let mut entries: Vec<CharacterSeasonEntry> = Vec::new();
+    for row in rows {
+        let Some(month) = row.month else { continue };
+        let month_idx = usize::try_from(month - 1).unwrap_or(0);
+        if month_idx >= 12 {
+            continue;
+        }
+        match entries.last_mut() {
+            Some(e) if e.id.into_inner() == row.id => {
+                e.monthly[month_idx] = u32::try_from(row.appearances).unwrap_or(u32::MAX);
+            }
+            _ => {
+                let mut monthly = vec![0_u32; 12];
+                monthly[month_idx] = u32::try_from(row.appearances).unwrap_or(u32::MAX);
+                entries.push(CharacterSeasonEntry {
+                    id: ItemId::from(row.id),
+                    name: row.name,
+                    monthly,
+                });
+            }
+        }
+    }
+    entries
+}
+
+fn build_publish_time_response(rows: Vec<DbPublishTimeRow>) -> Vec<PublishTimeYear> {
+    let mut years: Vec<PublishTimeYear> = Vec::new();
+    for row in rows {
+        let (Some(year), Some(hour)) = (row.year, row.hour) else {
+            continue;
+        };
+        let hour_idx = usize::try_from(hour).unwrap_or(0);
+        if hour_idx >= 24 {
+            continue;
+        }
+        match years.last_mut() {
+            Some(y) if y.year == year => {
+                y.hour_counts[hour_idx] = u32::try_from(row.comics).unwrap_or(u32::MAX);
+            }
+            _ => {
+                let mut hour_counts = vec![0_u32; 24];
+                hour_counts[hour_idx] = u32::try_from(row.comics).unwrap_or(u32::MAX);
+                years.push(PublishTimeYear { year, hour_counts });
+            }
+        }
+    }
+    years
+}
+
+fn build_schedule_evolution_response(
+    rows: Vec<DbScheduleEvolutionRow>,
+) -> Vec<ScheduleEvolutionYear> {
+    let mut years: Vec<ScheduleEvolutionYear> = Vec::new();
+    for row in rows {
+        let (Some(year), Some(dow)) = (row.year, row.dow) else {
+            continue;
+        };
+        // DAYOFWEEK: 1=Sun…7=Sat; remap so Mon=0…Sun=6
+        let dow_idx = usize::try_from((dow + 5) % 7).unwrap_or(0);
+        if dow_idx >= 7 {
+            continue;
+        }
+        match years.last_mut() {
+            Some(y) if y.year == year => {
+                y.dow_counts[dow_idx] = u32::try_from(row.comics).unwrap_or(u32::MAX);
+            }
+            _ => {
+                let mut dow_counts = vec![0_u32; 7];
+                dow_counts[dow_idx] = u32::try_from(row.comics).unwrap_or(u32::MAX);
+                years.push(ScheduleEvolutionYear { year, dow_counts });
+            }
+        }
+    }
+    years
+}
+
+#[expect(
+    clippy::many_single_char_names,
+    reason = "julian day formula uses math convention"
+)]
+fn julian_day(s: &str) -> Option<u32> {
+    let mut parts = s.splitn(3, '-');
+    let y: u32 = parts.next()?.parse().ok()?;
+    let m: u32 = parts.next()?.parse().ok()?;
+    let d: u32 = parts.next()?.parse().ok()?;
+    let a = (14 - m) / 12;
+    let yr = y + 4800 - a;
+    let mo = m + 12 * a - 3;
+    Some(d + (153 * mo + 2) / 5 + 365 * yr + yr / 4 - yr / 100 + yr / 400 - 32_045)
+}
+
+fn date_gap_days(date_a: &str, date_b: &str) -> u32 {
+    match (julian_day(date_a), julian_day(date_b)) {
+        (Some(ja), Some(jb)) => jb.saturating_sub(ja),
+        _ => u32::MAX,
+    }
+}
+
+fn is_consecutive_weekday_publication(date_a: &str, date_b: &str) -> bool {
+    match (julian_day(date_a), julian_day(date_b)) {
+        (Some(ja), Some(jb)) => {
+            // JDN % 7: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+            // Friday wraps to Monday with a 3-day calendar gap; all other weekdays advance by 1
+            let expected = if ja % 7 == 4 { ja + 3 } else { ja + 1 };
+            jb == expected
+        }
+        _ => false,
+    }
+}
+
+fn build_publication_streaks(dates: &[String]) -> Vec<PublicationStreak> {
+    if dates.is_empty() {
+        return Vec::new();
+    }
+
+    let mut streaks: Vec<PublicationStreak> = Vec::new();
+    let mut streak_start = dates[0].clone();
+    let mut streak_end = dates[0].clone();
+    let mut days_in_streak: u32 = 1;
+
+    for i in 1..dates.len() {
+        if is_consecutive_weekday_publication(&dates[i - 1], &dates[i]) {
+            streak_end.clone_from(&dates[i]);
+            days_in_streak += 1;
+        } else {
+            let calendar_days = date_gap_days(&streak_start, &streak_end) + 1;
+            streaks.push(PublicationStreak {
+                streak_start: streak_start.clone(),
+                streak_end: streak_end.clone(),
+                days_with_comics: days_in_streak,
+                calendar_days,
+            });
+            streak_start.clone_from(&dates[i]);
+            streak_end.clone_from(&dates[i]);
+            days_in_streak = 1;
+        }
+    }
+    let calendar_days = date_gap_days(&streak_start, &streak_end) + 1;
+    streaks.push(PublicationStreak {
+        streak_start,
+        streak_end,
+        days_with_comics: days_in_streak,
+        calendar_days,
+    });
+
+    streaks.sort_by_key(|s| std::cmp::Reverse(s.days_with_comics));
+    streaks.truncate(20);
+    streaks
 }
 
 fn build_location_affinity_response(rows: Vec<DbLocationAffinityRow>) -> Vec<LocationAffinity> {

@@ -1,0 +1,44 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    YEAR(`publish_date`) AS `year`,\n                    DAYOFWEEK(`publish_date`) AS `dow`,\n                    COUNT(*) AS `comics`\n                FROM `Comic`\n                WHERE `publish_date` IS NOT NULL\n                GROUP BY YEAR(`publish_date`), DAYOFWEEK(`publish_date`)\n                ORDER BY `year`, `dow`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "max_size": 4
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "dow",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "max_size": 1
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "comics",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "a9ca5c4d8dbbe6a5da955d62c00b1f5a9f4f0a6205d16dde8df0659cc384c88b"
+}

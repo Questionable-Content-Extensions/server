@@ -27,8 +27,9 @@ const MONTH_NAMES = [
     'Dec',
 ];
 
-// MySQL DAYOFWEEK: 1=Sunday, 2=Monday, ..., 7=Saturday
-const DOW_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// MySQL DAYOFWEEK: 1=Sunday, 2=Monday, ..., 7=Saturday — ordered Mon-first
+const DOW_ORDER = [2, 3, 4, 5, 6, 7, 1];
+const DOW_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 interface BarProps {
     labels: string[];
@@ -121,8 +122,7 @@ export default function PublicationCalendarPage() {
         (m) => data.monthly.find((r) => r.month === m)?.comics ?? 0,
     );
 
-    const allDows = Array.from({ length: 7 }, (_, i) => i + 1);
-    const dowCounts = allDows.map(
+    const dowCounts = DOW_ORDER.map(
         (d) => data.daily.find((r) => r.dow === d)?.comics ?? 0,
     );
 

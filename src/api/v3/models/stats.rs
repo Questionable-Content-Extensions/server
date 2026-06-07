@@ -275,3 +275,145 @@ pub struct BestFriendResponse {
     pub characters: HashMap<u16, CoAppearanceCharacterMeta>,
     pub pairs: Vec<BestFriendPair>,
 }
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SocialHubEntry {
+    pub id: ItemId,
+    pub name: String,
+    pub appearances: u32,
+    pub distinct_partners: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TrendingItem {
+    pub id: ItemId,
+    pub name: String,
+    pub total_appearances: u32,
+    pub recent_appearances: u32,
+    pub career_years: f64,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CastTurnoverYear {
+    pub year: i32,
+    pub new_chars: u32,
+    pub continuing_chars: u32,
+    pub returning_chars: u32,
+    pub dropped_chars: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CharacterSeasonEntry {
+    pub id: ItemId,
+    pub name: String,
+    pub monthly: Vec<u32>,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct BreakoutYear {
+    pub id: ItemId,
+    pub name: String,
+    pub breakout_years: Vec<i32>,
+    pub breakout_count: u32,
+    pub avg_per_year: f64,
+    pub ratio: f64,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CharacterHomeTurfEntry {
+    pub character_id: ItemId,
+    pub character_name: String,
+    pub location_id: ItemId,
+    pub location_name: String,
+    pub comics_together: u32,
+    pub character_appearances: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PairEvolutionYear {
+    pub year: i32,
+    pub comics_together: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LonerEntry {
+    pub id: ItemId,
+    pub name: String,
+    pub appearances: u32,
+    pub avg_co_cast: f64,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct NeverMetPair {
+    pub character1_id: ItemId,
+    pub character1_name: String,
+    pub character1_appearances: u32,
+    pub character2_id: ItemId,
+    pub character2_name: String,
+    pub character2_appearances: u32,
+    pub comics_together: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PublishTimeYear {
+    pub year: i32,
+    pub hour_counts: Vec<u32>,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ScheduleEvolutionYear {
+    pub year: i32,
+    pub dow_counts: Vec<u32>,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PublicationStreak {
+    pub streak_start: String,
+    pub streak_end: String,
+    pub days_with_comics: u32,
+    pub calendar_days: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct MonthlyHeatmapEntry {
+    pub year: i32,
+    pub month: u8,
+    pub comics: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct MilestoneComic {
+    pub comic_id: ComicId,
+    pub title: String,
+    pub pub_date: Option<String>,
+    pub is_guest_comic: bool,
+    pub is_non_canon: bool,
+}

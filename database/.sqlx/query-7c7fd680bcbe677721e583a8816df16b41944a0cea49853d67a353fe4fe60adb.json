@@ -1,0 +1,64 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                WITH `char_yr` AS (\n                    SELECT DISTINCT YEAR(`c`.`publish_date`) AS `yr`, `o`.`item_id`\n                    FROM `Occurrence` `o`\n                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`\n                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                    WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL\n                ),\n                `char_first` AS (\n                    SELECT `item_id`, MIN(`yr`) AS `first_yr`\n                    FROM `char_yr`\n                    GROUP BY `item_id`\n                )\n                SELECT\n                    `cur`.`yr` AS `year`,\n                    COUNT(CASE WHEN `first`.`first_yr` = `cur`.`yr` THEN 1 END) AS `new_chars`,\n                    COUNT(CASE WHEN `first`.`first_yr` < `cur`.`yr` AND `prev`.`item_id` IS NOT NULL THEN 1 END) AS `continuing_chars`,\n                    COUNT(CASE WHEN `first`.`first_yr` < `cur`.`yr` AND `prev`.`item_id` IS NULL THEN 1 END) AS `returning_chars`,\n                    (\n                        SELECT COUNT(DISTINCT `p`.`item_id`)\n                        FROM `char_yr` `p`\n                        WHERE `p`.`yr` = `cur`.`yr` - 1\n                          AND NOT EXISTS (\n                            SELECT 1 FROM `char_yr` `n`\n                            WHERE `n`.`item_id` = `p`.`item_id` AND `n`.`yr` = `cur`.`yr`\n                          )\n                    ) AS `dropped_chars`\n                FROM `char_yr` `cur`\n                JOIN `char_first` `first` ON `first`.`item_id` = `cur`.`item_id`\n                LEFT JOIN `char_yr` `prev`\n                    ON `prev`.`item_id` = `cur`.`item_id` AND `prev`.`yr` = `cur`.`yr` - 1\n                GROUP BY `cur`.`yr`\n                ORDER BY `cur`.`yr`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "new_chars",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "continuing_chars",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "returning_chars",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "dropped_chars",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "7c7fd680bcbe677721e583a8816df16b41944a0cea49853d67a353fe4fe60adb"
+}
