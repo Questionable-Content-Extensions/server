@@ -1,21 +1,21 @@
 import type { ItemStats } from '../../../bindings/ItemStats';
 import ItemStatsTable from './ItemStatsTable';
 
-interface LocationStatsProps {
+interface LocationDebutsProps {
     sharedData?: ItemStats[] | null;
     sharedError?: string | null;
 }
 
-export default function LocationStats({
+export default function LocationDebuts({
     sharedData,
     sharedError,
-}: LocationStatsProps) {
+}: LocationDebutsProps) {
     return (
         <ItemStatsTable
             endpoint="/api/v3/stats/locations"
-            title="Location Stats"
-            description="All locations ranked by total number of comic appearances."
-            sortBy="appearances"
+            title="Location Debuts"
+            description="All locations in order of first appearance."
+            sortBy="firstComic"
             sharedData={sharedData}
             sharedError={sharedError}
         />

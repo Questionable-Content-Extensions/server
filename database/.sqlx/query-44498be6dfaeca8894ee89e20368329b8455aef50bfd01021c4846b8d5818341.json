@@ -1,0 +1,44 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `first_app`.`year`,\n                    COUNT(CASE WHEN `i`.`type` = 'cast' THEN 1 END) AS `cast_debuts`,\n                    COUNT(CASE WHEN `i`.`type` = 'location' THEN 1 END) AS `location_debuts`\n                FROM (\n                    SELECT `o`.`item_id`, YEAR(MIN(`c`.`publish_date`)) AS `year`\n                    FROM `Occurrence` `o`\n                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`\n                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                    WHERE `c`.`publish_date` IS NOT NULL\n                      AND `i`.`type` IN ('cast', 'location')\n                    GROUP BY `o`.`item_id`\n                ) `first_app`\n                JOIN `Item` `i` ON `first_app`.`item_id` = `i`.`id`\n                GROUP BY `first_app`.`year`\n                ORDER BY `first_app`.`year`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "cast_debuts",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "location_debuts",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "44498be6dfaeca8894ee89e20368329b8455aef50bfd01021c4846b8d5818341"
+}

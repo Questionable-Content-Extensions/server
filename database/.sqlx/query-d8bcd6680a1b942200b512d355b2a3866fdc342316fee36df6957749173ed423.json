@@ -1,0 +1,34 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT DAYOFWEEK(`publish_date`) AS `dow`, COUNT(*) AS `comics`\n                FROM `Comic`\n                WHERE `publish_date` IS NOT NULL\n                GROUP BY `dow`\n                ORDER BY `dow`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "dow",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "max_size": 1
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "comics",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "d8bcd6680a1b942200b512d355b2a3866fdc342316fee36df6957749173ed423"
+}

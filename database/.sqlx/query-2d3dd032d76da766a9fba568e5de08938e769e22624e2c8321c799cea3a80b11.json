@@ -1,0 +1,44 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `yc`.`year`,\n                    COUNT(*) AS `total_cast`,\n                    COUNT(CASE WHEN `fd`.`debut_year` = `yc`.`year` THEN 1 END) AS `new_cast`\n                FROM (\n                    SELECT YEAR(`c`.`publish_date`) AS `year`, `o`.`item_id`\n                    FROM `Occurrence` `o`\n                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`\n                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                    WHERE `c`.`publish_date` IS NOT NULL AND `i`.`type` = 'cast'\n                    GROUP BY YEAR(`c`.`publish_date`), `o`.`item_id`\n                ) `yc`\n                JOIN (\n                    SELECT `o`.`item_id`, YEAR(MIN(`c`.`publish_date`)) AS `debut_year`\n                    FROM `Occurrence` `o`\n                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`\n                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                    WHERE `c`.`publish_date` IS NOT NULL AND `i`.`type` = 'cast'\n                    GROUP BY `o`.`item_id`\n                ) `fd` ON `yc`.`item_id` = `fd`.`item_id`\n                GROUP BY `yc`.`year`\n                ORDER BY `yc`.`year`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "total_cast",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "new_cast",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "2d3dd032d76da766a9fba568e5de08938e769e22624e2c8321c799cea3a80b11"
+}

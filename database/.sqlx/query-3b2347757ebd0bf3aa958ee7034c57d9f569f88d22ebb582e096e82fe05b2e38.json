@@ -1,0 +1,84 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `i1`.`id` AS `character1_id`,\n                    `i1`.`name` AS `character1_name`,\n                    `app1`.`total` AS `character1_appearances`,\n                    `i2`.`id` AS `character2_id`,\n                    `i2`.`name` AS `character2_name`,\n                    `app2`.`total` AS `character2_appearances`,\n                    COUNT(*) AS `comics_together`\n                FROM `Occurrence` `o1`\n                JOIN `Occurrence` `o2`\n                    ON `o1`.`comic_id` = `o2`.`comic_id`\n                    AND `o1`.`item_id` < `o2`.`item_id`\n                JOIN `Item` `i1` ON `o1`.`item_id` = `i1`.`id`\n                JOIN `Item` `i2` ON `o2`.`item_id` = `i2`.`id`\n                JOIN (\n                    SELECT `item_id`, COUNT(*) AS `total`\n                    FROM `Occurrence`\n                    GROUP BY `item_id`\n                ) `app1` ON `o1`.`item_id` = `app1`.`item_id`\n                JOIN (\n                    SELECT `item_id`, COUNT(*) AS `total`\n                    FROM `Occurrence`\n                    GROUP BY `item_id`\n                ) `app2` ON `o2`.`item_id` = `app2`.`item_id`\n                WHERE `i1`.`type` = 'cast' AND `i2`.`type` = 'cast'\n                GROUP BY `o1`.`item_id`, `o2`.`item_id`\n                ORDER BY `comics_together` DESC\n                LIMIT 100\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "character1_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "character1_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "character1_appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "character2_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "character2_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "character2_appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "comics_together",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "3b2347757ebd0bf3aa958ee7034c57d9f569f88d22ebb582e096e82fe05b2e38"
+}
