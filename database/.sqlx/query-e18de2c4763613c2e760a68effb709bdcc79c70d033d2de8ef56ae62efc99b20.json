@@ -1,0 +1,44 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    YEAR(MIN(`c`.`publish_date`)) AS `year`,\n                    `i`.`id`,\n                    `i`.`name`\n                FROM `Occurrence` `o`\n                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`\n                JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL\n                GROUP BY `i`.`id`\n                ORDER BY `year`, `i`.`name`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "max_size": 4
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "e18de2c4763613c2e760a68effb709bdcc79c70d033d2de8ef56ae62efc99b20"
+}

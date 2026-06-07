@@ -1,0 +1,44 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `gaps`.`before_comic`,\n                    `gaps`.`after_comic`,\n                    `gaps`.`gap_days`\n                FROM (\n                    SELECT\n                        `c`.`id` AS `before_comic`,\n                        LEAD(`c`.`id`) OVER (ORDER BY `c`.`publish_date`, `c`.`id`) AS `after_comic`,\n                        DATEDIFF(\n                            LEAD(`c`.`publish_date`) OVER (ORDER BY `c`.`publish_date`, `c`.`id`),\n                            `c`.`publish_date`\n                        ) AS `gap_days`\n                    FROM `Comic` `c`\n                    WHERE `c`.`publish_date` IS NOT NULL\n                ) `gaps`\n                WHERE `gaps`.`gap_days` IS NOT NULL AND `gaps`.`gap_days` > 6\n                ORDER BY `gaps`.`gap_days` DESC\n                LIMIT 20\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "before_comic",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "after_comic",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "gap_days",
+        "type_info": {
+          "type": "Long",
+          "flags": "",
+          "max_size": 8
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "df54175aaf2071819d26ced1cda3104ba4b1357038b16ab4a71a58c1b6f4b12a"
+}

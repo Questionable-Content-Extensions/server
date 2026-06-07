@@ -2,17 +2,26 @@ import { useEffect, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 
 import type { ItemStats } from '../../../bindings/ItemStats';
+import BestFriendScore from './BestFriendScore';
 import CharacterDebuts from './CharacterDebuts';
 import CharacterLongevity from './CharacterLongevity';
 import CharacterRankings from './CharacterRankings';
+import CharacterRegularity from './CharacterRegularity';
 import CoAppearances from './CoAppearances';
 import ComebackCharacters from './ComebackCharacters';
+import DebutClusters from './DebutClusters';
 import DebutsPerYear from './DebutsPerYear';
+import EnsembleRatio from './EnsembleRatio';
 import LocationAffinity from './LocationAffinity';
+import LocationCoOccurrences from './LocationCoOccurrences';
 import LocationDebuts from './LocationDebuts';
 import LocationStats from './LocationStats';
+import LocationYearlySpotlight from './LocationYearlySpotlight';
+import MostCrowdedComics from './MostCrowdedComics';
 import OneHitWonders from './OneHitWonders';
 import PublicationCalendar from './PublicationCalendar';
+import PublicationGaps from './PublicationGaps';
+import RetiredCharacters from './RetiredCharacters';
 import YearlyOverview from './YearlyOverview';
 import YearlySpotlight from './YearlySpotlight';
 
@@ -39,32 +48,69 @@ function TabLink({ to, children }: TabLinkProps) {
     );
 }
 
+interface NavRowProps {
+    label: string;
+    children: React.ReactNode;
+}
+
+function NavRow({ label, children }: NavRowProps) {
+    return (
+        <div className="flex items-center gap-1 border-b border-gray-200 last:border-b-0">
+            <span className="w-32 shrink-0 text-xs font-semibold text-gray-400 uppercase tracking-wide px-2">
+                {label}
+            </span>
+            <div className="flex gap-1 flex-wrap">{children}</div>
+        </div>
+    );
+}
+
 function StatsNav() {
     return (
-        <nav className="border-b border-gray-200 mb-6">
-            <div className="flex gap-1 flex-wrap">
-                <TabLink to="/stats">Character Rankings</TabLink>
-                <TabLink to="/stats/locations">Location Stats</TabLink>
-                <TabLink to="/stats/debuts">Character Debuts</TabLink>
-                <TabLink to="/stats/location-debuts">Location Debuts</TabLink>
-                <TabLink to="/stats/longevity">Character Longevity</TabLink>
+        <nav className="mb-6 border border-gray-200 rounded-md divide-y divide-gray-200">
+            <NavRow label="Characters">
+                <TabLink to="/stats">Rankings</TabLink>
+                <TabLink to="/stats/debuts">Debuts</TabLink>
+                <TabLink to="/stats/longevity">Longevity</TabLink>
                 <TabLink to="/stats/one-hit-wonders">One-Hit Wonders</TabLink>
-                <TabLink to="/stats/co-appearances">
-                    Who Appears Together
-                </TabLink>
-                <TabLink to="/stats/location-affinity">
-                    Location Affinity
-                </TabLink>
-                <TabLink to="/stats/yearly-spotlight">Yearly Spotlight</TabLink>
-                <TabLink to="/stats/yearly-overview">Yearly Overview</TabLink>
-                <TabLink to="/stats/debuts-per-year">Debuts Per Year</TabLink>
-                <TabLink to="/stats/publication-calendar">
-                    Publication Calendar
-                </TabLink>
                 <TabLink to="/stats/comeback-characters">
                     Comeback Characters
                 </TabLink>
-            </div>
+                <TabLink to="/stats/retired-characters">
+                    Retired Characters
+                </TabLink>
+                <TabLink to="/stats/character-regularity">Regularity</TabLink>
+            </NavRow>
+            <NavRow label="Locations">
+                <TabLink to="/stats/locations">Location Stats</TabLink>
+                <TabLink to="/stats/location-debuts">Debuts</TabLink>
+                <TabLink to="/stats/location-yearly-spotlight">
+                    Spotlight
+                </TabLink>
+                <TabLink to="/stats/location-co-occurrences">
+                    Co-Occurrences
+                </TabLink>
+                <TabLink to="/stats/location-affinity">Affinity</TabLink>
+            </NavRow>
+            <NavRow label="Relationships">
+                <TabLink to="/stats/co-appearances">
+                    Who Appears Together
+                </TabLink>
+                <TabLink to="/stats/best-friend-score">
+                    Best Friend Score
+                </TabLink>
+                <TabLink to="/stats/ensemble-ratio">Ensemble Ratio</TabLink>
+            </NavRow>
+            <NavRow label="Publication & Time">
+                <TabLink to="/stats/yearly-spotlight">Yearly Spotlight</TabLink>
+                <TabLink to="/stats/yearly-overview">Yearly Overview</TabLink>
+                <TabLink to="/stats/debuts-per-year">Debuts Per Year</TabLink>
+                <TabLink to="/stats/debut-clusters">Debut Clusters</TabLink>
+                <TabLink to="/stats/publication-calendar">
+                    Publication Calendar
+                </TabLink>
+                {/* <TabLink to="/stats/publication-gaps">Publication Gaps</TabLink> */}
+                <TabLink to="/stats/crowded-comics">Crowded Comics</TabLink>
+            </NavRow>
         </nav>
     );
 }
@@ -179,6 +225,32 @@ export default function StatsLayout() {
                 <Route
                     path="comeback-characters"
                     element={<ComebackCharacters />}
+                />
+                <Route path="crowded-comics" element={<MostCrowdedComics />} />
+                <Route
+                    path="retired-characters"
+                    element={
+                        <RetiredCharacters
+                            sharedData={castData}
+                            sharedError={castError}
+                        />
+                    }
+                />
+                <Route
+                    path="location-yearly-spotlight"
+                    element={<LocationYearlySpotlight />}
+                />
+                <Route path="publication-gaps" element={<PublicationGaps />} />
+                <Route path="best-friend-score" element={<BestFriendScore />} />
+                <Route path="debut-clusters" element={<DebutClusters />} />
+                <Route path="ensemble-ratio" element={<EnsembleRatio />} />
+                <Route
+                    path="character-regularity"
+                    element={<CharacterRegularity />}
+                />
+                <Route
+                    path="location-co-occurrences"
+                    element={<LocationCoOccurrences />}
                 />
             </Routes>
         </div>

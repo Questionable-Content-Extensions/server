@@ -23,8 +23,11 @@ function OneHitSection({ title, items }: SectionProps) {
                     <thead>
                         <tr className="border-b border-gray-200 text-left text-gray-600">
                             <th className="py-2 pr-4 font-medium">Name</th>
+                            <th className="py-2 pr-4 font-medium text-right">
+                                Appearances
+                            </th>
                             <th className="py-2 font-medium text-right">
-                                Comic
+                                First Comic
                             </th>
                         </tr>
                     </thead>
@@ -36,6 +39,9 @@ function OneHitSection({ title, items }: SectionProps) {
                             >
                                 <td className="py-2 pr-4 font-medium text-gray-900">
                                     {row.name}
+                                </td>
+                                <td className="py-2 pr-4 text-right text-gray-700">
+                                    {row.appearances}
                                 </td>
                                 <td className="py-2 text-right">
                                     <a
@@ -63,6 +69,7 @@ interface OneHitWondersProps {
     locationsError: string | null;
 }
 
+const ONE_HIT_WONDER_THRESHOLD = 10;
 export default function OneHitWonders({
     castData,
     castError,
@@ -70,11 +77,17 @@ export default function OneHitWonders({
     locationsError,
 }: OneHitWondersProps) {
     const castWonders = useMemo(
-        () => castData?.filter((r) => r.appearances === 1) ?? null,
+        () =>
+            castData
+                ?.filter((r) => r.appearances <= ONE_HIT_WONDER_THRESHOLD)
+                .sort((a, b) => a.appearances - b.appearances) ?? null,
         [castData],
     );
     const locationWonders = useMemo(
-        () => locationsData?.filter((r) => r.appearances === 1) ?? null,
+        () =>
+            locationsData
+                ?.filter((r) => r.appearances <= ONE_HIT_WONDER_THRESHOLD)
+                .sort((a, b) => a.appearances - b.appearances) ?? null,
         [locationsData],
     );
 
@@ -95,8 +108,8 @@ export default function OneHitWonders({
                 One-Hit Wonders
             </h2>
             <p className="text-sm text-gray-500 mb-4">
-                Characters and locations that appeared in exactly one comic.{' '}
-                {total} total.
+                Characters and locations that appeared in{' '}
+                {ONE_HIT_WONDER_THRESHOLD} or fewer comics. {total} total.
             </p>
             <OneHitSection
                 title={`Characters (${castWonders.length})`}

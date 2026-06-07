@@ -1,0 +1,34 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `c`.`id` AS `comic_id`,\n                    COUNT(`i`.`id`) AS `cast_count`\n                FROM `Comic` `c`\n                JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`\n                JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                WHERE `i`.`type` = 'cast'\n                GROUP BY `c`.`id`\n                ORDER BY `cast_count` DESC\n                LIMIT 25\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "comic_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "cast_count",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "01917b802c49943c088f93b9c1bbcf63821b990510b035847f0ae1e9054ae5c6"
+}

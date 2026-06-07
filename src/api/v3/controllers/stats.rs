@@ -2,18 +2,26 @@ use std::collections::HashMap;
 
 use crate::api::v3::models::ItemColor;
 use crate::api::v3::models::stats::{
-    CharacterMeta, CoAppearanceCharacterMeta, CoAppearancePair, CoAppearancesResponse,
-    ComebackCharacter, DailyComics, DebutsPerYear, ItemStats, LocationAffinity,
-    LocationAffinityCharacter, MonthlyComics, PublicationCalendar, YearlyOverview, YearlyRankEntry,
-    YearlySpotlightResponse, YearlySpotlightYear,
+    AvgCastPerYear, BestFriendPair, BestFriendResponse, CharacterMeta, CharacterRegularity,
+    CoAppearanceCharacterMeta, CoAppearancePair, CoAppearancesResponse, ComebackCharacter,
+    CrowdedComicsResponse, DailyComics, DebutCharacter, DebutYear, DebutsPerYear, EnsembleRatio,
+    ItemStats, LocationAffinity, LocationAffinityCharacter, LocationCoOccurrenceEntry,
+    LocationCoOccurrencePair, LocationCoOccurrenceResponse, LocationSpotlightResponse,
+    LocationSpotlightYear, MonthlyComics, MostCrowdedComic, PublicationCalendar, PublicationGap,
+    YearlyOverview, YearlyRankEntry, YearlySpotlightResponse, YearlySpotlightYear,
 };
 use crate::models::{ComicId, ItemId};
 use actix_web::{HttpResponse, Result, error, web};
 use database::DbPool;
 use database::models::stats::{
+    AvgCastPerYearRow as DbAvgCastPerYearRow, CharacterRegularityRow as DbCharacterRegularityRow,
     CoAppearance as DbCoAppearance, ComebackCharacterRow as DbComebackCharacterRow,
-    DebutsPerYearRow as DbDebutsPerYearRow, ItemStats as DbItemStats,
-    LocationAffinityRow as DbLocationAffinityRow, PublicationDowRow as DbPublicationDowRow,
+    CrowdedComicRow as DbCrowdedComicRow, DebutDetailRow as DbDebutDetailRow,
+    DebutsPerYearRow as DbDebutsPerYearRow, EnsembleRatioRow as DbEnsembleRatioRow,
+    ItemStats as DbItemStats, LocationAffinityRow as DbLocationAffinityRow,
+    LocationCoOccurrenceRow as DbLocationCoOccurrenceRow,
+    LocationYearlyAppearanceRow as DbLocationYearlyAppearanceRow,
+    PublicationDowRow as DbPublicationDowRow, PublicationGapRow as DbPublicationGapRow,
     PublicationMonthRow as DbPublicationMonthRow, YearlyAppearanceRow as DbYearlyAppearanceRow,
     YearlyOverviewRow as DbYearlyOverviewRow,
 };
@@ -28,7 +36,20 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(web::resource("/yearly-overview").route(web::get().to(yearly_overview)))
         .service(web::resource("/publication-calendar").route(web::get().to(publication_calendar)))
         .service(web::resource("/comeback-characters").route(web::get().to(comeback_characters)))
-        .service(web::resource("/location-affinity").route(web::get().to(location_affinity)));
+        .service(web::resource("/location-affinity").route(web::get().to(location_affinity)))
+        .service(web::resource("/crowded-comics").route(web::get().to(crowded_comics)))
+        .service(
+            web::resource("/location-yearly-spotlight")
+                .route(web::get().to(location_yearly_spotlight)),
+        )
+        .service(web::resource("/publication-gaps").route(web::get().to(publication_gaps)))
+        .service(web::resource("/debut-clusters").route(web::get().to(debut_clusters)))
+        .service(web::resource("/ensemble-ratio").route(web::get().to(ensemble_ratio)))
+        .service(web::resource("/character-regularity").route(web::get().to(character_regularity)))
+        .service(
+            web::resource("/location-co-occurrences").route(web::get().to(location_co_occurrences)),
+        )
+        .service(web::resource("/best-friend-score").route(web::get().to(best_friend_score)));
 }
 
 #[tracing::instrument(skip(pool))]
@@ -225,6 +246,189 @@ async fn location_affinity(pool: web::Data<DbPool>) -> Result<HttpResponse> {
     Ok(HttpResponse::Ok().json(build_location_affinity_response(rows)))
 }
 
+#[tracing::instrument(skip(pool))]
+async fn crowded_comics(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let comic_rows = DbCrowdedComicRow::top(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let avg_rows = DbAvgCastPerYearRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let top_comics: Vec<MostCrowdedComic> = comic_rows
+        .into_iter()
+        .map(|row| MostCrowdedComic {
+            comic_id: ComicId::from_trusted(row.comic_id),
+            cast_count: u32::try_from(row.cast_count).unwrap_or(u32::MAX),
+        })
+        .collect();
+
+    let avg_per_year: Vec<AvgCastPerYear> = avg_rows
+        .into_iter()
+        .filter_map(|row| {
+            Some(AvgCastPerYear {
+                year: row.year?,
+                avg_cast_size: row.avg_cast_size?,
+            })
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(CrowdedComicsResponse {
+        top_comics,
+        avg_per_year,
+    }))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn location_yearly_spotlight(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbLocationYearlyAppearanceRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(build_location_spotlight_response(rows)))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn publication_gaps(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbPublicationGapRow::top(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<PublicationGap> = rows
+        .into_iter()
+        .filter_map(|row| {
+            Some(PublicationGap {
+                before_comic: ComicId::from_trusted(row.before_comic?),
+                after_comic: ComicId::from_trusted(row.after_comic?),
+                gap_days: u32::try_from(row.gap_days?).unwrap_or(u32::MAX),
+            })
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn debut_clusters(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbDebutDetailRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(build_debut_clusters_response(rows)))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn ensemble_ratio(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbEnsembleRatioRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<EnsembleRatio> = rows
+        .into_iter()
+        .filter_map(|row| {
+            Some(EnsembleRatio {
+                year: row.year?,
+                no_cast: u32::try_from(row.no_cast).unwrap_or(u32::MAX),
+                solo: u32::try_from(row.solo).unwrap_or(u32::MAX),
+                small_group: u32::try_from(row.small_group).unwrap_or(u32::MAX),
+                large_group: u32::try_from(row.large_group).unwrap_or(u32::MAX),
+                total: u32::try_from(row.total).unwrap_or(u32::MAX),
+            })
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn character_regularity(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbCharacterRegularityRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<CharacterRegularity> = rows
+        .into_iter()
+        .filter_map(|row| {
+            Some(CharacterRegularity {
+                id: ItemId::from(row.id),
+                name: row.name,
+                appearances: u32::try_from(row.gap_count + 1).unwrap_or(u32::MAX),
+                avg_gap_days: row.avg_gap_days?,
+                stddev_gap_days: row.stddev_gap_days?,
+            })
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn location_co_occurrences(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbLocationCoOccurrenceRow::top(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(build_location_co_occurrences_response(rows)))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn best_friend_score(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbCoAppearance::top_normalized(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(build_best_friend_response(rows)))
+}
+
 fn item_stats_from_db(row: DbItemStats) -> Option<ItemStats> {
     let (Some(first_comic), Some(last_comic)) = (row.first_comic, row.last_comic) else {
         return None;
@@ -302,6 +506,133 @@ fn build_yearly_spotlight_response(rows: Vec<DbYearlyAppearanceRow>) -> YearlySp
     }
 
     YearlySpotlightResponse { characters, years }
+}
+
+fn build_location_spotlight_response(
+    rows: Vec<DbLocationYearlyAppearanceRow>,
+) -> LocationSpotlightResponse {
+    let mut locations: HashMap<u16, CharacterMeta> = HashMap::new();
+    let mut years: Vec<LocationSpotlightYear> = Vec::new();
+
+    for row in rows {
+        let Some(year) = row.year else { continue };
+
+        match years.last_mut() {
+            Some(spotlight) if spotlight.year == year => {
+                if spotlight.locations.len() < 5 {
+                    locations.entry(row.id).or_insert_with(|| CharacterMeta {
+                        name: row.name,
+                        color: ItemColor(row.color_red, row.color_green, row.color_blue),
+                    });
+                    spotlight.locations.push(YearlyRankEntry {
+                        id: ItemId::from(row.id),
+                        appearances: u32::try_from(row.appearances).unwrap_or(u32::MAX),
+                    });
+                }
+            }
+            _ => {
+                locations.entry(row.id).or_insert_with(|| CharacterMeta {
+                    name: row.name,
+                    color: ItemColor(row.color_red, row.color_green, row.color_blue),
+                });
+                years.push(LocationSpotlightYear {
+                    year,
+                    locations: vec![YearlyRankEntry {
+                        id: ItemId::from(row.id),
+                        appearances: u32::try_from(row.appearances).unwrap_or(u32::MAX),
+                    }],
+                });
+            }
+        }
+    }
+
+    LocationSpotlightResponse { locations, years }
+}
+
+fn build_debut_clusters_response(rows: Vec<DbDebutDetailRow>) -> Vec<DebutYear> {
+    let mut years: Vec<DebutYear> = Vec::new();
+
+    for row in rows {
+        let Some(year) = row.year else { continue };
+
+        match years.last_mut() {
+            Some(dy) if dy.year == year => {
+                dy.characters.push(DebutCharacter {
+                    id: ItemId::from(row.id),
+                    name: row.name,
+                });
+            }
+            _ => {
+                years.push(DebutYear {
+                    year,
+                    characters: vec![DebutCharacter {
+                        id: ItemId::from(row.id),
+                        name: row.name,
+                    }],
+                });
+            }
+        }
+    }
+
+    years
+}
+
+fn build_location_co_occurrences_response(
+    rows: Vec<DbLocationCoOccurrenceRow>,
+) -> LocationCoOccurrenceResponse {
+    let mut locations: HashMap<u16, LocationCoOccurrenceEntry> = HashMap::new();
+    let mut pairs = Vec::with_capacity(rows.len());
+
+    for row in rows {
+        locations
+            .entry(row.location1_id)
+            .or_insert_with(|| LocationCoOccurrenceEntry {
+                id: ItemId::from(row.location1_id),
+                name: row.location1_name.clone(),
+                appearances: u32::try_from(row.location1_appearances).unwrap_or(u32::MAX),
+            });
+        locations
+            .entry(row.location2_id)
+            .or_insert_with(|| LocationCoOccurrenceEntry {
+                id: ItemId::from(row.location2_id),
+                name: row.location2_name.clone(),
+                appearances: u32::try_from(row.location2_appearances).unwrap_or(u32::MAX),
+            });
+        pairs.push(LocationCoOccurrencePair {
+            location1_id: ItemId::from(row.location1_id),
+            location2_id: ItemId::from(row.location2_id),
+            comics_together: u32::try_from(row.comics_together).unwrap_or(u32::MAX),
+        });
+    }
+
+    LocationCoOccurrenceResponse { locations, pairs }
+}
+
+fn build_best_friend_response(rows: Vec<DbCoAppearance>) -> BestFriendResponse {
+    let mut characters: HashMap<u16, CoAppearanceCharacterMeta> = HashMap::new();
+    let mut pairs = Vec::with_capacity(rows.len());
+
+    for row in rows {
+        characters
+            .entry(row.character1_id)
+            .or_insert_with(|| CoAppearanceCharacterMeta {
+                name: row.character1_name.clone(),
+                appearances: u32::try_from(row.character1_appearances).unwrap_or(u32::MAX),
+            });
+        characters
+            .entry(row.character2_id)
+            .or_insert_with(|| CoAppearanceCharacterMeta {
+                name: row.character2_name.clone(),
+                appearances: u32::try_from(row.character2_appearances).unwrap_or(u32::MAX),
+            });
+        pairs.push(BestFriendPair {
+            character1_id: ItemId::from(row.character1_id),
+            character2_id: ItemId::from(row.character2_id),
+            comics_together: u32::try_from(row.comics_together).unwrap_or(u32::MAX),
+        });
+    }
+
+    BestFriendResponse { characters, pairs }
 }
 
 fn build_location_affinity_response(rows: Vec<DbLocationAffinityRow>) -> Vec<LocationAffinity> {
@@ -418,5 +749,163 @@ mod tests {
             .collect();
         let result = build_location_affinity_response(rows);
         assert_eq!(result[0].top_characters.len(), 5);
+    }
+
+    #[test]
+    fn build_location_spotlight_groups_by_year() {
+        let rows = vec![
+            DbLocationYearlyAppearanceRow {
+                year: Some(2020),
+                id: 1,
+                name: "Coffee Shop".to_string(),
+                color_red: 0,
+                color_green: 0,
+                color_blue: 0,
+                appearances: 50,
+            },
+            DbLocationYearlyAppearanceRow {
+                year: Some(2020),
+                id: 2,
+                name: "Bar".to_string(),
+                color_red: 0,
+                color_green: 0,
+                color_blue: 0,
+                appearances: 30,
+            },
+            DbLocationYearlyAppearanceRow {
+                year: Some(2021),
+                id: 1,
+                name: "Coffee Shop".to_string(),
+                color_red: 0,
+                color_green: 0,
+                color_blue: 0,
+                appearances: 60,
+            },
+        ];
+        let result = build_location_spotlight_response(rows);
+        assert_eq!(result.years.len(), 2);
+        assert_eq!(result.years[0].locations.len(), 2);
+        assert_eq!(result.years[1].locations.len(), 1);
+        assert_eq!(result.locations.len(), 2);
+    }
+
+    #[test]
+    fn build_location_spotlight_caps_at_five() {
+        let rows = (1_u16..=7)
+            .map(|i| DbLocationYearlyAppearanceRow {
+                year: Some(2020),
+                id: i,
+                name: format!("Loc{i}"),
+                color_red: 0,
+                color_green: 0,
+                color_blue: 0,
+                appearances: i64::from(100 - i),
+            })
+            .collect();
+        let result = build_location_spotlight_response(rows);
+        assert_eq!(result.years[0].locations.len(), 5);
+    }
+
+    #[test]
+    fn build_debut_clusters_groups_by_year() {
+        let rows = vec![
+            DbDebutDetailRow {
+                year: Some(2005),
+                id: 1,
+                name: "Alice".to_string(),
+            },
+            DbDebutDetailRow {
+                year: Some(2005),
+                id: 2,
+                name: "Bob".to_string(),
+            },
+            DbDebutDetailRow {
+                year: Some(2006),
+                id: 3,
+                name: "Carol".to_string(),
+            },
+        ];
+        let result = build_debut_clusters_response(rows);
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0].year, 2005);
+        assert_eq!(result[0].characters.len(), 2);
+        assert_eq!(result[1].year, 2006);
+        assert_eq!(result[1].characters.len(), 1);
+    }
+
+    #[test]
+    fn build_debut_clusters_skips_null_year() {
+        let rows = vec![
+            DbDebutDetailRow {
+                year: None,
+                id: 1,
+                name: "Alice".to_string(),
+            },
+            DbDebutDetailRow {
+                year: Some(2005),
+                id: 2,
+                name: "Bob".to_string(),
+            },
+        ];
+        let result = build_debut_clusters_response(rows);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].year, 2005);
+    }
+
+    #[test]
+    fn build_location_co_occurrences_deduplicates_locations() {
+        let rows = vec![
+            DbLocationCoOccurrenceRow {
+                location1_id: 1,
+                location1_name: "Coffee Shop".to_string(),
+                location1_appearances: 100,
+                location2_id: 2,
+                location2_name: "Bar".to_string(),
+                location2_appearances: 80,
+                comics_together: 40,
+            },
+            DbLocationCoOccurrenceRow {
+                location1_id: 1,
+                location1_name: "Coffee Shop".to_string(),
+                location1_appearances: 100,
+                location2_id: 3,
+                location2_name: "Park".to_string(),
+                location2_appearances: 60,
+                comics_together: 20,
+            },
+        ];
+        let result = build_location_co_occurrences_response(rows);
+        assert_eq!(result.locations.len(), 3);
+        assert_eq!(result.pairs.len(), 2);
+        assert_eq!(result.locations[&1].name, "Coffee Shop");
+    }
+
+    #[test]
+    fn build_best_friend_deduplicates_characters() {
+        use database::models::stats::CoAppearance as DbCoAppearance;
+        let rows = vec![
+            DbCoAppearance {
+                character1_id: 1,
+                character1_name: "Alice".to_string(),
+                character1_appearances: 100,
+                character2_id: 2,
+                character2_name: "Bob".to_string(),
+                character2_appearances: 80,
+                comics_together: 75,
+            },
+            DbCoAppearance {
+                character1_id: 1,
+                character1_name: "Alice".to_string(),
+                character1_appearances: 100,
+                character2_id: 3,
+                character2_name: "Carol".to_string(),
+                character2_appearances: 50,
+                comics_together: 45,
+            },
+        ];
+        let result = build_best_friend_response(rows);
+        assert_eq!(result.characters.len(), 3);
+        assert_eq!(result.pairs.len(), 2);
+        assert_eq!(result.characters[&1].appearances, 100);
     }
 }

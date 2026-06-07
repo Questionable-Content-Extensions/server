@@ -1,0 +1,74 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `sub`.`pub_year` AS `year`,\n                    COUNT(CASE WHEN `sub`.`cast_count` = 0 THEN 1 END) AS `no_cast`,\n                    COUNT(CASE WHEN `sub`.`cast_count` = 1 THEN 1 END) AS `solo`,\n                    COUNT(CASE WHEN `sub`.`cast_count` BETWEEN 2 AND 4 THEN 1 END) AS `small_group`,\n                    COUNT(CASE WHEN `sub`.`cast_count` >= 5 THEN 1 END) AS `large_group`,\n                    COUNT(*) AS `total`\n                FROM (\n                    SELECT\n                        YEAR(`c`.`publish_date`) AS `pub_year`,\n                        COUNT(`i`.`id`) AS `cast_count`\n                    FROM `Comic` `c`\n                    LEFT JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`\n                    LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id` AND `i`.`type` = 'cast'\n                    WHERE `c`.`publish_date` IS NOT NULL\n                    GROUP BY `c`.`id`, YEAR(`c`.`publish_date`)\n                ) `sub`\n                WHERE `sub`.`pub_year` IS NOT NULL\n                GROUP BY `sub`.`pub_year`\n                ORDER BY `sub`.`pub_year`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "no_cast",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "solo",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "small_group",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "large_group",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "total",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "89718d7a88be31770e4745186e3954446ff605b9329cd306242be8e2ef2e2bc2"
+}

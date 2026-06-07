@@ -31,6 +31,15 @@ export default function LocationAffinityPage() {
         });
     }
 
+    function expandAll() {
+        if (!data) return;
+        setExpanded(new Set(data.map((loc) => loc.locationId)));
+    }
+
+    function collapseAll() {
+        setExpanded(new Set());
+    }
+
     if (error) {
         return <p className="text-red-600">Failed to load data: {error}</p>;
     }
@@ -44,10 +53,28 @@ export default function LocationAffinityPage() {
             <h2 className="text-xl font-semibold text-gray-800 mb-1">
                 Location–Character Affinity
             </h2>
-            <p className="text-sm text-gray-500 mb-4">
-                For each location, the top 5 characters who appear there most.
-                Click a location to expand.
-            </p>
+            <div className="flex items-center gap-4 mb-4">
+                <p className="text-sm text-gray-500">
+                    For each location, the top 5 characters who appear there
+                    most. Click a location to expand.
+                </p>
+                <div className="ml-auto flex gap-2 shrink-0">
+                    <button
+                        type="button"
+                        className="text-xs text-indigo-600 hover:underline"
+                        onClick={expandAll}
+                    >
+                        Expand all
+                    </button>
+                    <button
+                        type="button"
+                        className="text-xs text-indigo-600 hover:underline"
+                        onClick={collapseAll}
+                    >
+                        Collapse all
+                    </button>
+                </div>
+            </div>
             <div className="divide-y divide-gray-100">
                 {data.map((loc) => {
                     const isOpen = expanded.has(loc.locationId);

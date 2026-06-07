@@ -460,3 +460,412 @@ impl LocationAffinityRow {
         .await
     }
 }
+
+#[derive(Clone, Copy, Debug, sqlx::FromRow)]
+pub struct CrowdedComicRow {
+    pub comic_id: u16,
+    pub cast_count: i64,
+}
+
+impl CrowdedComicRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn top<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `c`.`id` AS `comic_id`,
+                    COUNT(`i`.`id`) AS `cast_count`
+                FROM `Comic` `c`
+                JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`
+                JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                WHERE `i`.`type` = 'cast'
+                GROUP BY `c`.`id`
+                ORDER BY `cast_count` DESC
+                LIMIT 25
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Clone, Copy, Debug, sqlx::FromRow)]
+pub struct AvgCastPerYearRow {
+    pub year: Option<i32>,
+    pub avg_cast_size: Option<f64>,
+}
+
+impl AvgCastPerYearRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `sub`.`pub_year` AS `year`,
+                    CAST(AVG(`sub`.`cast_count`) AS DOUBLE) AS `avg_cast_size`
+                FROM (
+                    SELECT
+                        YEAR(`c`.`publish_date`) AS `pub_year`,
+                        COUNT(`i`.`id`) AS `cast_count`
+                    FROM `Comic` `c`
+                    LEFT JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`
+                    LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id` AND `i`.`type` = 'cast'
+                    WHERE `c`.`publish_date` IS NOT NULL
+                    GROUP BY `c`.`id`, YEAR(`c`.`publish_date`)
+                ) `sub`
+                WHERE `sub`.`pub_year` IS NOT NULL
+                GROUP BY `sub`.`pub_year`
+                ORDER BY `sub`.`pub_year`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct LocationYearlyAppearanceRow {
+    pub year: Option<i32>,
+    pub id: u16,
+    pub name: String,
+    pub color_red: u8,
+    pub color_green: u8,
+    pub color_blue: u8,
+    pub appearances: i64,
+}
+
+impl LocationYearlyAppearanceRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    YEAR(`c`.`publish_date`) AS `year`,
+                    `i`.`id`,
+                    `i`.`name`,
+                    `i`.`color_red`,
+                    `i`.`color_green`,
+                    `i`.`color_blue`,
+                    COUNT(*) AS `appearances`
+                FROM `Comic` `c`
+                JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`
+                JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                WHERE `c`.`publish_date` IS NOT NULL AND `i`.`type` = 'location'
+                GROUP BY `year`, `i`.`id`
+                ORDER BY `year`, `appearances` DESC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Clone, Copy, Debug, sqlx::FromRow)]
+pub struct PublicationGapRow {
+    pub before_comic: Option<u16>,
+    pub after_comic: Option<u16>,
+    pub gap_days: Option<i32>,
+}
+
+impl PublicationGapRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn top<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `gaps`.`before_comic`,
+                    `gaps`.`after_comic`,
+                    `gaps`.`gap_days`
+                FROM (
+                    SELECT
+                        `c`.`id` AS `before_comic`,
+                        LEAD(`c`.`id`) OVER (ORDER BY `c`.`publish_date`, `c`.`id`) AS `after_comic`,
+                        DATEDIFF(
+                            LEAD(`c`.`publish_date`) OVER (ORDER BY `c`.`publish_date`, `c`.`id`),
+                            `c`.`publish_date`
+                        ) AS `gap_days`
+                    FROM `Comic` `c`
+                    WHERE `c`.`publish_date` IS NOT NULL
+                ) `gaps`
+                WHERE `gaps`.`gap_days` IS NOT NULL AND `gaps`.`gap_days` > 6
+                ORDER BY `gaps`.`gap_days` DESC
+                LIMIT 20
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct DebutDetailRow {
+    pub year: Option<i32>,
+    pub id: u16,
+    pub name: String,
+}
+
+impl DebutDetailRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    YEAR(MIN(`c`.`publish_date`)) AS `year`,
+                    `i`.`id`,
+                    `i`.`name`
+                FROM `Occurrence` `o`
+                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
+                GROUP BY `i`.`id`
+                ORDER BY `year`, `i`.`name`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Clone, Copy, Debug, sqlx::FromRow)]
+pub struct EnsembleRatioRow {
+    pub year: Option<i32>,
+    pub no_cast: i64,
+    pub solo: i64,
+    pub small_group: i64,
+    pub large_group: i64,
+    pub total: i64,
+}
+
+impl EnsembleRatioRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `sub`.`pub_year` AS `year`,
+                    COUNT(CASE WHEN `sub`.`cast_count` = 0 THEN 1 END) AS `no_cast`,
+                    COUNT(CASE WHEN `sub`.`cast_count` = 1 THEN 1 END) AS `solo`,
+                    COUNT(CASE WHEN `sub`.`cast_count` BETWEEN 2 AND 4 THEN 1 END) AS `small_group`,
+                    COUNT(CASE WHEN `sub`.`cast_count` >= 5 THEN 1 END) AS `large_group`,
+                    COUNT(*) AS `total`
+                FROM (
+                    SELECT
+                        YEAR(`c`.`publish_date`) AS `pub_year`,
+                        COUNT(`i`.`id`) AS `cast_count`
+                    FROM `Comic` `c`
+                    LEFT JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`
+                    LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id` AND `i`.`type` = 'cast'
+                    WHERE `c`.`publish_date` IS NOT NULL
+                    GROUP BY `c`.`id`, YEAR(`c`.`publish_date`)
+                ) `sub`
+                WHERE `sub`.`pub_year` IS NOT NULL
+                GROUP BY `sub`.`pub_year`
+                ORDER BY `sub`.`pub_year`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct CharacterRegularityRow {
+    pub id: u16,
+    pub name: String,
+    pub gap_count: i64,
+    pub avg_gap_days: Option<f64>,
+    pub stddev_gap_days: Option<f64>,
+}
+
+impl CharacterRegularityRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`name`,
+                    COUNT(`g`.`gap_days`) AS `gap_count`,
+                    CAST(AVG(`g`.`gap_days`) AS DOUBLE) AS `avg_gap_days`,
+                    CAST(STDDEV_POP(`g`.`gap_days`) AS DOUBLE) AS `stddev_gap_days`
+                FROM (
+                    SELECT
+                        `o`.`item_id`,
+                        DATEDIFF(
+                            `c`.`publish_date`,
+                            LAG(`c`.`publish_date`) OVER (PARTITION BY `o`.`item_id` ORDER BY `o`.`comic_id`)
+                        ) AS `gap_days`
+                    FROM `Occurrence` `o`
+                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
+                    WHERE `i2`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
+                ) `g`
+                JOIN `Item` `i` ON `g`.`item_id` = `i`.`id`
+                WHERE `g`.`gap_days` IS NOT NULL
+                GROUP BY `g`.`item_id`
+                HAVING COUNT(`g`.`gap_days`) >= 9
+                ORDER BY `stddev_gap_days` ASC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct LocationCoOccurrenceRow {
+    pub location1_id: u16,
+    pub location1_name: String,
+    pub location1_appearances: i64,
+    pub location2_id: u16,
+    pub location2_name: String,
+    pub location2_appearances: i64,
+    pub comics_together: i64,
+}
+
+impl LocationCoOccurrenceRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn top<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `l1`.`id` AS `location1_id`,
+                    `l1`.`name` AS `location1_name`,
+                    `app1`.`total` AS `location1_appearances`,
+                    `l2`.`id` AS `location2_id`,
+                    `l2`.`name` AS `location2_name`,
+                    `app2`.`total` AS `location2_appearances`,
+                    COUNT(*) AS `comics_together`
+                FROM `Occurrence` `ol1`
+                JOIN `Occurrence` `ol2`
+                    ON `ol1`.`comic_id` = `ol2`.`comic_id`
+                    AND `ol1`.`item_id` < `ol2`.`item_id`
+                JOIN `Item` `l1` ON `ol1`.`item_id` = `l1`.`id`
+                JOIN `Item` `l2` ON `ol2`.`item_id` = `l2`.`id`
+                JOIN (
+                    SELECT `item_id`, COUNT(*) AS `total`
+                    FROM `Occurrence`
+                    GROUP BY `item_id`
+                ) `app1` ON `ol1`.`item_id` = `app1`.`item_id`
+                JOIN (
+                    SELECT `item_id`, COUNT(*) AS `total`
+                    FROM `Occurrence`
+                    GROUP BY `item_id`
+                ) `app2` ON `ol2`.`item_id` = `app2`.`item_id`
+                WHERE `l1`.`type` = 'location' AND `l2`.`type` = 'location'
+                GROUP BY `ol1`.`item_id`, `ol2`.`item_id`
+                ORDER BY `comics_together` DESC
+                LIMIT 50
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+impl CoAppearance {
+    /// Returns top 100 character pairs sorted by normalized co-appearance score
+    /// (comics together / min of each character's total appearances).
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn top_normalized<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i1`.`id` AS `character1_id`,
+                    `i1`.`name` AS `character1_name`,
+                    `app1`.`total` AS `character1_appearances`,
+                    `i2`.`id` AS `character2_id`,
+                    `i2`.`name` AS `character2_name`,
+                    `app2`.`total` AS `character2_appearances`,
+                    COUNT(*) AS `comics_together`
+                FROM `Occurrence` `o1`
+                JOIN `Occurrence` `o2`
+                    ON `o1`.`comic_id` = `o2`.`comic_id`
+                    AND `o1`.`item_id` < `o2`.`item_id`
+                JOIN `Item` `i1` ON `o1`.`item_id` = `i1`.`id`
+                JOIN `Item` `i2` ON `o2`.`item_id` = `i2`.`id`
+                JOIN (
+                    SELECT `item_id`, COUNT(*) AS `total`
+                    FROM `Occurrence`
+                    GROUP BY `item_id`
+                ) `app1` ON `o1`.`item_id` = `app1`.`item_id`
+                JOIN (
+                    SELECT `item_id`, COUNT(*) AS `total`
+                    FROM `Occurrence`
+                    GROUP BY `item_id`
+                ) `app2` ON `o2`.`item_id` = `app2`.`item_id`
+                WHERE `i1`.`type` = 'cast' AND `i2`.`type` = 'cast'
+                GROUP BY `o1`.`item_id`, `o2`.`item_id`
+                HAVING COUNT(*) >= 5
+                ORDER BY COUNT(*) / LEAST(`app1`.`total`, `app2`.`total`) DESC
+                LIMIT 100
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
