@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { BreakoutYear } from '../../../bindings/BreakoutYear';
+import type { LocationRegularity } from '../../../bindings/LocationRegularity';
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -11,19 +11,26 @@ import {
     useSortState,
 } from './StatsTable';
 
-type SortKey = 'ratio' | 'count' | 'avg' | 'year' | 'name';
+type SortKey = 'stddev' | 'avg' | 'name' | 'appearances';
 
-export default function BreakoutYears() {
-    const [data, setData] = useState<BreakoutYear[] | null>(null);
+function formatDays(days: number) {
+    if (days >= 30) {
+        return `${(days / 30).toFixed(1)}mo`;
+    }
+    return `${days.toFixed(1)}d`;
+}
+
+export default function LocationRegularityPage() {
+    const [data, setData] = useState<LocationRegularity[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [sort, handleSort] = useSortState<SortKey>('ratio', 'desc');
+    const [sort, handleSort] = useSortState<SortKey>('stddev', 'asc');
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/breakout-years')
+        fetch('/api/v3/stats/location-regularity')
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<BreakoutYear[]>;
+                return r.json() as Promise<LocationRegularity[]>;
             })
             .then(setData)
             .catch((e: unknown) =>
@@ -36,24 +43,25 @@ export default function BreakoutYears() {
         const copy = [...data];
         copy.sort((a, b) => {
             const diff =
-                sort.key === 'ratio'
-                    ? a.ratio - b.ratio
-                    : sort.key === 'count'
-                      ? a.breakoutCount - b.breakoutCount
-                      : sort.key === 'avg'
-                        ? a.avgPerYear - b.avgPerYear
-                        : sort.key === 'year'
-                          ? (a.breakoutYears[0] ?? 0) -
-                            (b.breakoutYears[0] ?? 0)
-                          : a.name.localeCompare(b.name);
+                sort.key === 'stddev'
+                    ? a.stddevGapDays - b.stddevGapDays
+                    : sort.key === 'avg'
+                      ? a.avgGapDays - b.avgGapDays
+                      : sort.key === 'appearances'
+                        ? a.appearances - b.appearances
+                        : a.name.localeCompare(b.name);
             return sort.dir === 'asc' ? diff : -diff;
         });
         return copy;
     }, [data, sort]);
 
-    if (error)
+    if (error) {
         return <p className="text-red-600">Failed to load data: {error}</p>;
-    if (!sorted) return <p className="text-gray-500">Loading…</p>;
+    }
+
+    if (!sorted) {
+        return <p className="text-gray-500">Loading…</p>;
+    }
 
     return (
         <>
@@ -67,16 +75,15 @@ export default function BreakoutYears() {
             )}
             <div>
                 <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                    Breakout Years
+                    Location Regularity
                 </h2>
                 <p className="text-sm text-gray-500 mb-4">
-                    Each character&apos;s best year (highest appearance count),
-                    compared to their career average per year. The ratio shows
-                    how exceptional that year was — a ratio of 3× means they
-                    appeared three times more than an average year. When
-                    multiple years tie for the best count, all are listed. Only
-                    characters with appearances in at least 2 years are
-                    included.
+                    For locations with at least 10 dated appearances, the
+                    standard deviation of days between consecutive appearances.
+                    Low std dev means very consistent; high means bursty or
+                    arc-driven. Click any column header to sort. &ldquo;Dated
+                    appearances&rdquo; counts only comics with a known publish
+                    date.
                 </p>
                 <StatsTable>
                     <thead>
@@ -91,32 +98,25 @@ export default function BreakoutYears() {
                                 Name
                             </SortableHeader>
                             <SortableHeader
-                                sortKey="year"
+                                sortKey="appearances"
                                 sort={sort}
                                 onSort={handleSort}
                             >
-                                Breakout year
-                            </SortableHeader>
-                            <SortableHeader
-                                sortKey="count"
-                                sort={sort}
-                                onSort={handleSort}
-                            >
-                                Count
+                                Dated appearances
                             </SortableHeader>
                             <SortableHeader
                                 sortKey="avg"
                                 sort={sort}
                                 onSort={handleSort}
                             >
-                                Avg/yr
+                                Avg gap
                             </SortableHeader>
                             <SortableHeader
-                                sortKey="ratio"
+                                sortKey="stddev"
                                 sort={sort}
                                 onSort={handleSort}
                             >
-                                Ratio
+                                Std dev
                             </SortableHeader>
                         </StatsTheadRow>
                     </thead>
@@ -137,19 +137,14 @@ export default function BreakoutYears() {
                                         {row.name}
                                     </button>
                                 </td>
-                                <td className="py-2 pr-4 text-right text-gray-500">
-                                    {row.breakoutYears.join(', ')}
+                                <td className="py-2 pr-4 text-right text-gray-700">
+                                    {row.appearances.toLocaleString()}
                                 </td>
-                                <td className="py-2 pr-4 text-right font-medium text-indigo-700">
-                                    {row.breakoutCount.toLocaleString()}
+                                <td className="py-2 pr-4 text-right text-gray-700">
+                                    {formatDays(row.avgGapDays)}
                                 </td>
-                                <td className="py-2 pr-4 text-right text-gray-500">
-                                    {row.avgPerYear.toFixed(1)}
-                                </td>
-                                <td
-                                    className={`py-2 text-right font-medium ${row.ratio >= 3 ? 'text-green-600' : row.ratio >= 2 ? 'text-indigo-700' : 'text-gray-500'}`}
-                                >
-                                    {row.ratio.toFixed(2)}×
+                                <td className="py-2 text-right font-medium text-gray-800">
+                                    {formatDays(row.stddevGapDays)}
                                 </td>
                             </StatsTbodyRow>
                         ))}

@@ -14,14 +14,22 @@ import CharacterRegularity from './CharacterRegularity';
 import CharacterSeasons from './CharacterSeasons';
 import CoAppearances from './CoAppearances';
 import ComebackCharacters from './ComebackCharacters';
-import DebutClusters from './DebutClusters';
+import ComebackLocations from './ComebackLocations';
+import DebutYears from './DebutYears';
 import DebutsPerYear from './DebutsPerYear';
 import EnsembleRatio from './EnsembleRatio';
 import LocationAffinity from './LocationAffinity';
+import LocationAppearanceDistribution from './LocationAppearanceDistribution';
+import LocationBreakoutYears from './LocationBreakoutYears';
 import LocationCoOccurrences from './LocationCoOccurrences';
 import LocationDebuts from './LocationDebuts';
 import LocationLifespan from './LocationLifespan';
+import LocationOneHitWonders from './LocationOneHitWonders';
+import LocationRegularity from './LocationRegularity';
+import LocationSeasons from './LocationSeasons';
+import LocationSocialHub from './LocationSocialHub';
 import LocationStats from './LocationStats';
+import LocationTurnover from './LocationTurnover';
 import LocationYearlySpotlight from './LocationYearlySpotlight';
 import LonerIndex from './LonerIndex';
 import MilestoneTracker from './MilestoneTracker';
@@ -34,11 +42,11 @@ import PublicationCalendar from './PublicationCalendar';
 import PublicationGaps from './PublicationGaps';
 import PublicationStreaks from './PublicationStreaks';
 import RetiredCharacters from './RetiredCharacters';
+import RetiredLocations from './RetiredLocations';
 import ScheduleEvolution from './ScheduleEvolution';
 import SocialHub from './SocialHub';
 import TrendingCharacters from './TrendingCharacters';
 import TrendingLocations from './TrendingLocations';
-import YearlyOverview from './YearlyOverview';
 import YearlySpotlight from './YearlySpotlight';
 
 interface TabLinkProps {
@@ -103,43 +111,59 @@ function StatsNav() {
                 <TabLink to="/stats/appearance-distribution">
                     Appearance Distribution
                 </TabLink>
+                <TabLink to="/stats/yearly-spotlight">Yearly Spotlight</TabLink>
             </NavRow>
             <NavRow label="Locations">
-                <TabLink to="/stats/locations">Location Stats</TabLink>
+                <TabLink to="/stats/locations">Rankings</TabLink>
                 <TabLink to="/stats/location-debuts">Debuts</TabLink>
+                <TabLink to="/stats/location-lifespan">Lifespan</TabLink>
+                <TabLink to="/stats/location-one-hit-wonders">
+                    One-Hit Wonders
+                </TabLink>
+                <TabLink to="/stats/comeback-locations">
+                    Comeback Locations
+                </TabLink>
+                <TabLink to="/stats/retired-locations">
+                    Retired Locations
+                </TabLink>
+                <TabLink to="/stats/location-regularity">Regularity</TabLink>
+                <TabLink to="/stats/location-social-hub">Social Hub</TabLink>
+                <TabLink to="/stats/trending-locations">Trending</TabLink>
+                <TabLink to="/stats/location-turnover">Turnover</TabLink>
+                <TabLink to="/stats/location-seasons">Seasons</TabLink>
+                <TabLink to="/stats/location-breakout-years">
+                    Breakout Years
+                </TabLink>
+                <TabLink to="/stats/location-appearance-distribution">
+                    Appearance Distribution
+                </TabLink>
                 <TabLink to="/stats/location-yearly-spotlight">
-                    Spotlight
+                    Yearly Spotlight
                 </TabLink>
                 <TabLink to="/stats/location-co-occurrences">
                     Co-Occurrences
                 </TabLink>
                 <TabLink to="/stats/location-affinity">Affinity</TabLink>
-                <TabLink to="/stats/location-lifespan">Lifespan</TabLink>
-                <TabLink to="/stats/trending-locations">Trending</TabLink>
             </NavRow>
             <NavRow label="Relationships">
-                <TabLink to="/stats/co-appearances">
-                    Who Appears Together
-                </TabLink>
+                <TabLink to="/stats/co-appearances">Co-Appearances</TabLink>
                 <TabLink to="/stats/best-friend-score">
                     Best Friend Score
                 </TabLink>
-                <TabLink to="/stats/ensemble-ratio">Ensemble Ratio</TabLink>
                 <TabLink to="/stats/character-home-turf">Home Turf</TabLink>
                 <TabLink to="/stats/pair-evolution">Pair Evolution</TabLink>
                 <TabLink to="/stats/loner-index">Loner Index</TabLink>
                 <TabLink to="/stats/never-met">Never Met</TabLink>
             </NavRow>
             <NavRow label="Publication & Time">
-                <TabLink to="/stats/yearly-spotlight">Yearly Spotlight</TabLink>
-                <TabLink to="/stats/yearly-overview">Yearly Overview</TabLink>
                 <TabLink to="/stats/debuts-per-year">Debuts Per Year</TabLink>
-                <TabLink to="/stats/debut-clusters">Debut Clusters</TabLink>
+                <TabLink to="/stats/debut-years">Debut Years</TabLink>
                 <TabLink to="/stats/publication-calendar">
                     Publication Calendar
                 </TabLink>
                 {/* <TabLink to="/stats/publication-gaps">Publication Gaps</TabLink> */}
                 <TabLink to="/stats/crowded-comics">Crowded Comics</TabLink>
+                <TabLink to="/stats/ensemble-ratio">Ensemble Ratio</TabLink>
                 <TabLink to="/stats/schedule-evolution">
                     Schedule Evolution
                 </TabLink>
@@ -243,6 +267,13 @@ export default function StatsLayout() {
                         <OneHitWonders
                             castData={castData}
                             castError={castError}
+                        />
+                    }
+                />
+                <Route
+                    path="location-one-hit-wonders"
+                    element={
+                        <LocationOneHitWonders
                             locationsData={locationsData}
                             locationsError={locationsError}
                         />
@@ -254,7 +285,6 @@ export default function StatsLayout() {
                     element={<LocationAffinity />}
                 />
                 <Route path="yearly-spotlight" element={<YearlySpotlight />} />
-                <Route path="yearly-overview" element={<YearlyOverview />} />
                 <Route path="debuts-per-year" element={<DebutsPerYear />} />
                 <Route
                     path="publication-calendar"
@@ -263,6 +293,10 @@ export default function StatsLayout() {
                 <Route
                     path="comeback-characters"
                     element={<ComebackCharacters />}
+                />
+                <Route
+                    path="comeback-locations"
+                    element={<ComebackLocations />}
                 />
                 <Route path="crowded-comics" element={<MostCrowdedComics />} />
                 <Route
@@ -275,16 +309,29 @@ export default function StatsLayout() {
                     }
                 />
                 <Route
+                    path="retired-locations"
+                    element={
+                        <RetiredLocations
+                            sharedData={locationsData}
+                            sharedError={locationsError}
+                        />
+                    }
+                />
+                <Route
                     path="location-yearly-spotlight"
                     element={<LocationYearlySpotlight />}
                 />
                 <Route path="publication-gaps" element={<PublicationGaps />} />
                 <Route path="best-friend-score" element={<BestFriendScore />} />
-                <Route path="debut-clusters" element={<DebutClusters />} />
+                <Route path="debut-years" element={<DebutYears />} />
                 <Route path="ensemble-ratio" element={<EnsembleRatio />} />
                 <Route
                     path="character-regularity"
                     element={<CharacterRegularity />}
+                />
+                <Route
+                    path="location-regularity"
+                    element={<LocationRegularity />}
                 />
                 <Route
                     path="location-co-occurrences"
@@ -300,7 +347,12 @@ export default function StatsLayout() {
                     path="character-seasons"
                     element={<CharacterSeasons />}
                 />
+                <Route path="location-seasons" element={<LocationSeasons />} />
                 <Route path="breakout-years" element={<BreakoutYears />} />
+                <Route
+                    path="location-breakout-years"
+                    element={<LocationBreakoutYears />}
+                />
                 <Route
                     path="appearance-distribution"
                     element={
@@ -309,6 +361,23 @@ export default function StatsLayout() {
                             castError={castError}
                         />
                     }
+                />
+                <Route
+                    path="location-appearance-distribution"
+                    element={
+                        <LocationAppearanceDistribution
+                            locationsData={locationsData}
+                            locationsError={locationsError}
+                        />
+                    }
+                />
+                <Route
+                    path="location-social-hub"
+                    element={<LocationSocialHub />}
+                />
+                <Route
+                    path="location-turnover"
+                    element={<LocationTurnover />}
                 />
                 <Route
                     path="location-lifespan"

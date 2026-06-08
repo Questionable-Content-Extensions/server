@@ -7,7 +7,7 @@ import YearlyStreamgraph from './YearlyStreamgraph';
 type ChartView = 'bar' | 'stream';
 
 export default function YearlySpotlight() {
-    const [view, setView] = useState<ChartView>('bar');
+    const [view, setView] = useState<ChartView>('stream');
     const [response, setResponse] = useState<YearlySpotlightResponse | null>(
         null,
     );

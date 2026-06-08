@@ -5,13 +5,15 @@ use crate::api::v3::models::stats::{
     AvgCastPerYear, BestFriendPair, BestFriendResponse, BreakoutYear, CastTurnoverYear,
     CharacterHomeTurfEntry, CharacterMeta, CharacterRegularity, CharacterSeasonEntry,
     CoAppearanceCharacterMeta, CoAppearancePair, CoAppearancesResponse, ComebackCharacter,
-    CrowdedComicsResponse, DailyComics, DebutCharacter, DebutYear, DebutsPerYear, EnsembleRatio,
-    HomeTurfLocation, ItemStats, LocationAffinity, LocationAffinityCharacter,
-    LocationCoOccurrenceEntry, LocationCoOccurrencePair, LocationCoOccurrenceResponse,
-    LocationSpotlightResponse, LocationSpotlightYear, LonerEntry, MilestoneComic, MonthlyComics,
-    MonthlyHeatmapEntry, MostCrowdedComic, NeverMetPair, PairEvolutionYear, PublicationCalendar,
-    PublicationGap, PublicationStreak, PublishTimeYear, ScheduleEvolutionYear, SocialHubEntry,
-    TrendingItem, YearlyOverview, YearlyRankEntry, YearlySpotlightResponse, YearlySpotlightYear,
+    ComebackLocation, CrowdedComicsResponse, DailyComics, DebutCharacter, DebutYear, DebutsPerYear,
+    EnsembleRatio, HomeTurfLocation, ItemStats, LocationAffinity, LocationAffinityCharacter,
+    LocationBreakoutYear, LocationCoOccurrenceEntry, LocationCoOccurrencePair,
+    LocationCoOccurrenceResponse, LocationRegularity, LocationSeasonEntry, LocationSocialHubEntry,
+    LocationSpotlightResponse, LocationSpotlightYear, LocationTurnoverYear, LonerEntry,
+    MilestoneComic, MonthlyComics, MonthlyHeatmapEntry, MostCrowdedComic, NeverMetPair,
+    PairEvolutionYear, PublicationCalendar, PublicationGap, PublicationStreak, PublishTimeYear,
+    ScheduleEvolutionYear, SocialHubEntry, TrendingItem, YearlyOverview, YearlyRankEntry,
+    YearlySpotlightResponse, YearlySpotlightYear,
 };
 use crate::models::{ComicId, ItemId};
 use crate::util::environment;
@@ -22,10 +24,14 @@ use database::models::stats::{
     CastTurnoverRow as DbCastTurnoverRow, CharacterHomeTurfRow as DbCharacterHomeTurfRow,
     CharacterRegularityRow as DbCharacterRegularityRow, CharacterSeasonRow as DbCharacterSeasonRow,
     CoAppearance as DbCoAppearance, ComebackCharacterRow as DbComebackCharacterRow,
-    CrowdedComicRow as DbCrowdedComicRow, DebutDetailRow as DbDebutDetailRow,
-    DebutsPerYearRow as DbDebutsPerYearRow, EnsembleRatioRow as DbEnsembleRatioRow,
-    ItemStats as DbItemStats, LocationAffinityRow as DbLocationAffinityRow,
+    ComebackLocationRow as DbComebackLocationRow, CrowdedComicRow as DbCrowdedComicRow,
+    DebutDetailRow as DbDebutDetailRow, DebutsPerYearRow as DbDebutsPerYearRow,
+    EnsembleRatioRow as DbEnsembleRatioRow, ItemStats as DbItemStats,
+    LocationAffinityRow as DbLocationAffinityRow,
+    LocationBreakoutYearRow as DbLocationBreakoutYearRow,
     LocationCoOccurrenceRow as DbLocationCoOccurrenceRow,
+    LocationRegularityRow as DbLocationRegularityRow, LocationSeasonRow as DbLocationSeasonRow,
+    LocationSocialHubRow as DbLocationSocialHubRow, LocationTurnoverRow as DbLocationTurnoverRow,
     LocationYearlyAppearanceRow as DbLocationYearlyAppearanceRow, LonerIndexRow as DbLonerIndexRow,
     MilestoneComicRow as DbMilestoneComicRow, MonthlyHeatmapRow as DbMonthlyHeatmapRow,
     NeverMetRow as DbNeverMetRow, PairEvolutionRow as DbPairEvolutionRow,
@@ -57,6 +63,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(web::resource("/debut-clusters").route(web::get().to(debut_clusters)))
         .service(web::resource("/ensemble-ratio").route(web::get().to(ensemble_ratio)))
         .service(web::resource("/character-regularity").route(web::get().to(character_regularity)))
+        .service(web::resource("/location-regularity").route(web::get().to(location_regularity)))
         .service(
             web::resource("/location-co-occurrences").route(web::get().to(location_co_occurrences)),
         )
@@ -77,7 +84,14 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         )
         .service(web::resource("/publication-streaks").route(web::get().to(publication_streaks)))
         .service(web::resource("/monthly-heatmap").route(web::get().to(monthly_heatmap)))
-        .service(web::resource("/milestones").route(web::get().to(milestones)));
+        .service(web::resource("/milestones").route(web::get().to(milestones)))
+        .service(web::resource("/comeback-locations").route(web::get().to(comeback_locations)))
+        .service(web::resource("/location-seasons").route(web::get().to(location_seasons)))
+        .service(
+            web::resource("/location-breakout-years").route(web::get().to(location_breakout_years)),
+        )
+        .service(web::resource("/location-social-hub").route(web::get().to(location_social_hub)))
+        .service(web::resource("/location-turnover").route(web::get().to(location_turnover)));
 }
 
 #[tracing::instrument(skip(pool))]
@@ -415,6 +429,34 @@ async fn character_regularity(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .into_iter()
         .filter_map(|row| {
             Some(CharacterRegularity {
+                id: ItemId::from(row.id),
+                name: row.name,
+                appearances: u32::try_from(row.gap_count + 1).unwrap_or(u32::MAX),
+                avg_gap_days: row.avg_gap_days?,
+                stddev_gap_days: row.stddev_gap_days?,
+            })
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn location_regularity(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbLocationRegularityRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<LocationRegularity> = rows
+        .into_iter()
+        .filter_map(|row| {
+            Some(LocationRegularity {
                 id: ItemId::from(row.id),
                 name: row.name,
                 appearances: u32::try_from(row.gap_count + 1).unwrap_or(u32::MAX),
@@ -1025,6 +1067,166 @@ fn build_trending_response(rows: Vec<DbTrendingItemRow>) -> Vec<TrendingItem> {
         .collect()
 }
 
+#[tracing::instrument(skip(pool))]
+async fn comeback_locations(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbComebackLocationRow::top(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<ComebackLocation> = rows
+        .into_iter()
+        .filter_map(|row| {
+            Some(ComebackLocation {
+                id: ItemId::from(row.id),
+                name: row.name,
+                last_comic: ComicId::from_trusted(row.last_comic?),
+                return_comic: ComicId::from_trusted(row.return_comic?),
+                gap_days: u32::try_from(row.gap_days?).unwrap_or(u32::MAX),
+            })
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn location_seasons(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbLocationSeasonRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().json(build_location_seasons_response(rows)))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn location_breakout_years(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbLocationBreakoutYearRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<LocationBreakoutYear> = rows
+        .into_iter()
+        .filter_map(|r| {
+            let avg = r.avg_per_year.unwrap_or(0.0);
+            let breakout_years = r
+                .breakout_years?
+                .split(',')
+                .filter_map(|s| s.parse::<i32>().ok())
+                .collect();
+            Some(LocationBreakoutYear {
+                id: ItemId::from(r.id),
+                name: r.name,
+                breakout_years,
+                breakout_count: u32::try_from(r.breakout_count).unwrap_or(u32::MAX),
+                avg_per_year: avg,
+                #[expect(clippy::cast_precision_loss, reason = "ratio is approximate by nature")]
+                ratio: if avg > 0.0 {
+                    r.breakout_count as f64 / avg
+                } else {
+                    0.0
+                },
+            })
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn location_social_hub(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbLocationSocialHubRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<LocationSocialHubEntry> = rows
+        .into_iter()
+        .map(|r| LocationSocialHubEntry {
+            id: ItemId::from(r.id),
+            name: r.name,
+            appearances: u32::try_from(r.appearances).unwrap_or(u32::MAX),
+            distinct_characters: u32::try_from(r.distinct_characters).unwrap_or(u32::MAX),
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+#[tracing::instrument(skip(pool))]
+async fn location_turnover(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbLocationTurnoverRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let result: Vec<LocationTurnoverYear> = rows
+        .into_iter()
+        .filter_map(|r| {
+            Some(LocationTurnoverYear {
+                year: r.year?,
+                new_locations: u32::try_from(r.new_locations).unwrap_or(u32::MAX),
+                continuing_locations: u32::try_from(r.continuing_locations).unwrap_or(u32::MAX),
+                returning_locations: u32::try_from(r.returning_locations).unwrap_or(u32::MAX),
+                dropped_locations: u32::try_from(r.dropped_locations.unwrap_or(0))
+                    .unwrap_or(u32::MAX),
+            })
+        })
+        .collect();
+    Ok(HttpResponse::Ok().json(result))
+}
+
+fn build_location_seasons_response(rows: Vec<DbLocationSeasonRow>) -> Vec<LocationSeasonEntry> {
+    let mut entries: Vec<LocationSeasonEntry> = Vec::new();
+    for row in rows {
+        let Some(month) = row.month else { continue };
+        let month_idx = usize::try_from(month - 1).unwrap_or(0);
+        if month_idx >= 12 {
+            continue;
+        }
+        match entries.last_mut() {
+            Some(e) if e.id.into_inner() == row.id => {
+                e.monthly[month_idx] = u32::try_from(row.appearances).unwrap_or(u32::MAX);
+            }
+            _ => {
+                let mut monthly = vec![0_u32; 12];
+                monthly[month_idx] = u32::try_from(row.appearances).unwrap_or(u32::MAX);
+                entries.push(LocationSeasonEntry {
+                    id: ItemId::from(row.id),
+                    name: row.name,
+                    monthly,
+                });
+            }
+        }
+    }
+    entries
+}
+
 fn build_character_seasons_response(rows: Vec<DbCharacterSeasonRow>) -> Vec<CharacterSeasonEntry> {
     let mut entries: Vec<CharacterSeasonEntry> = Vec::new();
     for row in rows {
@@ -1106,6 +1308,41 @@ fn build_schedule_evolution_response(
     clippy::many_single_char_names,
     reason = "julian day formula uses math convention"
 )]
+fn julian_day_to_str(jd: u32) -> String {
+    // Standard JDN to Gregorian calendar conversion algorithm.
+    let j = i64::from(jd);
+    let n = j + 32044;
+    let g = n / 146_097;
+    let dg = n % 146_097;
+    let c = (dg / 36524 + 1) * 3 / 4;
+    let dc = dg - c * 36524;
+    let b = dc / 1461;
+    let db = dc % 1461;
+    let a = (db / 365 + 1) * 3 / 4;
+    let da = db - a * 365;
+    let y = g * 400 + c * 100 + b * 4 + a;
+    let m = (da * 5 + 308) / 153 - 2;
+    let d = da - (m + 4) * 153 / 5 + 122;
+    let year = y - 4800 + (m + 2) / 12;
+    let month = (m + 2) % 12 + 1;
+    let day = d + 1;
+    format!("{year:04}-{month:02}-{day:02}")
+}
+
+fn next_weekday_after(date: &str) -> Option<String> {
+    let jd = julian_day(date)?;
+    // JDN % 7: 0=Mon, 1=Tue, 2=Wed, 3=Thu, 4=Fri, 5=Sat, 6=Sun
+    let next = match jd % 7 {
+        4 => jd + 3, // Friday -> Monday
+        _ => jd + 1, // Mon-Thu -> next day
+    };
+    Some(julian_day_to_str(next))
+}
+
+#[expect(
+    clippy::many_single_char_names,
+    reason = "julian day formula uses math convention"
+)]
 fn julian_day(s: &str) -> Option<u32> {
     let mut parts = s.splitn(3, '-');
     let y: u32 = parts.next()?.parse().ok()?;
@@ -1152,23 +1389,27 @@ fn build_publication_streaks(dates: &[String]) -> Vec<PublicationStreak> {
             days_in_streak += 1;
         } else {
             let calendar_days = date_gap_days(&streak_start, &streak_end) + 1;
+            let break_date = next_weekday_after(&streak_end);
             streaks.push(PublicationStreak {
                 streak_start: streak_start.clone(),
                 streak_end: streak_end.clone(),
                 days_with_comics: days_in_streak,
                 calendar_days,
+                break_date,
             });
             streak_start.clone_from(&dates[i]);
             streak_end.clone_from(&dates[i]);
             days_in_streak = 1;
         }
     }
+    // The final streak ends at the last known publication date; treat it as ongoing.
     let calendar_days = date_gap_days(&streak_start, &streak_end) + 1;
     streaks.push(PublicationStreak {
         streak_start,
         streak_end,
         days_with_comics: days_in_streak,
         calendar_days,
+        break_date: None,
     });
 
     streaks.sort_by_key(|s| std::cmp::Reverse(s.days_with_comics));
@@ -1419,6 +1660,56 @@ mod tests {
         assert_eq!(result.locations.len(), 3);
         assert_eq!(result.pairs.len(), 2);
         assert_eq!(result.locations[&1].name, "Coffee Shop");
+    }
+
+    #[test]
+    fn julian_day_roundtrip() {
+        let dates = ["2003-11-11", "2023-01-01", "2020-02-29", "2000-12-31"];
+        for &d in &dates {
+            let jd = julian_day(d).expect("valid date");
+            assert_eq!(julian_day_to_str(jd), d, "round-trip failed for {d}");
+        }
+    }
+
+    #[test]
+    fn next_weekday_after_monday_to_tuesday() {
+        assert_eq!(
+            next_weekday_after("2024-01-08"),
+            Some("2024-01-09".to_string())
+        ); // Mon->Tue
+    }
+
+    #[test]
+    fn next_weekday_after_friday_to_monday() {
+        assert_eq!(
+            next_weekday_after("2024-01-12"),
+            Some("2024-01-15".to_string())
+        ); // Fri->Mon
+    }
+
+    #[test]
+    fn build_publication_streaks_sets_break_date_for_ended_streaks() {
+        let dates: Vec<String> = vec![
+            "2024-01-08",
+            "2024-01-09",
+            "2024-01-10", // Mon-Wed streak
+            "2024-01-15",
+            "2024-01-16", // Mon-Tue streak (gap over Fri 12th)
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+        let streaks = build_publication_streaks(&dates);
+        let first = streaks
+            .iter()
+            .find(|s| s.streak_start == "2024-01-08")
+            .unwrap();
+        assert_eq!(first.break_date, Some("2024-01-11".to_string())); // Thu after Wed
+        let second = streaks
+            .iter()
+            .find(|s| s.streak_start == "2024-01-15")
+            .unwrap();
+        assert_eq!(second.break_date, None, "last streak should be ongoing");
     }
 
     #[test]

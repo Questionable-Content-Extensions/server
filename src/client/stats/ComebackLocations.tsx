@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { BreakoutYear } from '../../../bindings/BreakoutYear';
+import type { ComebackLocation } from '../../../bindings/ComebackLocation';
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -8,22 +8,31 @@ import {
     StatsTable,
     StatsTbodyRow,
     StatsTheadRow,
+    comicLink,
     useSortState,
 } from './StatsTable';
 
-type SortKey = 'ratio' | 'count' | 'avg' | 'year' | 'name';
+type SortKey = 'name' | 'lastComic' | 'returnComic' | 'gapDays';
 
-export default function BreakoutYears() {
-    const [data, setData] = useState<BreakoutYear[] | null>(null);
+function formatGap(days: number) {
+    if (days >= 365) {
+        const years = (days / 365).toFixed(1);
+        return `${years}y (${days.toLocaleString()}d)`;
+    }
+    return `${days.toLocaleString()} days`;
+}
+
+export default function ComebackLocations() {
+    const [data, setData] = useState<ComebackLocation[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [sort, handleSort] = useSortState<SortKey>('ratio', 'desc');
+    const [sort, handleSort] = useSortState<SortKey>('gapDays', 'desc');
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/breakout-years')
+        fetch('/api/v3/stats/comeback-locations')
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<BreakoutYear[]>;
+                return r.json() as Promise<ComebackLocation[]>;
             })
             .then(setData)
             .catch((e: unknown) =>
@@ -36,24 +45,25 @@ export default function BreakoutYears() {
         const copy = [...data];
         copy.sort((a, b) => {
             const diff =
-                sort.key === 'ratio'
-                    ? a.ratio - b.ratio
-                    : sort.key === 'count'
-                      ? a.breakoutCount - b.breakoutCount
-                      : sort.key === 'avg'
-                        ? a.avgPerYear - b.avgPerYear
-                        : sort.key === 'year'
-                          ? (a.breakoutYears[0] ?? 0) -
-                            (b.breakoutYears[0] ?? 0)
-                          : a.name.localeCompare(b.name);
+                sort.key === 'name'
+                    ? a.name.localeCompare(b.name)
+                    : sort.key === 'lastComic'
+                      ? a.lastComic - b.lastComic
+                      : sort.key === 'returnComic'
+                        ? a.returnComic - b.returnComic
+                        : a.gapDays - b.gapDays;
             return sort.dir === 'asc' ? diff : -diff;
         });
         return copy;
     }, [data, sort]);
 
-    if (error)
+    if (error) {
         return <p className="text-red-600">Failed to load data: {error}</p>;
-    if (!sorted) return <p className="text-gray-500">Loading…</p>;
+    }
+
+    if (!sorted) {
+        return <p className="text-gray-500">Loading…</p>;
+    }
 
     return (
         <>
@@ -67,16 +77,12 @@ export default function BreakoutYears() {
             )}
             <div>
                 <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                    Breakout Years
+                    Comeback Locations
                 </h2>
                 <p className="text-sm text-gray-500 mb-4">
-                    Each character&apos;s best year (highest appearance count),
-                    compared to their career average per year. The ratio shows
-                    how exceptional that year was — a ratio of 3× means they
-                    appeared three times more than an average year. When
-                    multiple years tie for the best count, all are listed. Only
-                    characters with appearances in at least 2 years are
-                    included.
+                    Locations with the longest gap between two consecutive
+                    appearances — those that disappeared and came back. Top 50
+                    by largest single gap (minimum 90 days).
                 </p>
                 <StatsTable>
                     <thead>
@@ -91,32 +97,25 @@ export default function BreakoutYears() {
                                 Name
                             </SortableHeader>
                             <SortableHeader
-                                sortKey="year"
+                                sortKey="lastComic"
                                 sort={sort}
                                 onSort={handleSort}
                             >
-                                Breakout year
+                                Last seen
                             </SortableHeader>
                             <SortableHeader
-                                sortKey="count"
+                                sortKey="returnComic"
                                 sort={sort}
                                 onSort={handleSort}
                             >
-                                Count
+                                Returned in
                             </SortableHeader>
                             <SortableHeader
-                                sortKey="avg"
+                                sortKey="gapDays"
                                 sort={sort}
                                 onSort={handleSort}
                             >
-                                Avg/yr
-                            </SortableHeader>
-                            <SortableHeader
-                                sortKey="ratio"
-                                sort={sort}
-                                onSort={handleSort}
-                            >
-                                Ratio
+                                Gap
                             </SortableHeader>
                         </StatsTheadRow>
                     </thead>
@@ -137,19 +136,28 @@ export default function BreakoutYears() {
                                         {row.name}
                                     </button>
                                 </td>
-                                <td className="py-2 pr-4 text-right text-gray-500">
-                                    {row.breakoutYears.join(', ')}
+                                <td className="py-2 pr-4 text-right">
+                                    <a
+                                        href={comicLink(row.lastComic)}
+                                        className="text-blue-600 hover:underline"
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        #{row.lastComic}
+                                    </a>
                                 </td>
-                                <td className="py-2 pr-4 text-right font-medium text-indigo-700">
-                                    {row.breakoutCount.toLocaleString()}
+                                <td className="py-2 pr-4 text-right">
+                                    <a
+                                        href={comicLink(row.returnComic)}
+                                        className="text-blue-600 hover:underline"
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        #{row.returnComic}
+                                    </a>
                                 </td>
-                                <td className="py-2 pr-4 text-right text-gray-500">
-                                    {row.avgPerYear.toFixed(1)}
-                                </td>
-                                <td
-                                    className={`py-2 text-right font-medium ${row.ratio >= 3 ? 'text-green-600' : row.ratio >= 2 ? 'text-indigo-700' : 'text-gray-500'}`}
-                                >
-                                    {row.ratio.toFixed(2)}×
+                                <td className="py-2 text-right text-gray-700">
+                                    {formatGap(row.gapDays)}
                                 </td>
                             </StatsTbodyRow>
                         ))}

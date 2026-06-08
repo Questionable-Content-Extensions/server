@@ -9,7 +9,7 @@ import {
 } from 'chart.js';
 import { useEffect, useRef, useState } from 'react';
 
-import type { CharacterSeasonEntry } from '../../../bindings/CharacterSeasonEntry';
+import type { LocationSeasonEntry } from '../../../bindings/LocationSeasonEntry';
 
 Chart.register(
     BarController,
@@ -36,7 +36,7 @@ const MONTH_LABELS = [
 ];
 
 interface ChartProps {
-    entry: CharacterSeasonEntry;
+    entry: LocationSeasonEntry;
 }
 
 function SeasonChart({ entry }: ChartProps) {
@@ -55,7 +55,7 @@ function SeasonChart({ entry }: ChartProps) {
                     {
                         label: 'Appearances',
                         data: entry.monthly,
-                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
                     },
                 ],
             },
@@ -95,15 +95,15 @@ function SeasonChart({ entry }: ChartProps) {
     );
 }
 
-export default function CharacterSeasons() {
-    const [data, setData] = useState<CharacterSeasonEntry[] | null>(null);
+export default function LocationSeasons() {
+    const [data, setData] = useState<LocationSeasonEntry[] | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/character-seasons')
+        fetch('/api/v3/stats/location-seasons')
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<CharacterSeasonEntry[]>;
+                return r.json() as Promise<LocationSeasonEntry[]>;
             })
             .then(setData)
             .catch((e: unknown) =>
@@ -118,12 +118,12 @@ export default function CharacterSeasons() {
     return (
         <div>
             <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                Character Seasons
+                Location Seasons
             </h2>
             <p className="text-sm text-gray-500 mb-6">
-                Monthly appearance distribution for each character — does a
-                character tend to appear more in certain months of the year?
-                Only characters with at least 50 appearances are included.
+                Monthly appearance distribution for each location — does a
+                location tend to appear more in certain months of the year? Only
+                locations with at least 50 appearances are included.
             </p>
             <div className="space-y-8">
                 {data.map((entry) => (

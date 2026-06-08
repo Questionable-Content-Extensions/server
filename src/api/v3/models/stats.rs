@@ -236,6 +236,17 @@ pub struct CharacterRegularity {
 #[derive(Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
+pub struct LocationRegularity {
+    pub id: ItemId,
+    pub name: String,
+    pub appearances: u32,
+    pub avg_gap_days: f64,
+    pub stddev_gap_days: f64,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct LocationCoOccurrenceEntry {
     pub id: ItemId,
     pub name: String,
@@ -332,6 +343,59 @@ pub struct BreakoutYear {
 #[derive(Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
+pub struct ComebackLocation {
+    pub id: ItemId,
+    pub name: String,
+    pub last_comic: ComicId,
+    pub return_comic: ComicId,
+    pub gap_days: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LocationSeasonEntry {
+    pub id: ItemId,
+    pub name: String,
+    pub monthly: Vec<u32>,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LocationBreakoutYear {
+    pub id: ItemId,
+    pub name: String,
+    pub breakout_years: Vec<i32>,
+    pub breakout_count: u32,
+    pub avg_per_year: f64,
+    pub ratio: f64,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LocationSocialHubEntry {
+    pub id: ItemId,
+    pub name: String,
+    pub appearances: u32,
+    pub distinct_characters: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct LocationTurnoverYear {
+    pub year: i32,
+    pub new_locations: u32,
+    pub continuing_locations: u32,
+    pub returning_locations: u32,
+    pub dropped_locations: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct HomeTurfLocation {
     pub location_id: ItemId,
     pub location_name: String,
@@ -403,6 +467,7 @@ pub struct PublicationStreak {
     pub streak_end: String,
     pub days_with_comics: u32,
     pub calendar_days: u32,
+    pub break_date: Option<String>,
 }
 
 #[derive(Debug, Serialize, TS)]

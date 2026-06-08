@@ -74,9 +74,13 @@ export default function TrendingCharacters() {
                     Trending Characters
                 </h2>
                 <p className="text-sm text-gray-500 mb-4">
-                    Characters whose appearances in the last 12 months are high
-                    relative to their historical average per year. A ratio above
-                    1.0× means they are appearing more than usual recently. Only
+                    Characters appearing more frequently in the{' '}
+                    <strong>last 12 months</strong> than their historical
+                    average. &ldquo;Career avg/yr&rdquo; is their total
+                    appearances divided by the number of calendar years they
+                    have been active. &ldquo;Trend ratio&rdquo; is recent
+                    appearances divided by that yearly average — 1.0× means on
+                    pace, 2.0× means appearing twice as often as usual. Only
                     characters with at least 5 career appearances are shown.
                 </p>
                 <StatsTable>

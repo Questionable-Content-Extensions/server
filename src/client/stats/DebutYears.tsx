@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { DebutYear } from '../../../bindings/DebutYear';
 import ItemDetailsModal from './ItemDetailsModal';
 
-export default function DebutClusters() {
+export default function DebutYears() {
     const [data, setData] = useState<DebutYear[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [expanded, setExpanded] = useState<Set<number>>(new Set());
@@ -61,7 +61,7 @@ export default function DebutClusters() {
             )}
             <div>
                 <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                    Character Debut Clusters
+                    Character Debut Years
                 </h2>
                 <div className="flex items-center gap-4 mb-4">
                     <p className="text-sm text-gray-500">

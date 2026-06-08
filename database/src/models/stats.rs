@@ -421,6 +421,109 @@ impl ComebackCharacterRow {
 }
 
 #[derive(Debug, sqlx::FromRow)]
+pub struct ComebackLocationRow {
+    pub id: u16,
+    pub name: String,
+    pub last_comic: Option<u16>,
+    pub return_comic: Option<u16>,
+    pub gap_days: Option<i64>,
+}
+
+impl ComebackLocationRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn top<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`name`,
+                    `g`.`last_comic`,
+                    `g`.`return_comic`,
+                    `mg`.`max_gap_days` AS `gap_days`
+                FROM (
+                    SELECT `item_id`, MAX(`gap_days`) AS `max_gap_days`
+                    FROM (
+                        SELECT
+                            `sub`.`item_id`,
+                            `sub`.`prev_comic` AS `last_comic`,
+                            `sub`.`comic_id` AS `return_comic`,
+                            DATEDIFF(`sub`.`return_date`, `sub`.`prev_date`) AS `gap_days`
+                        FROM (
+                            SELECT
+                                `o`.`item_id`,
+                                `o`.`comic_id`,
+                                `c`.`publish_date` AS `return_date`,
+                                LAG(`o`.`comic_id`) OVER (
+                                    PARTITION BY `o`.`item_id`
+                                    ORDER BY `o`.`comic_id`
+                                ) AS `prev_comic`,
+                                LAG(`c`.`publish_date`) OVER (
+                                    PARTITION BY `o`.`item_id`
+                                    ORDER BY `o`.`comic_id`
+                                ) AS `prev_date`
+                            FROM `Occurrence` `o`
+                            JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                            JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                            WHERE `i`.`type` = 'location'
+                              AND `c`.`publish_date` IS NOT NULL
+                        ) `sub`
+                        WHERE `sub`.`prev_comic` IS NOT NULL
+                    ) `gaps`
+                    GROUP BY `item_id`
+                ) `mg`
+                JOIN (
+                    SELECT `item_id`, `gap_days`,
+                           MIN(`last_comic`) AS `last_comic`,
+                           MIN(`return_comic`) AS `return_comic`
+                    FROM (
+                        SELECT
+                            `sub`.`item_id`,
+                            `sub`.`prev_comic` AS `last_comic`,
+                            `sub`.`comic_id` AS `return_comic`,
+                            DATEDIFF(`sub`.`return_date`, `sub`.`prev_date`) AS `gap_days`
+                        FROM (
+                            SELECT
+                                `o`.`item_id`,
+                                `o`.`comic_id`,
+                                `c`.`publish_date` AS `return_date`,
+                                LAG(`o`.`comic_id`) OVER (
+                                    PARTITION BY `o`.`item_id`
+                                    ORDER BY `o`.`comic_id`
+                                ) AS `prev_comic`,
+                                LAG(`c`.`publish_date`) OVER (
+                                    PARTITION BY `o`.`item_id`
+                                    ORDER BY `o`.`comic_id`
+                                ) AS `prev_date`
+                            FROM `Occurrence` `o`
+                            JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                            JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                            WHERE `i`.`type` = 'location'
+                              AND `c`.`publish_date` IS NOT NULL
+                        ) `sub`
+                        WHERE `sub`.`prev_comic` IS NOT NULL
+                    ) `g_raw`
+                    GROUP BY `item_id`, `gap_days`
+                ) `g` ON `mg`.`item_id` = `g`.`item_id`
+                    AND `mg`.`max_gap_days` = `g`.`gap_days`
+                JOIN `Item` `i` ON `mg`.`item_id` = `i`.`id`
+                WHERE `mg`.`max_gap_days` >= 90
+                ORDER BY `mg`.`max_gap_days` DESC
+                LIMIT 50
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
 pub struct LocationAffinityRow {
     pub location_id: u16,
     pub location_name: String,
@@ -748,6 +851,57 @@ impl CharacterRegularityRow {
                     JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
                     WHERE `i2`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
+                ) `g`
+                JOIN `Item` `i` ON `g`.`item_id` = `i`.`id`
+                WHERE `g`.`gap_days` IS NOT NULL
+                GROUP BY `g`.`item_id`
+                HAVING COUNT(`g`.`gap_days`) >= 9
+                ORDER BY `stddev_gap_days` ASC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct LocationRegularityRow {
+    pub id: u16,
+    pub name: String,
+    pub gap_count: i64,
+    pub avg_gap_days: Option<f64>,
+    pub stddev_gap_days: Option<f64>,
+}
+
+impl LocationRegularityRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`name`,
+                    COUNT(`g`.`gap_days`) AS `gap_count`,
+                    CAST(AVG(`g`.`gap_days`) AS DOUBLE) AS `avg_gap_days`,
+                    CAST(STDDEV_POP(`g`.`gap_days`) AS DOUBLE) AS `stddev_gap_days`
+                FROM (
+                    SELECT
+                        `o`.`item_id`,
+                        DATEDIFF(
+                            `c`.`publish_date`,
+                            LAG(`c`.`publish_date`) OVER (PARTITION BY `o`.`item_id` ORDER BY `o`.`comic_id`)
+                        ) AS `gap_days`
+                    FROM `Occurrence` `o`
+                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
+                    WHERE `i2`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
                 ) `g`
                 JOIN `Item` `i` ON `g`.`item_id` = `i`.`id`
                 WHERE `g`.`gap_days` IS NOT NULL
@@ -1125,7 +1279,7 @@ impl BreakoutYearRow {
                     `i`.`name`,
                     GROUP_CONCAT(DISTINCT `ranked`.`yr` ORDER BY `ranked`.`yr` SEPARATOR ',') AS `breakout_years`,
                     `ranked`.`cnt` AS `breakout_count`,
-                    CAST(SUM(`yr_counts`.`cnt`) AS DOUBLE) / NULLIF(COUNT(DISTINCT `yr_counts`.`yr`), 0) AS `avg_per_year`
+                    CAST(`item_totals`.`total_appearances` AS DOUBLE) / NULLIF(`item_totals`.`active_years`, 0) AS `avg_per_year`
                 FROM (
                     SELECT
                         `o`.`item_id`,
@@ -1142,17 +1296,16 @@ impl BreakoutYearRow {
                 JOIN (
                     SELECT
                         `o`.`item_id`,
-                        YEAR(`c`.`publish_date`) AS `yr`,
-                        COUNT(*) AS `cnt`
+                        COUNT(*) AS `total_appearances`,
+                        COUNT(DISTINCT YEAR(`c`.`publish_date`)) AS `active_years`
                     FROM `Occurrence` `o`
                     JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
                     WHERE `i2`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
-                    GROUP BY `o`.`item_id`, YEAR(`c`.`publish_date`)
-                ) `yr_counts` ON `yr_counts`.`item_id` = `ranked`.`item_id`
-                WHERE `ranked`.`rnk` = 1
-                GROUP BY `ranked`.`item_id`, `ranked`.`cnt`
-                HAVING COUNT(DISTINCT `yr_counts`.`yr`) >= 2
+                    GROUP BY `o`.`item_id`
+                ) `item_totals` ON `item_totals`.`item_id` = `ranked`.`item_id`
+                WHERE `ranked`.`rnk` = 1 AND `item_totals`.`active_years` >= 2
+                GROUP BY `ranked`.`item_id`, `ranked`.`cnt`, `item_totals`.`total_appearances`, `item_totals`.`active_years`
                 ORDER BY `ranked`.`cnt` DESC
             "#,
         )
@@ -1537,6 +1690,217 @@ impl MilestoneComicRow {
                    OR (`id` >= 100 AND `id` <= 1000 AND `id` % 100 = 0)
                    OR (`id` > 1000 AND `id` % 500 = 0)
                 ORDER BY `id`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct LocationSeasonRow {
+    pub id: u16,
+    pub name: String,
+    pub month: Option<i32>,
+    pub appearances: i64,
+}
+
+impl LocationSeasonRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`name`,
+                    MONTH(`c`.`publish_date`) AS `month`,
+                    COUNT(*) AS `appearances`
+                FROM `Item` `i`
+                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
+                  AND `i`.`id` IN (
+                    SELECT `item_id` FROM `Occurrence`
+                    GROUP BY `item_id`
+                    HAVING COUNT(*) >= 50
+                  )
+                GROUP BY `i`.`id`, MONTH(`c`.`publish_date`)
+                ORDER BY `i`.`id`, `month`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct LocationBreakoutYearRow {
+    pub id: u16,
+    pub name: String,
+    pub breakout_years: Option<String>,
+    pub breakout_count: i64,
+    pub avg_per_year: Option<f64>,
+}
+
+impl LocationBreakoutYearRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `ranked`.`item_id` AS `id`,
+                    `i`.`name`,
+                    GROUP_CONCAT(DISTINCT `ranked`.`yr` ORDER BY `ranked`.`yr` SEPARATOR ',') AS `breakout_years`,
+                    `ranked`.`cnt` AS `breakout_count`,
+                    CAST(`item_totals`.`total_appearances` AS DOUBLE) / NULLIF(`item_totals`.`active_years`, 0) AS `avg_per_year`
+                FROM (
+                    SELECT
+                        `o`.`item_id`,
+                        YEAR(`c`.`publish_date`) AS `yr`,
+                        COUNT(*) AS `cnt`,
+                        RANK() OVER (PARTITION BY `o`.`item_id` ORDER BY COUNT(*) DESC) AS `rnk`
+                    FROM `Occurrence` `o`
+                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
+                    WHERE `i2`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
+                    GROUP BY `o`.`item_id`, YEAR(`c`.`publish_date`)
+                ) `ranked`
+                JOIN `Item` `i` ON `i`.`id` = `ranked`.`item_id`
+                JOIN (
+                    SELECT
+                        `o`.`item_id`,
+                        COUNT(*) AS `total_appearances`,
+                        COUNT(DISTINCT YEAR(`c`.`publish_date`)) AS `active_years`
+                    FROM `Occurrence` `o`
+                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
+                    WHERE `i2`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
+                    GROUP BY `o`.`item_id`
+                ) `item_totals` ON `item_totals`.`item_id` = `ranked`.`item_id`
+                WHERE `ranked`.`rnk` = 1 AND `item_totals`.`active_years` >= 2
+                GROUP BY `ranked`.`item_id`, `ranked`.`cnt`, `item_totals`.`total_appearances`, `item_totals`.`active_years`
+                ORDER BY `ranked`.`cnt` DESC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct LocationSocialHubRow {
+    pub id: u16,
+    pub name: String,
+    pub appearances: i64,
+    pub distinct_characters: i64,
+}
+
+impl LocationSocialHubRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`name`,
+                    `app`.`total` AS `appearances`,
+                    COUNT(DISTINCT `o2`.`item_id`) AS `distinct_characters`
+                FROM `Item` `i`
+                JOIN (
+                    SELECT `item_id`, COUNT(*) AS `total`
+                    FROM `Occurrence`
+                    GROUP BY `item_id`
+                ) `app` ON `app`.`item_id` = `i`.`id`
+                JOIN `Occurrence` `o1` ON `o1`.`item_id` = `i`.`id`
+                JOIN `Occurrence` `o2`
+                    ON `o2`.`comic_id` = `o1`.`comic_id`
+                    AND `o2`.`item_id` != `o1`.`item_id`
+                JOIN `Item` `i2` ON `i2`.`id` = `o2`.`item_id` AND `i2`.`type` = 'cast'
+                WHERE `i`.`type` = 'location'
+                GROUP BY `i`.`id`
+                HAVING COUNT(DISTINCT `o2`.`item_id`) > 0
+                ORDER BY `distinct_characters` DESC
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}
+
+#[derive(Copy, Clone, Debug, sqlx::FromRow)]
+pub struct LocationTurnoverRow {
+    pub year: Option<i32>,
+    pub new_locations: i64,
+    pub continuing_locations: i64,
+    pub returning_locations: i64,
+    pub dropped_locations: Option<i64>,
+}
+
+impl LocationTurnoverRow {
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                WITH `loc_yr` AS (
+                    SELECT DISTINCT YEAR(`c`.`publish_date`) AS `yr`, `o`.`item_id`
+                    FROM `Occurrence` `o`
+                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                    WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
+                ),
+                `loc_first` AS (
+                    SELECT `item_id`, MIN(`yr`) AS `first_yr`
+                    FROM `loc_yr`
+                    GROUP BY `item_id`
+                )
+                SELECT
+                    `cur`.`yr` AS `year`,
+                    COUNT(CASE WHEN `first`.`first_yr` = `cur`.`yr` THEN 1 END) AS `new_locations`,
+                    COUNT(CASE WHEN `first`.`first_yr` < `cur`.`yr` AND `prev`.`item_id` IS NOT NULL THEN 1 END) AS `continuing_locations`,
+                    COUNT(CASE WHEN `first`.`first_yr` < `cur`.`yr` AND `prev`.`item_id` IS NULL THEN 1 END) AS `returning_locations`,
+                    (
+                        SELECT COUNT(DISTINCT `p`.`item_id`)
+                        FROM `loc_yr` `p`
+                        WHERE `p`.`yr` = `cur`.`yr` - 1
+                          AND NOT EXISTS (
+                            SELECT 1 FROM `loc_yr` `n`
+                            WHERE `n`.`item_id` = `p`.`item_id` AND `n`.`yr` = `cur`.`yr`
+                          )
+                    ) AS `dropped_locations`
+                FROM `loc_yr` `cur`
+                JOIN `loc_first` `first` ON `first`.`item_id` = `cur`.`item_id`
+                LEFT JOIN `loc_yr` `prev`
+                    ON `prev`.`item_id` = `cur`.`item_id` AND `prev`.`yr` = `cur`.`yr` - 1
+                GROUP BY `cur`.`yr`
+                ORDER BY `cur`.`yr`
             "#,
         )
         .fetch_all(executor)

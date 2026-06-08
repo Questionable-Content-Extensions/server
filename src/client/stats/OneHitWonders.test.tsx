@@ -2,6 +2,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import type { ItemStats } from '../../../bindings/ItemStats';
+import LocationOneHitWonders from './LocationOneHitWonders';
 import OneHitWonders from './OneHitWonders';
 
 afterEach(cleanup);
@@ -24,11 +25,34 @@ const LOCATIONS: ItemStats[] = [
 
 describe('OneHitWonders', () => {
     it('shows loading state when cast data is null', () => {
+        render(<OneHitWonders castData={null} castError={null} />);
+        expect(screen.getByText('Loading…')).toBeInTheDocument();
+    });
+
+    it('shows error state', () => {
+        render(<OneHitWonders castData={null} castError="HTTP 500" />);
+        expect(
+            screen.getByText('Failed to load data: HTTP 500'),
+        ).toBeInTheDocument();
+    });
+
+    it('shows only cast members within threshold', () => {
+        render(<OneHitWonders castData={CAST} castError={null} />);
+        expect(screen.getByText('Bob')).toBeInTheDocument();
+        expect(screen.queryByText('Alice')).not.toBeInTheDocument();
+    });
+
+    it('shows correct total count', () => {
+        render(<OneHitWonders castData={CAST} castError={null} />);
+        expect(screen.getByText(/1 total/)).toBeInTheDocument();
+    });
+});
+
+describe('LocationOneHitWonders', () => {
+    it('shows loading state when locations data is null', () => {
         render(
-            <OneHitWonders
-                castData={null}
-                castError={null}
-                locationsData={LOCATIONS}
+            <LocationOneHitWonders
+                locationsData={null}
                 locationsError={null}
             />,
         );
@@ -37,11 +61,9 @@ describe('OneHitWonders', () => {
 
     it('shows error state', () => {
         render(
-            <OneHitWonders
-                castData={null}
-                castError="HTTP 500"
+            <LocationOneHitWonders
                 locationsData={null}
-                locationsError={null}
+                locationsError="HTTP 500"
             />,
         );
         expect(
@@ -49,30 +71,24 @@ describe('OneHitWonders', () => {
         ).toBeInTheDocument();
     });
 
-    it('shows only items with exactly 1 appearance', () => {
+    it('shows only locations within threshold', () => {
         render(
-            <OneHitWonders
-                castData={CAST}
-                castError={null}
+            <LocationOneHitWonders
                 locationsData={LOCATIONS}
                 locationsError={null}
             />,
         );
-        expect(screen.getByText('Bob')).toBeInTheDocument();
         expect(screen.getByText('Alley')).toBeInTheDocument();
-        expect(screen.queryByText('Alice')).not.toBeInTheDocument();
         expect(screen.queryByText('Coffee Shop')).not.toBeInTheDocument();
     });
 
     it('shows correct total count', () => {
         render(
-            <OneHitWonders
-                castData={CAST}
-                castError={null}
+            <LocationOneHitWonders
                 locationsData={LOCATIONS}
                 locationsError={null}
             />,
         );
-        expect(screen.getByText(/2 total/)).toBeInTheDocument();
+        expect(screen.getByText(/1 total/)).toBeInTheDocument();
     });
 });

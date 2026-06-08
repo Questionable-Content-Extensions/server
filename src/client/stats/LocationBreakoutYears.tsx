@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { BreakoutYear } from '../../../bindings/BreakoutYear';
+import type { LocationBreakoutYear } from '../../../bindings/LocationBreakoutYear';
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -13,17 +13,17 @@ import {
 
 type SortKey = 'ratio' | 'count' | 'avg' | 'year' | 'name';
 
-export default function BreakoutYears() {
-    const [data, setData] = useState<BreakoutYear[] | null>(null);
+export default function LocationBreakoutYears() {
+    const [data, setData] = useState<LocationBreakoutYear[] | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [sort, handleSort] = useSortState<SortKey>('ratio', 'desc');
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/breakout-years')
+        fetch('/api/v3/stats/location-breakout-years')
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<BreakoutYear[]>;
+                return r.json() as Promise<LocationBreakoutYear[]>;
             })
             .then(setData)
             .catch((e: unknown) =>
@@ -67,15 +67,15 @@ export default function BreakoutYears() {
             )}
             <div>
                 <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                    Breakout Years
+                    Location Breakout Years
                 </h2>
                 <p className="text-sm text-gray-500 mb-4">
-                    Each character&apos;s best year (highest appearance count),
+                    Each location&apos;s best year (highest appearance count),
                     compared to their career average per year. The ratio shows
-                    how exceptional that year was — a ratio of 3× means they
-                    appeared three times more than an average year. When
-                    multiple years tie for the best count, all are listed. Only
-                    characters with appearances in at least 2 years are
+                    how exceptional that year was — a ratio of 3× means the
+                    location appeared three times more than an average year.
+                    When multiple years tie for the best count, all are listed.
+                    Only locations with appearances in at least 2 years are
                     included.
                 </p>
                 <StatsTable>

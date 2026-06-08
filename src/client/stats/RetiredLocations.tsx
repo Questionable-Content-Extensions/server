@@ -21,15 +21,15 @@ type SortKey =
 
 const THRESHOLD_OPTIONS = [100, 250, 500, 1000, 2000] as const;
 
-interface RetiredCharactersProps {
+interface RetiredLocationsProps {
     sharedData?: ItemStats[] | null;
     sharedError?: string | null;
 }
 
-export default function RetiredCharacters({
+export default function RetiredLocations({
     sharedData,
     sharedError,
-}: RetiredCharactersProps) {
+}: RetiredLocationsProps) {
     const [threshold, setThreshold] = useState<number>(500);
     const [sort, handleSort] = useSortState<SortKey>('lastComic', 'asc');
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -79,14 +79,14 @@ export default function RetiredCharacters({
             )}
             <div>
                 <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                    Retired Characters
+                    Retired Locations
                 </h2>
                 <div className="flex items-center gap-4 mb-4">
                     <p className="text-sm text-gray-500">
-                        Characters who haven't appeared in the last{' '}
+                        Locations that haven't appeared in the last{' '}
                         <strong>{threshold.toLocaleString()}</strong> comics
                         (before #{(maxComic - threshold).toLocaleString()}).{' '}
-                        {retired.length} character
+                        {retired.length} location
                         {retired.length !== 1 ? 's' : ''} found.
                     </p>
                     <div className="ml-auto flex items-center gap-2 shrink-0">

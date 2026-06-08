@@ -12,6 +12,12 @@ import {
 
 type SortKey = 'days' | 'calendar' | 'start';
 
+function formatBreakDate(breakDate: string | null): string {
+    if (breakDate === null) return 'Ongoing';
+    const date = new Date(`${breakDate}T00:00:00`);
+    return `Missed ${date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}`;
+}
+
 export default function PublicationStreaks() {
     const [data, setData] = useState<PublicationStreak[] | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -88,6 +94,7 @@ export default function PublicationStreaks() {
                         >
                             Calendar days
                         </SortableHeader>
+                        <StaticHeader align="left">Ended</StaticHeader>
                     </StatsTheadRow>
                 </thead>
                 <tbody>
@@ -103,8 +110,13 @@ export default function PublicationStreaks() {
                             <td className="py-2 pr-4 text-right font-medium text-indigo-700">
                                 {row.daysWithComics.toLocaleString()}
                             </td>
-                            <td className="py-2 text-right text-gray-500">
+                            <td className="py-2 pr-4 text-right text-gray-500">
                                 {row.calendarDays.toLocaleString()}
+                            </td>
+                            <td
+                                className={`py-2 text-sm ${row.breakDate === null ? 'font-medium text-green-600' : 'text-gray-500'}`}
+                            >
+                                {formatBreakDate(row.breakDate)}
                             </td>
                         </StatsTbodyRow>
                     ))}

@@ -110,9 +110,9 @@ export default function BestFriendScore() {
                 <p className="text-sm text-gray-500 mb-4">
                     Character pairs ranked by normalized co-appearance: comics
                     together divided by the smaller character's total
-                    appearances. A score near 100% means the less common
-                    character almost always appears with the other. Requires at
-                    least 5 shared comics.
+                    appearances. The closer to 100% the score is, the more often
+                    the less common character appears with the other. Requires
+                    at least 5 shared comics.
                 </p>
                 <StatsTable>
                     <thead>

@@ -20,7 +20,7 @@ function adaptToYearlySpotlight(
 }
 
 export default function LocationYearlySpotlight() {
-    const [view, setView] = useState<ChartView>('bar');
+    const [view, setView] = useState<ChartView>('stream');
     const [response, setResponse] = useState<LocationSpotlightResponse | null>(
         null,
     );

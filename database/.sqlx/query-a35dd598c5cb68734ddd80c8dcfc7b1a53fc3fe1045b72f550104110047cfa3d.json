@@ -1,0 +1,64 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`name`,\n                    `g`.`last_comic`,\n                    `g`.`return_comic`,\n                    `mg`.`max_gap_days` AS `gap_days`\n                FROM (\n                    SELECT `item_id`, MAX(`gap_days`) AS `max_gap_days`\n                    FROM (\n                        SELECT\n                            `sub`.`item_id`,\n                            `sub`.`prev_comic` AS `last_comic`,\n                            `sub`.`comic_id` AS `return_comic`,\n                            DATEDIFF(`sub`.`return_date`, `sub`.`prev_date`) AS `gap_days`\n                        FROM (\n                            SELECT\n                                `o`.`item_id`,\n                                `o`.`comic_id`,\n                                `c`.`publish_date` AS `return_date`,\n                                LAG(`o`.`comic_id`) OVER (\n                                    PARTITION BY `o`.`item_id`\n                                    ORDER BY `o`.`comic_id`\n                                ) AS `prev_comic`,\n                                LAG(`c`.`publish_date`) OVER (\n                                    PARTITION BY `o`.`item_id`\n                                    ORDER BY `o`.`comic_id`\n                                ) AS `prev_date`\n                            FROM `Occurrence` `o`\n                            JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`\n                            JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                            WHERE `i`.`type` = 'location'\n                              AND `c`.`publish_date` IS NOT NULL\n                        ) `sub`\n                        WHERE `sub`.`prev_comic` IS NOT NULL\n                    ) `gaps`\n                    GROUP BY `item_id`\n                ) `mg`\n                JOIN (\n                    SELECT `item_id`, `gap_days`,\n                           MIN(`last_comic`) AS `last_comic`,\n                           MIN(`return_comic`) AS `return_comic`\n                    FROM (\n                        SELECT\n                            `sub`.`item_id`,\n                            `sub`.`prev_comic` AS `last_comic`,\n                            `sub`.`comic_id` AS `return_comic`,\n                            DATEDIFF(`sub`.`return_date`, `sub`.`prev_date`) AS `gap_days`\n                        FROM (\n                            SELECT\n                                `o`.`item_id`,\n                                `o`.`comic_id`,\n                                `c`.`publish_date` AS `return_date`,\n                                LAG(`o`.`comic_id`) OVER (\n                                    PARTITION BY `o`.`item_id`\n                                    ORDER BY `o`.`comic_id`\n                                ) AS `prev_comic`,\n                                LAG(`c`.`publish_date`) OVER (\n                                    PARTITION BY `o`.`item_id`\n                                    ORDER BY `o`.`comic_id`\n                                ) AS `prev_date`\n                            FROM `Occurrence` `o`\n                            JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`\n                            JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                            WHERE `i`.`type` = 'location'\n                              AND `c`.`publish_date` IS NOT NULL\n                        ) `sub`\n                        WHERE `sub`.`prev_comic` IS NOT NULL\n                    ) `g_raw`\n                    GROUP BY `item_id`, `gap_days`\n                ) `g` ON `mg`.`item_id` = `g`.`item_id`\n                    AND `mg`.`max_gap_days` = `g`.`gap_days`\n                JOIN `Item` `i` ON `mg`.`item_id` = `i`.`id`\n                WHERE `mg`.`max_gap_days` >= 90\n                ORDER BY `mg`.`max_gap_days` DESC\n                LIMIT 50\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "last_comic",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "return_comic",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "gap_days",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "",
+          "max_size": 8
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "a35dd598c5cb68734ddd80c8dcfc7b1a53fc3fe1045b72f550104110047cfa3d"
+}

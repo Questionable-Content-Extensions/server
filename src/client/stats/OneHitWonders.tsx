@@ -14,7 +14,7 @@ import {
 type SortKey = 'name' | 'appearances' | 'firstComic';
 
 interface SectionProps {
-    title: string;
+    title?: string;
     items: ItemStats[];
     onItemClick: (id: number) => void;
 }
@@ -39,9 +39,11 @@ function OneHitSection({ title, items, onItemClick }: SectionProps) {
     if (items.length === 0) return null;
     return (
         <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-700 mb-3">
-                {title}
-            </h3>
+            {title && (
+                <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                    {title}
+                </h3>
+            )}
             <StatsTable>
                 <thead>
                     <StatsTheadRow>
@@ -107,46 +109,28 @@ function OneHitSection({ title, items, onItemClick }: SectionProps) {
 interface OneHitWondersProps {
     castData: ItemStats[] | null;
     castError: string | null;
-    locationsData: ItemStats[] | null;
-    locationsError: string | null;
 }
 
 const ONE_HIT_WONDER_THRESHOLD = 10;
 export default function OneHitWonders({
     castData,
     castError,
-    locationsData,
-    locationsError,
 }: OneHitWondersProps) {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-    const castWonders = useMemo(
+    const wonders = useMemo(
         () =>
             castData?.filter(
                 (r) => r.appearances <= ONE_HIT_WONDER_THRESHOLD,
             ) ?? null,
         [castData],
     );
-    const locationWonders = useMemo(
-        () =>
-            locationsData?.filter(
-                (r) => r.appearances <= ONE_HIT_WONDER_THRESHOLD,
-            ) ?? null,
-        [locationsData],
-    );
 
-    const error = castError ?? locationsError;
-    if (error) {
-        return <p className="text-red-600">Failed to load data: {error}</p>;
+    if (castError) {
+        return <p className="text-red-600">Failed to load data: {castError}</p>;
     }
 
-    if (!castWonders || !locationWonders) {
+    if (!wonders) {
         return <p className="text-gray-500">Loading…</p>;
-    }
-
-    const total = castWonders.length + locationWonders.length;
-
-    function handleItemClick(id: number) {
-        setSelectedItemId(id);
     }
 
     return (
@@ -164,18 +148,15 @@ export default function OneHitWonders({
                     One-Hit Wonders
                 </h2>
                 <p className="text-sm text-gray-500 mb-4">
-                    Characters and locations that appeared in{' '}
-                    {ONE_HIT_WONDER_THRESHOLD} or fewer comics. {total} total.
+                    Characters that appeared in {ONE_HIT_WONDER_THRESHOLD} or
+                    fewer comics. {wonders.length} total.
                 </p>
                 <OneHitSection
-                    title={`Characters (${castWonders.length})`}
-                    items={castWonders}
-                    onItemClick={handleItemClick}
-                />
-                <OneHitSection
-                    title={`Locations (${locationWonders.length})`}
-                    items={locationWonders}
-                    onItemClick={handleItemClick}
+                    title=""
+                    items={wonders}
+                    onItemClick={(id) => {
+                        setSelectedItemId(id);
+                    }}
                 />
             </div>
         </>

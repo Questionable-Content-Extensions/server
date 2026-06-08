@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { SocialHubEntry } from '../../../bindings/SocialHubEntry';
+import type { LocationSocialHubEntry } from '../../../bindings/LocationSocialHubEntry';
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -11,19 +11,19 @@ import {
     useSortState,
 } from './StatsTable';
 
-type SortKey = 'partners' | 'appearances' | 'name';
+type SortKey = 'characters' | 'appearances' | 'name';
 
-export default function SocialHub() {
-    const [data, setData] = useState<SocialHubEntry[] | null>(null);
+export default function LocationSocialHub() {
+    const [data, setData] = useState<LocationSocialHubEntry[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [sort, handleSort] = useSortState<SortKey>('partners', 'desc');
+    const [sort, handleSort] = useSortState<SortKey>('characters', 'desc');
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/social-hub')
+        fetch('/api/v3/stats/location-social-hub')
             .then((r) => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<SocialHubEntry[]>;
+                return r.json() as Promise<LocationSocialHubEntry[]>;
             })
             .then(setData)
             .catch((e: unknown) =>
@@ -36,8 +36,8 @@ export default function SocialHub() {
         const copy = [...data];
         copy.sort((a, b) => {
             const diff =
-                sort.key === 'partners'
-                    ? a.distinctPartners - b.distinctPartners
+                sort.key === 'characters'
+                    ? a.distinctCharacters - b.distinctCharacters
                     : sort.key === 'appearances'
                       ? a.appearances - b.appearances
                       : a.name.localeCompare(b.name);
@@ -46,8 +46,8 @@ export default function SocialHub() {
         return copy;
     }, [data, sort]);
 
-    const maxPartners = useMemo(
-        () => (data ? Math.max(...data.map((d) => d.distinctPartners)) : 1),
+    const maxCharacters = useMemo(
+        () => (data ? Math.max(...data.map((d) => d.distinctCharacters)) : 1),
         [data],
     );
 
@@ -67,17 +67,15 @@ export default function SocialHub() {
             )}
             <div>
                 <h2 className="text-xl font-semibold text-gray-800 mb-1">
-                    Social Hub
+                    Location Social Hub
                 </h2>
                 <p className="text-sm text-gray-500 mb-4">
-                    Characters ranked by the number of distinct other cast
-                    members they have appeared with. A character with a high hub
-                    score connects the most unique people in the comic&apos;s
-                    social graph. Requires at least one shared comic with
-                    another cast member. &ldquo;Relative reach&rdquo; is a
-                    percentage showing how many distinct partners this character
-                    has compared to the most-connected character (100% = tied
-                    for first place).
+                    Locations ranked by the number of distinct cast members that
+                    have appeared there. A location with a high hub score is a
+                    meeting point for the widest variety of characters.
+                    &ldquo;Relative reach&rdquo; is a percentage showing how
+                    many distinct characters this location has hosted compared
+                    to the most-visited location (100% = tied for first place).
                 </p>
                 <StatsTable>
                     <thead>
@@ -92,11 +90,11 @@ export default function SocialHub() {
                                 Name
                             </SortableHeader>
                             <SortableHeader
-                                sortKey="partners"
+                                sortKey="characters"
                                 sort={sort}
                                 onSort={handleSort}
                             >
-                                Distinct partners
+                                Distinct characters
                             </SortableHeader>
                             <SortableHeader
                                 sortKey="appearances"
@@ -113,8 +111,9 @@ export default function SocialHub() {
                     <tbody>
                         {sorted.map((row, i) => {
                             const reach =
-                                maxPartners > 0
-                                    ? (row.distinctPartners / maxPartners) * 100
+                                maxCharacters > 0
+                                    ? (row.distinctCharacters / maxCharacters) *
+                                      100
                                     : 0;
                             return (
                                 <StatsTbodyRow key={row.id}>
@@ -133,7 +132,7 @@ export default function SocialHub() {
                                         </button>
                                     </td>
                                     <td className="py-2 pr-4 text-right font-medium text-indigo-700">
-                                        {row.distinctPartners.toLocaleString()}
+                                        {row.distinctCharacters.toLocaleString()}
                                     </td>
                                     <td className="py-2 pr-4 text-right text-gray-500">
                                         {row.appearances.toLocaleString()}
