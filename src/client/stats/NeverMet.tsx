@@ -2,50 +2,21 @@ import { useEffect, useMemo, useState } from 'react';
 
 import type { NeverMetPair } from '../../../bindings/NeverMetPair';
 import ItemDetailsModal from './ItemDetailsModal';
+import {
+    SortableHeader,
+    StaticHeader,
+    StatsTable,
+    StatsTbodyRow,
+    StatsTheadRow,
+    useSortState,
+} from './StatsTable';
 
 type SortKey = 'together' | 'char1' | 'char2';
-type SortDir = 'asc' | 'desc';
-
-interface SortState {
-    key: SortKey;
-    dir: SortDir;
-}
-
-function SortHeader({
-    label,
-    sortKey,
-    current,
-    onSort,
-    align = 'right',
-}: {
-    label: string;
-    sortKey: SortKey;
-    current: SortState;
-    onSort: (key: SortKey) => void;
-    align?: 'left' | 'right';
-}) {
-    const isActive = current.key === sortKey;
-    const arrow = isActive ? (current.dir === 'asc' ? ' ↑' : ' ↓') : '';
-    return (
-        <th
-            className={`py-2 pr-4 font-medium cursor-pointer select-none hover:text-gray-900 ${align === 'right' ? 'text-right' : 'text-left'} ${isActive ? 'text-gray-900' : ''}`}
-            onClick={() => {
-                onSort(sortKey);
-            }}
-        >
-            {label}
-            {arrow}
-        </th>
-    );
-}
 
 export default function NeverMet() {
     const [data, setData] = useState<NeverMetPair[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [sort, setSort] = useState<SortState>({
-        key: 'together',
-        dir: 'asc',
-    });
+    const [sort, handleSort] = useSortState<SortKey>('together', 'asc');
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -59,13 +30,6 @@ export default function NeverMet() {
                 setError(e instanceof Error ? e.message : String(e)),
             );
     }, []);
-
-    function handleSort(key: SortKey) {
-        setSort((prev) => ({
-            key,
-            dir: prev.key === key && prev.dir === 'asc' ? 'desc' : 'asc',
-        }));
-    }
 
     const sorted = useMemo(() => {
         if (!data) return null;
@@ -108,94 +72,88 @@ export default function NeverMet() {
                     literally never appeared in the same comic. Only pairs with
                     2 or fewer shared comics are shown.
                 </p>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-gray-200 text-left text-gray-600">
-                                <th className="py-2 pr-4 font-medium w-12">
-                                    #
-                                </th>
-                                <SortHeader
-                                    label="Character 1"
-                                    sortKey="char1"
-                                    current={sort}
-                                    onSort={handleSort}
-                                    align="left"
-                                />
-                                <th className="py-2 pr-4 font-medium text-right text-gray-600">
-                                    Appearances
-                                </th>
-                                <SortHeader
-                                    label="Character 2"
-                                    sortKey="char2"
-                                    current={sort}
-                                    onSort={handleSort}
-                                    align="left"
-                                />
-                                <th className="py-2 pr-4 font-medium text-right text-gray-600">
-                                    Appearances
-                                </th>
-                                <SortHeader
-                                    label="Together"
-                                    sortKey="together"
-                                    current={sort}
-                                    onSort={handleSort}
-                                />
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sorted.map((row, i) => (
-                                <tr
-                                    key={`${row.character1Id}-${row.character2Id}`}
-                                    className="border-b border-gray-100 hover:bg-gray-50"
-                                >
-                                    <td className="py-2 pr-4 text-gray-400">
-                                        {i + 1}
-                                    </td>
-                                    <td className="py-2 pr-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedItemId(
-                                                    row.character1Id,
-                                                );
-                                            }}
-                                            className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
-                                        >
-                                            {row.character1Name}
-                                        </button>
-                                    </td>
-                                    <td className="py-2 pr-4 text-right text-gray-500">
-                                        {row.character1Appearances.toLocaleString()}
-                                    </td>
-                                    <td className="py-2 pr-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedItemId(
-                                                    row.character2Id,
-                                                );
-                                            }}
-                                            className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
-                                        >
-                                            {row.character2Name}
-                                        </button>
-                                    </td>
-                                    <td className="py-2 pr-4 text-right text-gray-500">
-                                        {row.character2Appearances.toLocaleString()}
-                                    </td>
-                                    <td
-                                        className={`py-2 text-right font-medium ${row.comicsTogether === 0 ? 'text-red-600' : 'text-orange-500'}`}
+                <StatsTable>
+                    <thead>
+                        <StatsTheadRow>
+                            <StaticHeader className="w-12">#</StaticHeader>
+                            <SortableHeader
+                                sortKey="char1"
+                                sort={sort}
+                                onSort={handleSort}
+                                align="left"
+                            >
+                                Character 1
+                            </SortableHeader>
+                            <StaticHeader align="right">
+                                Appearances
+                            </StaticHeader>
+                            <SortableHeader
+                                sortKey="char2"
+                                sort={sort}
+                                onSort={handleSort}
+                                align="left"
+                            >
+                                Character 2
+                            </SortableHeader>
+                            <StaticHeader align="right">
+                                Appearances
+                            </StaticHeader>
+                            <SortableHeader
+                                sortKey="together"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                Together
+                            </SortableHeader>
+                        </StatsTheadRow>
+                    </thead>
+                    <tbody>
+                        {sorted.map((row, i) => (
+                            <StatsTbodyRow
+                                key={`${row.character1Id}-${row.character2Id}`}
+                            >
+                                <td className="py-2 pr-4 text-gray-400">
+                                    {i + 1}
+                                </td>
+                                <td className="py-2 pr-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedItemId(row.character1Id);
+                                        }}
+                                        className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
                                     >
-                                        {row.comicsTogether === 0
-                                            ? 'Never'
-                                            : row.comicsTogether.toLocaleString()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                        {row.character1Name}
+                                    </button>
+                                </td>
+                                <td className="py-2 pr-4 text-right text-gray-500">
+                                    {row.character1Appearances.toLocaleString()}
+                                </td>
+                                <td className="py-2 pr-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedItemId(row.character2Id);
+                                        }}
+                                        className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
+                                    >
+                                        {row.character2Name}
+                                    </button>
+                                </td>
+                                <td className="py-2 pr-4 text-right text-gray-500">
+                                    {row.character2Appearances.toLocaleString()}
+                                </td>
+                                <td
+                                    className={`py-2 text-right font-medium ${row.comicsTogether === 0 ? 'text-red-600' : 'text-orange-500'}`}
+                                >
+                                    {row.comicsTogether === 0
+                                        ? 'Never'
+                                        : row.comicsTogether.toLocaleString()}
+                                </td>
+                            </StatsTbodyRow>
+                        ))}
+                    </tbody>
+                </StatsTable>
             </div>
         </>
     );

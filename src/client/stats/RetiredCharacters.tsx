@@ -2,10 +2,17 @@ import { useMemo, useState } from 'react';
 
 import type { ItemStats } from '../../../bindings/ItemStats';
 import ItemDetailsModal from './ItemDetailsModal';
+import {
+    SortableHeader,
+    StaticHeader,
+    StatsTable,
+    StatsTbodyRow,
+    StatsTheadRow,
+    comicLink,
+    useSortState,
+} from './StatsTable';
 
-function comicLink(comicId: number) {
-    return `https://questionablecontent.net/view.php?comic=${comicId}`;
-}
+type SortKey = 'name' | 'appearances' | 'firstComic' | 'lastComic';
 
 const THRESHOLD_OPTIONS = [100, 250, 500, 1000, 2000] as const;
 
@@ -19,6 +26,7 @@ export default function RetiredCharacters({
     sharedError,
 }: RetiredCharactersProps) {
     const [threshold, setThreshold] = useState<number>(500);
+    const [sort, handleSort] = useSortState<SortKey>('lastComic', 'asc');
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     const { retired, maxComic } = useMemo(() => {
@@ -26,11 +34,21 @@ export default function RetiredCharacters({
             return { retired: null, maxComic: 0 };
         const max = Math.max(...sharedData.map((d) => d.lastComic));
         const cutoff = max - threshold;
-        const filtered = sharedData
-            .filter((d) => d.lastComic < cutoff)
-            .sort((a, b) => a.lastComic - b.lastComic);
-        return { retired: filtered, maxComic: max };
-    }, [sharedData, threshold]);
+        const filtered = sharedData.filter((d) => d.lastComic < cutoff);
+        const copy = [...filtered];
+        copy.sort((a, b) => {
+            const diff =
+                sort.key === 'name'
+                    ? a.name.localeCompare(b.name)
+                    : sort.key === 'appearances'
+                      ? a.appearances - b.appearances
+                      : sort.key === 'firstComic'
+                        ? a.firstComic - b.firstComic
+                        : a.lastComic - b.lastComic;
+            return sort.dir === 'asc' ? diff : -diff;
+        });
+        return { retired: copy, maxComic: max };
+    }, [sharedData, threshold, sort]);
 
     if (sharedError) {
         return (
@@ -87,73 +105,85 @@ export default function RetiredCharacters({
                         </select>
                     </div>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-gray-200 text-left text-gray-600">
-                                <th className="py-2 pr-4 font-medium w-12">
-                                    #
-                                </th>
-                                <th className="py-2 pr-4 font-medium">Name</th>
-                                <th className="py-2 pr-4 font-medium text-right">
-                                    Appearances
-                                </th>
-                                <th className="py-2 pr-4 font-medium text-right">
-                                    First comic
-                                </th>
-                                <th className="py-2 font-medium text-right">
-                                    Last comic
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {retired.map((row, i) => (
-                                <tr
-                                    key={row.id}
-                                    className="border-b border-gray-100 hover:bg-gray-50"
-                                >
-                                    <td className="py-2 pr-4 text-gray-400">
-                                        {i + 1}
-                                    </td>
-                                    <td className="py-2 pr-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedItemId(row.id);
-                                            }}
-                                            className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
-                                        >
-                                            {row.name}
-                                        </button>
-                                    </td>
-                                    <td className="py-2 pr-4 text-right text-gray-700">
-                                        {row.appearances.toLocaleString()}
-                                    </td>
-                                    <td className="py-2 pr-4 text-right">
-                                        <a
-                                            href={comicLink(row.firstComic)}
-                                            className="text-blue-600 hover:underline"
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            #{row.firstComic}
-                                        </a>
-                                    </td>
-                                    <td className="py-2 text-right">
-                                        <a
-                                            href={comicLink(row.lastComic)}
-                                            className="text-blue-600 hover:underline"
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            #{row.lastComic}
-                                        </a>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <StatsTable>
+                    <thead>
+                        <StatsTheadRow>
+                            <StaticHeader className="w-12">#</StaticHeader>
+                            <SortableHeader
+                                sortKey="name"
+                                sort={sort}
+                                onSort={handleSort}
+                                align="left"
+                            >
+                                Name
+                            </SortableHeader>
+                            <SortableHeader
+                                sortKey="appearances"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                Appearances
+                            </SortableHeader>
+                            <SortableHeader
+                                sortKey="firstComic"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                First comic
+                            </SortableHeader>
+                            <SortableHeader
+                                sortKey="lastComic"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                Last comic
+                            </SortableHeader>
+                        </StatsTheadRow>
+                    </thead>
+                    <tbody>
+                        {retired.map((row, i) => (
+                            <StatsTbodyRow key={row.id}>
+                                <td className="py-2 pr-4 text-gray-400">
+                                    {i + 1}
+                                </td>
+                                <td className="py-2 pr-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedItemId(row.id);
+                                        }}
+                                        className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
+                                    >
+                                        {row.name}
+                                    </button>
+                                </td>
+                                <td className="py-2 pr-4 text-right text-gray-700">
+                                    {row.appearances.toLocaleString()}
+                                </td>
+                                <td className="py-2 pr-4 text-right">
+                                    <a
+                                        href={comicLink(row.firstComic)}
+                                        className="text-blue-600 hover:underline"
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        #{row.firstComic}
+                                    </a>
+                                </td>
+                                <td className="py-2 text-right">
+                                    <a
+                                        href={comicLink(row.lastComic)}
+                                        className="text-blue-600 hover:underline"
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        #{row.lastComic}
+                                    </a>
+                                </td>
+                            </StatsTbodyRow>
+                        ))}
+                    </tbody>
+                </StatsTable>
             </div>
         </>
     );

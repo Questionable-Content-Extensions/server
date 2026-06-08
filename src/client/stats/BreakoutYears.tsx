@@ -2,47 +2,21 @@ import { useEffect, useMemo, useState } from 'react';
 
 import type { BreakoutYear } from '../../../bindings/BreakoutYear';
 import ItemDetailsModal from './ItemDetailsModal';
+import {
+    SortableHeader,
+    StaticHeader,
+    StatsTable,
+    StatsTbodyRow,
+    StatsTheadRow,
+    useSortState,
+} from './StatsTable';
 
 type SortKey = 'ratio' | 'count' | 'avg' | 'year' | 'name';
-type SortDir = 'asc' | 'desc';
-
-interface SortState {
-    key: SortKey;
-    dir: SortDir;
-}
-
-function SortHeader({
-    label,
-    sortKey,
-    current,
-    onSort,
-    align = 'right',
-}: {
-    label: string;
-    sortKey: SortKey;
-    current: SortState;
-    onSort: (key: SortKey) => void;
-    align?: 'left' | 'right';
-}) {
-    const isActive = current.key === sortKey;
-    const arrow = isActive ? (current.dir === 'asc' ? ' ↑' : ' ↓') : '';
-    return (
-        <th
-            className={`py-2 pr-4 font-medium cursor-pointer select-none hover:text-gray-900 ${align === 'right' ? 'text-right' : 'text-left'} ${isActive ? 'text-gray-900' : ''}`}
-            onClick={() => {
-                onSort(sortKey);
-            }}
-        >
-            {label}
-            {arrow}
-        </th>
-    );
-}
 
 export default function BreakoutYears() {
     const [data, setData] = useState<BreakoutYear[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [sort, setSort] = useState<SortState>({ key: 'ratio', dir: 'desc' });
+    const [sort, handleSort] = useSortState<SortKey>('ratio', 'desc');
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -56,13 +30,6 @@ export default function BreakoutYears() {
                 setError(e instanceof Error ? e.message : String(e)),
             );
     }, []);
-
-    function handleSort(key: SortKey) {
-        setSort((prev) => ({
-            key,
-            dir: prev.key === key && prev.dir === 'desc' ? 'asc' : 'desc',
-        }));
-    }
 
     const sorted = useMemo(() => {
         if (!data) return null;
@@ -110,85 +77,83 @@ export default function BreakoutYears() {
                     tie for the best count, all are listed. Only characters with
                     appearances in at least 2 years are included.
                 </p>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-gray-200 text-left text-gray-600">
-                                <th className="py-2 pr-4 font-medium w-12">
-                                    #
-                                </th>
-                                <SortHeader
-                                    label="Name"
-                                    sortKey="name"
-                                    current={sort}
-                                    onSort={handleSort}
-                                    align="left"
-                                />
-                                <SortHeader
-                                    label="Breakout year"
-                                    sortKey="year"
-                                    current={sort}
-                                    onSort={handleSort}
-                                />
-                                <SortHeader
-                                    label="Count"
-                                    sortKey="count"
-                                    current={sort}
-                                    onSort={handleSort}
-                                />
-                                <SortHeader
-                                    label="Avg/yr"
-                                    sortKey="avg"
-                                    current={sort}
-                                    onSort={handleSort}
-                                />
-                                <SortHeader
-                                    label="Ratio"
-                                    sortKey="ratio"
-                                    current={sort}
-                                    onSort={handleSort}
-                                />
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sorted.map((row, i) => (
-                                <tr
-                                    key={row.id}
-                                    className="border-b border-gray-100 hover:bg-gray-50"
-                                >
-                                    <td className="py-2 pr-4 text-gray-400">
-                                        {i + 1}
-                                    </td>
-                                    <td className="py-2 pr-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedItemId(row.id);
-                                            }}
-                                            className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
-                                        >
-                                            {row.name}
-                                        </button>
-                                    </td>
-                                    <td className="py-2 pr-4 text-right text-gray-500">
-                                        {row.breakoutYears.join(', ')}
-                                    </td>
-                                    <td className="py-2 pr-4 text-right font-medium text-indigo-700">
-                                        {row.breakoutCount.toLocaleString()}
-                                    </td>
-                                    <td className="py-2 pr-4 text-right text-gray-500">
-                                        {row.avgPerYear.toFixed(1)}
-                                    </td>
-                                    <td
-                                        className={`py-2 text-right font-medium ${row.ratio >= 3 ? 'text-green-600' : row.ratio >= 2 ? 'text-indigo-700' : 'text-gray-500'}`}
+                <StatsTable>
+                    <thead>
+                        <StatsTheadRow>
+                            <StaticHeader className="w-12">#</StaticHeader>
+                            <SortableHeader
+                                sortKey="name"
+                                sort={sort}
+                                onSort={handleSort}
+                                align="left"
+                            >
+                                Name
+                            </SortableHeader>
+                            <SortableHeader
+                                sortKey="year"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                Breakout year
+                            </SortableHeader>
+                            <SortableHeader
+                                sortKey="count"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                Count
+                            </SortableHeader>
+                            <SortableHeader
+                                sortKey="avg"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                Avg/yr
+                            </SortableHeader>
+                            <SortableHeader
+                                sortKey="ratio"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                Ratio
+                            </SortableHeader>
+                        </StatsTheadRow>
+                    </thead>
+                    <tbody>
+                        {sorted.map((row, i) => (
+                            <StatsTbodyRow key={row.id}>
+                                <td className="py-2 pr-4 text-gray-400">
+                                    {i + 1}
+                                </td>
+                                <td className="py-2 pr-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedItemId(row.id);
+                                        }}
+                                        className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
                                     >
-                                        {row.ratio.toFixed(2)}×
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                                        {row.name}
+                                    </button>
+                                </td>
+                                <td className="py-2 pr-4 text-right text-gray-500">
+                                    {row.breakoutYears.join(', ')}
+                                </td>
+                                <td className="py-2 pr-4 text-right font-medium text-indigo-700">
+                                    {row.breakoutCount.toLocaleString()}
+                                </td>
+                                <td className="py-2 pr-4 text-right text-gray-500">
+                                    {row.avgPerYear.toFixed(1)}
+                                </td>
+                                <td
+                                    className={`py-2 text-right font-medium ${row.ratio >= 3 ? 'text-green-600' : row.ratio >= 2 ? 'text-indigo-700' : 'text-gray-500'}`}
+                                >
+                                    {row.ratio.toFixed(2)}×
+                                </td>
+                            </StatsTbodyRow>
+                        ))}
+                    </tbody>
+                </StatsTable>
             </div>
         </>
     );

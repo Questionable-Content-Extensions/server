@@ -2,14 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 
 import type { CharacterRegularity } from '../../../bindings/CharacterRegularity';
 import ItemDetailsModal from './ItemDetailsModal';
+import {
+    SortableHeader,
+    StaticHeader,
+    StatsTable,
+    StatsTbodyRow,
+    StatsTheadRow,
+    useSortState,
+} from './StatsTable';
 
 type SortKey = 'stddev' | 'avg' | 'name' | 'appearances';
-type SortDir = 'asc' | 'desc';
-
-interface SortState {
-    key: SortKey;
-    dir: SortDir;
-}
 
 function formatDays(days: number) {
     if (days >= 30) {
@@ -18,41 +20,10 @@ function formatDays(days: number) {
     return `${days.toFixed(1)}d`;
 }
 
-function SortHeader({
-    label,
-    sortKey,
-    current,
-    onSort,
-    align = 'right',
-}: {
-    label: string;
-    sortKey: SortKey;
-    current: SortState;
-    onSort: (key: SortKey) => void;
-    align?: 'left' | 'right';
-}) {
-    const isActive = current.key === sortKey;
-    const arrow = isActive ? (current.dir === 'asc' ? ' ↑' : ' ↓') : '';
-    return (
-        <th
-            className={`py-2 pr-4 font-medium cursor-pointer select-none hover:text-gray-900 ${align === 'right' ? 'text-right' : 'text-left'} ${isActive ? 'text-gray-900' : ''}`}
-            onClick={() => {
-                onSort(sortKey);
-            }}
-        >
-            {label}
-            {arrow}
-        </th>
-    );
-}
-
 export default function CharacterRegularityPage() {
     const [data, setData] = useState<CharacterRegularity[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [sort, setSort] = useState<SortState>({
-        key: 'stddev',
-        dir: 'asc',
-    });
+    const [sort, handleSort] = useSortState<SortKey>('stddev', 'asc');
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
@@ -66,13 +37,6 @@ export default function CharacterRegularityPage() {
                 setError(e instanceof Error ? e.message : String(e)),
             );
     }, []);
-
-    function handleSort(key: SortKey) {
-        setSort((prev) => ({
-            key,
-            dir: prev.key === key && prev.dir === 'asc' ? 'desc' : 'asc',
-        }));
-    }
 
     const sorted = useMemo(() => {
         if (!data) return null;
@@ -120,74 +84,71 @@ export default function CharacterRegularityPage() {
                     arc-driven. Click any column header to sort. "Dated
                     appearances" counts only comics with a known publish date.
                 </p>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-gray-200 text-left text-gray-600">
-                                <th className="py-2 pr-4 font-medium w-12">
-                                    #
-                                </th>
-                                <SortHeader
-                                    label="Name"
-                                    sortKey="name"
-                                    current={sort}
-                                    onSort={handleSort}
-                                    align="left"
-                                />
-                                <SortHeader
-                                    label="Dated appearances"
-                                    sortKey="appearances"
-                                    current={sort}
-                                    onSort={handleSort}
-                                />
-                                <SortHeader
-                                    label="Avg gap"
-                                    sortKey="avg"
-                                    current={sort}
-                                    onSort={handleSort}
-                                />
-                                <SortHeader
-                                    label="Std dev"
-                                    sortKey="stddev"
-                                    current={sort}
-                                    onSort={handleSort}
-                                />
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sorted.map((row, i) => (
-                                <tr
-                                    key={row.id}
-                                    className="border-b border-gray-100 hover:bg-gray-50"
-                                >
-                                    <td className="py-2 pr-4 text-gray-400">
-                                        {i + 1}
-                                    </td>
-                                    <td className="py-2 pr-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setSelectedItemId(row.id);
-                                            }}
-                                            className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
-                                        >
-                                            {row.name}
-                                        </button>
-                                    </td>
-                                    <td className="py-2 pr-4 text-right text-gray-700">
-                                        {row.appearances.toLocaleString()}
-                                    </td>
-                                    <td className="py-2 pr-4 text-right text-gray-700">
-                                        {formatDays(row.avgGapDays)}
-                                    </td>
-                                    <td className="py-2 text-right font-medium text-gray-800">
-                                        {formatDays(row.stddevGapDays)}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <StatsTable>
+                    <thead>
+                        <StatsTheadRow>
+                            <StaticHeader className="w-12">#</StaticHeader>
+                            <SortableHeader
+                                sortKey="name"
+                                sort={sort}
+                                onSort={handleSort}
+                                align="left"
+                            >
+                                Name
+                            </SortableHeader>
+                            <SortableHeader
+                                sortKey="appearances"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                Dated appearances
+                            </SortableHeader>
+                            <SortableHeader
+                                sortKey="avg"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                Avg gap
+                            </SortableHeader>
+                            <SortableHeader
+                                sortKey="stddev"
+                                sort={sort}
+                                onSort={handleSort}
+                            >
+                                Std dev
+                            </SortableHeader>
+                        </StatsTheadRow>
+                    </thead>
+                    <tbody>
+                        {sorted.map((row, i) => (
+                            <StatsTbodyRow key={row.id}>
+                                <td className="py-2 pr-4 text-gray-400">
+                                    {i + 1}
+                                </td>
+                                <td className="py-2 pr-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedItemId(row.id);
+                                        }}
+                                        className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-left"
+                                    >
+                                        {row.name}
+                                    </button>
+                                </td>
+                                <td className="py-2 pr-4 text-right text-gray-700">
+                                    {row.appearances.toLocaleString()}
+                                </td>
+                                <td className="py-2 pr-4 text-right text-gray-700">
+                                    {formatDays(row.avgGapDays)}
+                                </td>
+                                <td className="py-2 text-right font-medium text-gray-800">
+                                    {formatDays(row.stddevGapDays)}
+                                </td>
+                            </StatsTbodyRow>
+                        ))}
+                    </tbody>
+                </StatsTable>
             </div>
         </>
     );

@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { PublicationGap } from '../../../bindings/PublicationGap';
+import {
+    SortableHeader,
+    StaticHeader,
+    StatsTable,
+    StatsTbodyRow,
+    StatsTheadRow,
+    comicLink,
+    useSortState,
+} from './StatsTable';
 
-function comicLink(comicId: number) {
-    return `https://questionablecontent.net/view.php?comic=${comicId}`;
-}
+type SortKey = 'beforeComic' | 'afterComic' | 'gapDays';
 
 function formatGap(days: number) {
     if (days >= 365) {
@@ -17,6 +24,7 @@ function formatGap(days: number) {
 export default function PublicationGaps() {
     const [data, setData] = useState<PublicationGap[] | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [sort, handleSort] = useSortState<SortKey>('gapDays', 'desc');
 
     useEffect(() => {
         fetch('/api/v3/stats/publication-gaps')
@@ -30,11 +38,26 @@ export default function PublicationGaps() {
             );
     }, []);
 
+    const sorted = useMemo(() => {
+        if (!data) return null;
+        const copy = [...data];
+        copy.sort((a, b) => {
+            const diff =
+                sort.key === 'beforeComic'
+                    ? a.beforeComic - b.beforeComic
+                    : sort.key === 'afterComic'
+                      ? a.afterComic - b.afterComic
+                      : a.gapDays - b.gapDays;
+            return sort.dir === 'asc' ? diff : -diff;
+        });
+        return copy;
+    }, [data, sort]);
+
     if (error) {
         return <p className="text-red-600">Failed to load data: {error}</p>;
     }
 
-    if (!data) {
+    if (!sorted) {
         return <p className="text-gray-500">Loading…</p>;
     }
 
@@ -47,59 +70,66 @@ export default function PublicationGaps() {
                 The 20 longest hiatuses between consecutive published comics
                 (minimum 7 days apart).
             </p>
-            <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                    <thead>
-                        <tr className="border-b border-gray-200 text-left text-gray-600">
-                            <th className="py-2 pr-4 font-medium w-12">#</th>
-                            <th className="py-2 pr-4 font-medium text-right">
-                                Last comic before
-                            </th>
-                            <th className="py-2 pr-4 font-medium text-right">
-                                First comic after
-                            </th>
-                            <th className="py-2 font-medium text-right">
-                                Gap length
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data.map((row, i) => (
-                            <tr
-                                key={`${row.beforeComic}-${row.afterComic}`}
-                                className="border-b border-gray-100 hover:bg-gray-50"
-                            >
-                                <td className="py-2 pr-4 text-gray-400">
-                                    {i + 1}
-                                </td>
-                                <td className="py-2 pr-4 text-right">
-                                    <a
-                                        href={comicLink(row.beforeComic)}
-                                        className="text-blue-600 hover:underline"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    >
-                                        #{row.beforeComic}
-                                    </a>
-                                </td>
-                                <td className="py-2 pr-4 text-right">
-                                    <a
-                                        href={comicLink(row.afterComic)}
-                                        className="text-blue-600 hover:underline"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    >
-                                        #{row.afterComic}
-                                    </a>
-                                </td>
-                                <td className="py-2 text-right text-gray-700">
-                                    {formatGap(row.gapDays)}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <StatsTable>
+                <thead>
+                    <StatsTheadRow>
+                        <StaticHeader className="w-12">#</StaticHeader>
+                        <SortableHeader
+                            sortKey="beforeComic"
+                            sort={sort}
+                            onSort={handleSort}
+                        >
+                            Last comic before
+                        </SortableHeader>
+                        <SortableHeader
+                            sortKey="afterComic"
+                            sort={sort}
+                            onSort={handleSort}
+                        >
+                            First comic after
+                        </SortableHeader>
+                        <SortableHeader
+                            sortKey="gapDays"
+                            sort={sort}
+                            onSort={handleSort}
+                        >
+                            Gap length
+                        </SortableHeader>
+                    </StatsTheadRow>
+                </thead>
+                <tbody>
+                    {sorted.map((row, i) => (
+                        <StatsTbodyRow
+                            key={`${row.beforeComic}-${row.afterComic}`}
+                        >
+                            <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
+                            <td className="py-2 pr-4 text-right">
+                                <a
+                                    href={comicLink(row.beforeComic)}
+                                    className="text-blue-600 hover:underline"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    #{row.beforeComic}
+                                </a>
+                            </td>
+                            <td className="py-2 pr-4 text-right">
+                                <a
+                                    href={comicLink(row.afterComic)}
+                                    className="text-blue-600 hover:underline"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    #{row.afterComic}
+                                </a>
+                            </td>
+                            <td className="py-2 text-right text-gray-700">
+                                {formatGap(row.gapDays)}
+                            </td>
+                        </StatsTbodyRow>
+                    ))}
+                </tbody>
+            </StatsTable>
         </div>
     );
 }

@@ -1,47 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { PublicationStreak } from '../../../bindings/PublicationStreak';
+import {
+    SortableHeader,
+    StaticHeader,
+    StatsTable,
+    StatsTbodyRow,
+    StatsTheadRow,
+    useSortState,
+} from './StatsTable';
 
 type SortKey = 'days' | 'calendar' | 'start';
-type SortDir = 'asc' | 'desc';
-
-interface SortState {
-    key: SortKey;
-    dir: SortDir;
-}
-
-function SortHeader({
-    label,
-    sortKey,
-    current,
-    onSort,
-    align = 'right',
-}: {
-    label: string;
-    sortKey: SortKey;
-    current: SortState;
-    onSort: (key: SortKey) => void;
-    align?: 'left' | 'right';
-}) {
-    const isActive = current.key === sortKey;
-    const arrow = isActive ? (current.dir === 'asc' ? ' ↑' : ' ↓') : '';
-    return (
-        <th
-            className={`py-2 pr-4 font-medium cursor-pointer select-none hover:text-gray-900 ${align === 'right' ? 'text-right' : 'text-left'} ${isActive ? 'text-gray-900' : ''}`}
-            onClick={() => {
-                onSort(sortKey);
-            }}
-        >
-            {label}
-            {arrow}
-        </th>
-    );
-}
 
 export default function PublicationStreaks() {
     const [data, setData] = useState<PublicationStreak[] | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [sort, setSort] = useState<SortState>({ key: 'days', dir: 'desc' });
+    const [sort, handleSort] = useSortState<SortKey>('days', 'desc');
 
     useEffect(() => {
         fetch('/api/v3/stats/publication-streaks')
@@ -54,13 +28,6 @@ export default function PublicationStreaks() {
                 setError(e instanceof Error ? e.message : String(e)),
             );
     }, []);
-
-    function handleSort(key: SortKey) {
-        setSort((prev) => ({
-            key,
-            dir: prev.key === key && prev.dir === 'desc' ? 'asc' : 'desc',
-        }));
-    }
 
     const sorted = useMemo(() => {
         if (!data) return null;
@@ -94,61 +61,55 @@ export default function PublicationStreaks() {
                 weekends; days with comics is the actual count of publishing
                 days. Top 20 streaks are shown.
             </p>
-            <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                    <thead>
-                        <tr className="border-b border-gray-200 text-left text-gray-600">
-                            <th className="py-2 pr-4 font-medium w-12">#</th>
-                            <SortHeader
-                                label="Start date"
-                                sortKey="start"
-                                current={sort}
-                                onSort={handleSort}
-                                align="left"
-                            />
-                            <th className="py-2 pr-4 font-medium text-left text-gray-600">
-                                End date
-                            </th>
-                            <SortHeader
-                                label="Days w/ comics"
-                                sortKey="days"
-                                current={sort}
-                                onSort={handleSort}
-                            />
-                            <SortHeader
-                                label="Calendar days"
-                                sortKey="calendar"
-                                current={sort}
-                                onSort={handleSort}
-                            />
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sorted.map((row, i) => (
-                            <tr
-                                key={row.streakStart}
-                                className="border-b border-gray-100 hover:bg-gray-50"
-                            >
-                                <td className="py-2 pr-4 text-gray-400">
-                                    {i + 1}
-                                </td>
-                                <td className="py-2 pr-4 font-medium text-gray-900">
-                                    {row.streakStart}
-                                </td>
-                                <td className="py-2 pr-4 text-gray-700">
-                                    {row.streakEnd}
-                                </td>
-                                <td className="py-2 pr-4 text-right font-medium text-indigo-700">
-                                    {row.daysWithComics.toLocaleString()}
-                                </td>
-                                <td className="py-2 text-right text-gray-500">
-                                    {row.calendarDays.toLocaleString()}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <StatsTable>
+                <thead>
+                    <StatsTheadRow>
+                        <StaticHeader className="w-12">#</StaticHeader>
+                        <SortableHeader
+                            sortKey="start"
+                            sort={sort}
+                            onSort={handleSort}
+                            align="left"
+                        >
+                            Start date
+                        </SortableHeader>
+                        <StaticHeader align="left">End date</StaticHeader>
+                        <SortableHeader
+                            sortKey="days"
+                            sort={sort}
+                            onSort={handleSort}
+                        >
+                            Days w/ comics
+                        </SortableHeader>
+                        <SortableHeader
+                            sortKey="calendar"
+                            sort={sort}
+                            onSort={handleSort}
+                        >
+                            Calendar days
+                        </SortableHeader>
+                    </StatsTheadRow>
+                </thead>
+                <tbody>
+                    {sorted.map((row, i) => (
+                        <StatsTbodyRow key={row.streakStart}>
+                            <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
+                            <td className="py-2 pr-4 font-medium text-gray-900">
+                                {row.streakStart}
+                            </td>
+                            <td className="py-2 pr-4 text-gray-700">
+                                {row.streakEnd}
+                            </td>
+                            <td className="py-2 pr-4 text-right font-medium text-indigo-700">
+                                {row.daysWithComics.toLocaleString()}
+                            </td>
+                            <td className="py-2 text-right text-gray-500">
+                                {row.calendarDays.toLocaleString()}
+                            </td>
+                        </StatsTbodyRow>
+                    ))}
+                </tbody>
+            </StatsTable>
         </div>
     );
 }

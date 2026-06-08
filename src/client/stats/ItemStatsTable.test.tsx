@@ -109,6 +109,85 @@ describe('ItemStatsTable with sharedData', () => {
         expect(rows.map((r) => r.id)).toEqual(originalOrder);
     });
 
+    it('sorts rows by name descending when name header is clicked (defaultDir=desc)', () => {
+        render(
+            <ItemStatsTable
+                endpoint="/api/v3/stats/cast"
+                title="Character Rankings"
+                description="Ranked by appearances."
+                sortBy="appearances"
+                sharedData={ROWS}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('columnheader', { name: /Name/i }));
+
+        const cells = screen
+            .getAllByRole('cell')
+            .filter((c) =>
+                ['Alice', 'Bob', 'Carol'].includes(c.textContent ?? ''),
+            );
+        expect(cells.map((c) => c.textContent)).toEqual([
+            'Carol',
+            'Bob',
+            'Alice',
+        ]);
+    });
+
+    it('sorts rows by name ascending when name header is clicked twice', () => {
+        render(
+            <ItemStatsTable
+                endpoint="/api/v3/stats/cast"
+                title="Character Rankings"
+                description="Ranked by appearances."
+                sortBy="appearances"
+                sharedData={ROWS}
+            />,
+        );
+
+        const nameHeader = screen.getByRole('columnheader', { name: /Name/i });
+        fireEvent.click(nameHeader);
+        fireEvent.click(nameHeader);
+
+        const cells = screen
+            .getAllByRole('cell')
+            .filter((c) =>
+                ['Alice', 'Bob', 'Carol'].includes(c.textContent ?? ''),
+            );
+        expect(cells.map((c) => c.textContent)).toEqual([
+            'Alice',
+            'Bob',
+            'Carol',
+        ]);
+    });
+
+    it('sorts rows by lastComic descending when last comic header is clicked', () => {
+        render(
+            <ItemStatsTable
+                endpoint="/api/v3/stats/cast"
+                title="Character Rankings"
+                description="Ranked by appearances."
+                sortBy="appearances"
+                sharedData={ROWS}
+            />,
+        );
+
+        fireEvent.click(
+            screen.getByRole('columnheader', { name: /Last comic/i }),
+        );
+
+        const cells = screen
+            .getAllByRole('cell')
+            .filter((c) =>
+                ['Alice', 'Bob', 'Carol'].includes(c.textContent ?? ''),
+            );
+        expect(cells.map((c) => c.textContent)).toEqual([
+            'Alice', // lastComic: 100
+            'Bob', // lastComic: 80
+            'Carol', // lastComic: 60
+        ]);
+    });
+
     it('opens the item details modal when a name is clicked', () => {
         vi.stubGlobal(
             'fetch',

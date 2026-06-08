@@ -8,9 +8,18 @@ import {
     PointElement,
     Tooltip,
 } from 'chart.js';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { CrowdedComicsResponse } from '../../../bindings/CrowdedComicsResponse';
+import {
+    SortableHeader,
+    StaticHeader,
+    StatsTable,
+    StatsTbodyRow,
+    StatsTheadRow,
+    comicLink,
+    useSortState,
+} from './StatsTable';
 
 Chart.register(
     LineController,
@@ -22,9 +31,7 @@ Chart.register(
     Legend,
 );
 
-function comicLink(comicId: number) {
-    return `https://questionablecontent.net/view.php?comic=${comicId}`;
-}
+type SortKey = 'comicId' | 'castCount';
 
 interface ChartProps {
     data: CrowdedComicsResponse;
@@ -94,6 +101,7 @@ function AvgCastChart({ data }: ChartProps) {
 export default function MostCrowdedComics() {
     const [data, setData] = useState<CrowdedComicsResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [sort, handleSort] = useSortState<SortKey>('castCount', 'desc');
 
     useEffect(() => {
         fetch('/api/v3/stats/crowded-comics')
@@ -107,11 +115,24 @@ export default function MostCrowdedComics() {
             );
     }, []);
 
+    const sorted = useMemo(() => {
+        if (!data) return null;
+        const copy = [...data.topComics];
+        copy.sort((a, b) => {
+            const diff =
+                sort.key === 'comicId'
+                    ? a.comicId - b.comicId
+                    : a.castCount - b.castCount;
+            return sort.dir === 'asc' ? diff : -diff;
+        });
+        return copy;
+    }, [data, sort]);
+
     if (error) {
         return <p className="text-red-600">Failed to load data: {error}</p>;
     }
 
-    if (!data) {
+    if (!data || !sorted) {
         return <p className="text-gray-500">Loading…</p>;
     }
 
@@ -135,44 +156,48 @@ export default function MostCrowdedComics() {
             <h3 className="text-base font-medium text-gray-700 mb-2">
                 Top 25 most crowded comics
             </h3>
-            <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                    <thead>
-                        <tr className="border-b border-gray-200 text-left text-gray-600">
-                            <th className="py-2 pr-4 font-medium w-12">#</th>
-                            <th className="py-2 pr-4 font-medium">Comic</th>
-                            <th className="py-2 font-medium text-right">
-                                Cast members
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data.topComics.map((row, i) => (
-                            <tr
-                                key={row.comicId}
-                                className="border-b border-gray-100 hover:bg-gray-50"
-                            >
-                                <td className="py-2 pr-4 text-gray-400">
-                                    {i + 1}
-                                </td>
-                                <td className="py-2 pr-4">
-                                    <a
-                                        href={comicLink(row.comicId)}
-                                        className="text-blue-600 hover:underline"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    >
-                                        #{row.comicId}
-                                    </a>
-                                </td>
-                                <td className="py-2 text-right text-gray-700">
-                                    {row.castCount}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+            <StatsTable>
+                <thead>
+                    <StatsTheadRow>
+                        <StaticHeader className="w-12">#</StaticHeader>
+                        <SortableHeader
+                            sortKey="comicId"
+                            sort={sort}
+                            onSort={handleSort}
+                            align="left"
+                        >
+                            Comic
+                        </SortableHeader>
+                        <SortableHeader
+                            sortKey="castCount"
+                            sort={sort}
+                            onSort={handleSort}
+                        >
+                            Cast members
+                        </SortableHeader>
+                    </StatsTheadRow>
+                </thead>
+                <tbody>
+                    {sorted.map((row, i) => (
+                        <StatsTbodyRow key={row.comicId}>
+                            <td className="py-2 pr-4 text-gray-400">{i + 1}</td>
+                            <td className="py-2 pr-4">
+                                <a
+                                    href={comicLink(row.comicId)}
+                                    className="text-blue-600 hover:underline"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                >
+                                    #{row.comicId}
+                                </a>
+                            </td>
+                            <td className="py-2 text-right text-gray-700">
+                                {row.castCount}
+                            </td>
+                        </StatsTbodyRow>
+                    ))}
+                </tbody>
+            </StatsTable>
         </div>
     );
 }

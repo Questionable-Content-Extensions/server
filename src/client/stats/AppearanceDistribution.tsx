@@ -10,6 +10,12 @@ import {
 import { useEffect, useMemo, useRef } from 'react';
 
 import type { ItemStats } from '../../../bindings/ItemStats';
+import {
+    StaticHeader,
+    StatsTable,
+    StatsTbodyRow,
+    StatsTheadRow,
+} from './StatsTable';
 
 Chart.register(
     BarController,
@@ -131,27 +137,22 @@ export default function AppearanceDistribution({ castData, castError }: Props) {
                 Total: {total.toLocaleString()} characters.
             </p>
             <DistributionChart counts={bucketCounts} />
-            <div className="mt-4 overflow-x-auto">
-                <table className="min-w-full text-sm">
+            <div className="mt-4">
+                <StatsTable>
                     <thead>
-                        <tr className="border-b border-gray-200 text-left text-gray-600">
-                            <th className="py-2 pr-4 font-medium">
+                        <StatsTheadRow>
+                            <StaticHeader align="left">
                                 Appearances
-                            </th>
-                            <th className="py-2 pr-4 font-medium text-right">
+                            </StaticHeader>
+                            <StaticHeader align="right">
                                 Characters
-                            </th>
-                            <th className="py-2 font-medium text-right">
-                                % of cast
-                            </th>
-                        </tr>
+                            </StaticHeader>
+                            <StaticHeader align="right">% of cast</StaticHeader>
+                        </StatsTheadRow>
                     </thead>
                     <tbody>
                         {BUCKETS.map((b, i) => (
-                            <tr
-                                key={b.label}
-                                className="border-b border-gray-100 hover:bg-gray-50"
-                            >
+                            <StatsTbodyRow key={b.label}>
                                 <td className="py-2 pr-4 text-gray-700">
                                     {b.label}
                                 </td>
@@ -167,10 +168,10 @@ export default function AppearanceDistribution({ castData, castError }: Props) {
                                         : '0.0'}
                                     %
                                 </td>
-                            </tr>
+                            </StatsTbodyRow>
                         ))}
                     </tbody>
-                </table>
+                </StatsTable>
             </div>
         </div>
     );
