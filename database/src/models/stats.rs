@@ -1613,9 +1613,31 @@ impl PublishedDateRow {
         sqlx::query_as!(
             Self,
             r#"
-                SELECT DISTINCT DATE_FORMAT(DATE(`publish_date`), '%Y-%m-%d') AS `pub_date`
-                FROM `Comic`
-                WHERE `publish_date` IS NOT NULL
+                SELECT `pub_date` FROM (
+                    -- Weekday comics: count on their actual date
+                    SELECT DATE_FORMAT(DATE(`publish_date`), '%Y-%m-%d') AS `pub_date`
+                    FROM `Comic`
+                    WHERE `publish_date` IS NOT NULL
+                      AND DAYOFWEEK(`publish_date`) BETWEEN 2 AND 6
+                    UNION
+                    -- Weekend comics: shift to following Monday
+                    --   Sunday (DAYOFWEEK=1) -> +1 day, Saturday (DAYOFWEEK=7) -> +2 days
+                    SELECT DATE_FORMAT(DATE(DATE_ADD(`publish_date`, INTERVAL
+                        CASE DAYOFWEEK(`publish_date`) WHEN 1 THEN 1 ELSE 2 END DAY
+                    )), '%Y-%m-%d') AS `pub_date`
+                    FROM `Comic`
+                    WHERE `publish_date` IS NOT NULL
+                      AND DAYOFWEEK(`publish_date`) IN (1, 7)
+                    UNION
+                    -- Late Mon-Thu comics (>=20:00): also count for the next day
+                    --   Friday is excluded: an evening Fri post is still Friday's comic,
+                    --   and bridging to Monday three days later would be too aggressive.
+                    SELECT DATE_FORMAT(DATE(DATE_ADD(`publish_date`, INTERVAL 1 DAY)), '%Y-%m-%d') AS `pub_date`
+                    FROM `Comic`
+                    WHERE `publish_date` IS NOT NULL
+                      AND DAYOFWEEK(`publish_date`) BETWEEN 2 AND 5
+                      AND TIME(`publish_date`) >= '20:00:00'
+                ) AS `d`
                 ORDER BY `pub_date`
             "#,
         )

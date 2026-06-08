@@ -80,10 +80,8 @@ export default function CharacterHomeTurf() {
                 </h2>
                 <p className="text-sm text-gray-500 mb-4">
                     Each character&apos;s most frequently visited location and
-                    what percentage of their appearances take place there. High
-                    percentages indicate a character who is strongly tied to a
-                    single setting. Only characters with at least 10 appearances
-                    are shown.
+                    what percentage of their appearances take place there. Only
+                    characters with at least 10 appearances are shown.
                 </p>
                 <StatsTable>
                     <thead>

@@ -1713,6 +1713,29 @@ mod tests {
     }
 
     #[test]
+    fn build_publication_streaks_ignores_weekend_dates() {
+        // A Sunday comic between a Friday and Monday should not break the streak.
+        // Callers are expected to strip weekends before calling build_publication_streaks,
+        // but this test documents that passing weekdays-only produces the correct result.
+        let dates: Vec<String> = vec![
+            "2021-12-09", // Thu
+            "2021-12-10", // Fri
+            // 2021-12-12 Sun is excluded (filtered by caller)
+            "2021-12-13", // Mon — should continue the streak
+            "2021-12-14", // Tue
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect();
+        let streaks = build_publication_streaks(&dates);
+        assert_eq!(streaks.len(), 1, "should be one continuous streak");
+        assert_eq!(streaks[0].streak_start, "2021-12-09");
+        assert_eq!(streaks[0].streak_end, "2021-12-14");
+        assert_eq!(streaks[0].days_with_comics, 4);
+        assert_eq!(streaks[0].break_date, None, "ongoing streak");
+    }
+
+    #[test]
     fn build_best_friend_deduplicates_characters() {
         use database::models::stats::CoAppearance as DbCoAppearance;
         let rows = vec![

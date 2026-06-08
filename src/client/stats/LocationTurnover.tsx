@@ -46,7 +46,7 @@ function TurnoverChart({ data }: ChartProps) {
                     {
                         label: 'Continuing',
                         data: data.map((d) => d.continuingLocations),
-                        backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
                         stack: 'a',
                     },
                     {

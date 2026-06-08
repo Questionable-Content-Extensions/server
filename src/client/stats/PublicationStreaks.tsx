@@ -65,7 +65,11 @@ export default function PublicationStreaks() {
                 passes with no new comic — weekend gaps do not break a streak.
                 Calendar days is the total span from start to end including
                 weekends; days with comics is the actual count of publishing
-                days. Top 20 streaks are shown.
+                days. Top 20 streaks are shown. Note that streak boundaries are
+                a best-effort estimate: comics posted late at night are counted
+                toward the following day, and weekend posts are attributed to
+                the following Monday, but edge cases mean some breaks may be
+                slightly mis-attributed.
             </p>
             <StatsTable>
                 <thead>

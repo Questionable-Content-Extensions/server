@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT `pub_date` FROM (\n                    -- Weekday comics: count on their actual date\n                    SELECT DATE_FORMAT(DATE(`publish_date`), '%Y-%m-%d') AS `pub_date`\n                    FROM `Comic`\n                    WHERE `publish_date` IS NOT NULL\n                      AND DAYOFWEEK(`publish_date`) BETWEEN 2 AND 6\n                    UNION\n                    -- Weekend comics: shift to following Monday\n                    --   Sunday (DAYOFWEEK=1) -> +1 day, Saturday (DAYOFWEEK=7) -> +2 days\n                    SELECT DATE_FORMAT(DATE(DATE_ADD(`publish_date`, INTERVAL\n                        CASE DAYOFWEEK(`publish_date`) WHEN 1 THEN 1 ELSE 2 END DAY\n                    )), '%Y-%m-%d') AS `pub_date`\n                    FROM `Comic`\n                    WHERE `publish_date` IS NOT NULL\n                      AND DAYOFWEEK(`publish_date`) IN (1, 7)\n                    UNION\n                    -- Late Mon-Thu comics (>=20:00): also count for the next day\n                    --   Friday is excluded: an evening Fri post is still Friday's comic,\n                    --   and bridging to Monday three days later would be too aggressive.\n                    SELECT DATE_FORMAT(DATE(DATE_ADD(`publish_date`, INTERVAL 1 DAY)), '%Y-%m-%d') AS `pub_date`\n                    FROM `Comic`\n                    WHERE `publish_date` IS NOT NULL\n                      AND DAYOFWEEK(`publish_date`) BETWEEN 2 AND 5\n                      AND TIME(`publish_date`) >= '20:00:00'\n                ) AS `d`\n                ORDER BY `pub_date`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pub_date",
+        "type_info": {
+          "type": "VarString",
+          "flags": "",
+          "max_size": 40
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "f2d6dbb78a00cecddbfd814d0aafcd8e921d01cb08ddaa74d96869dc6fb16230"
+}

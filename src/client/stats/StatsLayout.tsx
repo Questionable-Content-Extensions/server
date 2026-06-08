@@ -105,7 +105,7 @@ function StatsNav() {
                 <TabLink to="/stats/character-regularity">Regularity</TabLink>
                 <TabLink to="/stats/social-hub">Social Hub</TabLink>
                 <TabLink to="/stats/trending-characters">Trending</TabLink>
-                <TabLink to="/stats/cast-turnover">Cast Turnover</TabLink>
+                <TabLink to="/stats/cast-turnover">Turnover</TabLink>
                 <TabLink to="/stats/character-seasons">Seasons</TabLink>
                 <TabLink to="/stats/breakout-years">Breakout Years</TabLink>
                 <TabLink to="/stats/appearance-distribution">
