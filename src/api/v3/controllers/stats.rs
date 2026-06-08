@@ -1224,6 +1224,7 @@ fn build_location_seasons_response(rows: Vec<DbLocationSeasonRow>) -> Vec<Locati
             }
         }
     }
+    entries.sort_by_key(|e| std::cmp::Reverse(e.monthly.iter().sum::<u32>()));
     entries
 }
 
@@ -1250,6 +1251,7 @@ fn build_character_seasons_response(rows: Vec<DbCharacterSeasonRow>) -> Vec<Char
             }
         }
     }
+    entries.sort_by_key(|e| std::cmp::Reverse(e.monthly.iter().sum::<u32>()));
     entries
 }
 
