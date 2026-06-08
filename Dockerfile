@@ -2,8 +2,8 @@
 #   Rust image   #
 ##################
 
-FROM rust:1-bookworm AS chef 
-WORKDIR /usr/src/qcext-server
+FROM rust:trixie AS chef 
+WORKDIR /qcext-server
 RUN curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 RUN cargo binstall cargo-chef 
 
@@ -16,20 +16,22 @@ FROM chef AS rust
 ENV SQLX_OFFLINE=true
 
 # Build dependencies - this is the caching Docker layer!
-COPY --from=planner /usr/src/qcext-server/recipe.json recipe.json
+COPY --from=planner /qcext-server/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 
 # Dependencies are now cached, build for real.
 COPY . .
+RUN mkdir bindings
+RUN rm -f ./bindings/*.ts; cargo test --release export_
 RUN cargo build --release
 
 ##################
 #  NodeJS image  #
 ##################
 
-FROM debian:bookworm AS nodejs
+FROM debian:trixie AS nodejs
 
-WORKDIR /usr/src/qcext-server
+WORKDIR /qcext-server
 
 # Download and import the Nodesource GPG key
 RUN apt-get update && \
@@ -40,7 +42,7 @@ RUN mkdir -p /etc/apt/keyrings && \
     gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
 
 # Make sure we have npm and nodejs
-ENV NODE_MAJOR=18
+ENV NODE_MAJOR=24
 RUN echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update && \
@@ -49,27 +51,30 @@ RUN DEBIAN_FRONTEND=noninteractive \
 
 
 # Next, let's run npm install
-COPY package.json package-lock.json /usr/src/qcext-server/
+COPY package.json package-lock.json /qcext-server/
 RUN npm install
+COPY index.html tsconfig.json vite.config.ts /qcext-server/
 
 # Copy only files relevant for Node (i.e. no Rust files)
-RUN mkdir /usr/src/qcext-server/src 
-COPY src/client /usr/src/qcext-server/src/client
-COPY src/index.js /usr/src/qcext-server/src
+RUN mkdir /qcext-server/src 
+COPY src/client /qcext-server/src/client
+COPY src/index.tsx src/vite-env.d.ts /qcext-server/src/
 
 RUN npx update-browserslist-db@latest
 
-COPY public /usr/src/qcext-server/public
+COPY public /qcext-server/public
+RUN mkdir bindings
+COPY --from=rust /qcext-server/bindings ./bindings
 RUN npm run build
 
 ##################
 #  Output image  #
 ##################
 
-FROM gcr.io/distroless/cc-debian12
+FROM gcr.io/distroless/cc-debian13
 
-COPY --from=rust /usr/src/qcext-server/target/release/qcext-server /usr/local/bin/
-COPY --from=nodejs /usr/src/qcext-server/build /build
+COPY --from=rust /qcext-server/target/release/qcext-server /usr/local/bin/
+COPY --from=nodejs /qcext-server/build /build
 
 ENV PORT=80
 EXPOSE 80
