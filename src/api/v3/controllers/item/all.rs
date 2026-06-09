@@ -28,7 +28,7 @@ pub async fn all(pool: web::Data<DbPool>) -> Result<Json<Vec<ItemList>>> {
             name: item.name,
             r#type: ItemType::try_from(&*item.r#type).map_err(error::ErrorInternalServerError)?,
             color: ItemColor(item.color_red, item.color_green, item.color_blue),
-            count: i32::try_from(item.count).unwrap_or(i32::MAX),
+            count: i32::try_from(item.count).expect("known to be much smaller than i32::MAX"),
         });
     }
 

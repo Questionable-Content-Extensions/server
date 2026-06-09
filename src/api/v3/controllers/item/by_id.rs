@@ -36,7 +36,7 @@ pub async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Resul
     let primary_image = if let Some(primary_image) = item.primary_image {
         Some(primary_image)
     } else {
-        let image_metadatas = DatabaseItem::image_metadatas_by_id(&***pool, item_id.into_inner())
+        let image_metadatas = DatabaseItem::image_metadatas_by_id(&mut *conn, item_id.into_inner())
             .await
             .map_err(error::ErrorInternalServerError)?;
 
@@ -65,8 +65,9 @@ pub async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Resul
             .transpose()
             .expect("database has valid comicIds")
             .unwrap_or_default(),
-        appearances: i32::try_from(stats.count).unwrap(),
-        total_comics: i32::try_from(stats.total_comics).unwrap(),
+        appearances: i32::try_from(stats.count).expect("known to be much smaller than i32::MAX"),
+        total_comics: i32::try_from(stats.total_comics)
+            .expect("known to be much smaller than i32::MAX"),
         presence: if stats.total_comics == 0 {
             0.0
         } else {

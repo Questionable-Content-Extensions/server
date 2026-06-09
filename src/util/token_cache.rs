@@ -23,7 +23,7 @@ impl Default for TokenPermissionsCache {
 }
 
 impl TokenPermissionsCache {
-    /// Creates a new cache with a 60-second TTL.
+    /// Creates a new cache with a 5-minute TTL.
     #[must_use]
     pub fn new() -> Self {
         Self::with_ttl(DEFAULT_TTL)

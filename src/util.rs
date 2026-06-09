@@ -140,7 +140,7 @@ impl AddMonths for DateTime<Utc> {
         };
 
         // Check if the day we have is bigger than the biggest day of the resulting month
-        // and if so, truncateca
+        // and if so, truncate
         let days_in_month = u32::try_from(days_from_month_in_year(month, year).unwrap())
             .expect("days in month are always 28-31");
         if day > days_in_month {
