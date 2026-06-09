@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { CoAppearancesResponse } from '../../../bindings/CoAppearancesResponse';
+import type { CoAppearancesResponse } from 'bindings/CoAppearancesResponse';
+import { getStatsCoAppearances } from 'bindings/api/GetStatsCoAppearances';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -25,11 +27,7 @@ export default function CoAppearances() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/co-appearances')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<CoAppearancesResponse>;
-            })
+        getStatsCoAppearances()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

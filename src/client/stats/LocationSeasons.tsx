@@ -9,7 +9,8 @@ import {
 } from 'chart.js';
 import { useEffect, useRef, useState } from 'react';
 
-import type { LocationSeasonEntry } from '../../../bindings/LocationSeasonEntry';
+import type { LocationSeasonEntry } from 'bindings/LocationSeasonEntry';
+import { getStatsLocationSeasons } from 'bindings/api/GetStatsLocationSeasons';
 
 Chart.register(
     BarController,
@@ -100,11 +101,7 @@ export default function LocationSeasons() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/location-seasons')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<LocationSeasonEntry[]>;
-            })
+        getStatsLocationSeasons()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

@@ -2,9 +2,11 @@ use crate::api::v3::controllers::comic::patch_comic::{FlagType, update_flag};
 use crate::api::v3::models::ItemType;
 use crate::models::{ComicId, ComicIdInvalidity, False, Token, True};
 use crate::util::{andify_comma_string, ensure_is_authorized, ensure_is_valid};
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::web::Json;
+use actix_web::{Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
+use api_macros::api_endpoint;
 use database::DbPool;
 use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
 use parse_display::Display;
@@ -16,13 +18,14 @@ use std::fmt::Write;
 use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
+#[api_endpoint(method = "POST", path = "comicdata/additem")]
 #[tracing::instrument(skip(pool,  auth), fields(permissions = ?auth.authorities))]
 #[expect(clippy::too_many_lines)]
 pub async fn add_item(
     pool: web::Data<DbPool>,
     request: web::Json<AddItemToComicBody>,
     auth: AuthDetails,
-) -> Result<HttpResponse> {
+) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_ADD_ITEM_TO_COMIC)
         .map_err(error::ErrorForbidden)?;
 
@@ -149,14 +152,15 @@ pub async fn add_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body(action))
+    Ok(Json(action))
 }
 
+#[api_endpoint(method = "POST", path = "comicdata/additems")]
 pub async fn add_items(
     pool: web::Data<DbPool>,
     request: web::Json<AddItemsToComicBody>,
     auth: AuthDetails,
-) -> Result<HttpResponse> {
+) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_ADD_ITEM_TO_COMIC)
         .map_err(error::ErrorForbidden)?;
 
@@ -259,7 +263,7 @@ pub async fn add_items(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body(if items_added.is_empty() {
+    Ok(Json(if items_added.is_empty() {
         format!(
             "No new items added to comic {}; they were all already added",
             request.comic_id

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { CharacterRegularity } from '../../../bindings/CharacterRegularity';
+import type { CharacterRegularity } from 'bindings/CharacterRegularity';
+import { getStatsCharacterRegularity } from 'bindings/api/GetStatsCharacterRegularity';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -27,11 +29,7 @@ export default function CharacterRegularityPage() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/character-regularity')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<CharacterRegularity[]>;
-            })
+        getStatsCharacterRegularity()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { SocialHubEntry } from '../../../bindings/SocialHubEntry';
+import type { SocialHubEntry } from 'bindings/SocialHubEntry';
+import { getStatsSocialHub } from 'bindings/api/GetStatsSocialHub';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -20,11 +22,7 @@ export default function SocialHub() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/social-hub')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<SocialHubEntry[]>;
-            })
+        getStatsSocialHub()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

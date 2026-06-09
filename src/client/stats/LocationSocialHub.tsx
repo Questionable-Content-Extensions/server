@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { LocationSocialHubEntry } from '../../../bindings/LocationSocialHubEntry';
+import type { LocationSocialHubEntry } from 'bindings/LocationSocialHubEntry';
+import { getStatsLocationSocialHub } from 'bindings/api/GetStatsLocationSocialHub';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -20,11 +22,7 @@ export default function LocationSocialHub() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/location-social-hub')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<LocationSocialHubEntry[]>;
-            })
+        getStatsLocationSocialHub()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

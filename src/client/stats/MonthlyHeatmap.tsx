@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { MonthlyHeatmapEntry } from '../../../bindings/MonthlyHeatmapEntry';
+import type { MonthlyHeatmapEntry } from 'bindings/MonthlyHeatmapEntry';
+import { getStatsMonthlyHeatmap } from 'bindings/api/GetStatsMonthlyHeatmap';
 
 const MONTH_LABELS = [
     'Jan',
@@ -39,11 +40,7 @@ export default function MonthlyHeatmap() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/monthly-heatmap')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<MonthlyHeatmapEntry[]>;
-            })
+        getStatsMonthlyHeatmap()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

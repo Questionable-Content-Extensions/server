@@ -9,7 +9,8 @@ import {
 } from 'chart.js';
 import { useEffect, useRef, useState } from 'react';
 
-import type { DebutsPerYear } from '../../../bindings/DebutsPerYear';
+import type { DebutsPerYear } from 'bindings/DebutsPerYear';
+import { getStatsDebutsPerYear } from 'bindings/api/GetStatsDebutsPerYear';
 
 Chart.register(
     BarController,
@@ -90,11 +91,7 @@ export default function DebutsPerYearPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/debuts-per-year')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<DebutsPerYear[]>;
-            })
+        getStatsDebutsPerYear()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

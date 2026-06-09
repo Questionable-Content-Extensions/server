@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 
-import type { Item } from '../../../bindings/Item';
-import type { ItemList } from '../../../bindings/ItemList';
-import type { RelatedItem } from '../../../bindings/RelatedItem';
+import type { Item } from 'bindings/Item';
+import type { ItemList } from 'bindings/ItemList';
+import type { RelatedItem } from 'bindings/RelatedItem';
+import { getItemdata } from 'bindings/api/GetItemdata';
+import { getItemdataItemId } from 'bindings/api/GetItemdataItemId';
+import { getItemdataItemIdFriends } from 'bindings/api/GetItemdataItemIdFriends';
+import { getItemdataItemIdLocations } from 'bindings/api/GetItemdataItemIdLocations';
 
 let _allItemsCache: Map<number, ItemList> | null = null;
 let _allItemsFetch: Promise<Map<number, ItemList>> | null = null;
@@ -15,11 +19,7 @@ export function _resetItemsCache(): void {
 function getOrFetchAllItems(): Promise<Map<number, ItemList>> {
     if (_allItemsCache) return Promise.resolve(_allItemsCache);
     if (_allItemsFetch) return _allItemsFetch;
-    _allItemsFetch = fetch('/api/v3/itemdata/')
-        .then((r) => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.json() as Promise<ItemList[]>;
-        })
+    _allItemsFetch = getItemdata()
         .then((items) => {
             _allItemsCache = new Map(items.map((i) => [i.id, i]));
             return _allItemsCache;
@@ -76,11 +76,7 @@ export default function ItemDetailsModal({
         const controller = new AbortController();
         const { signal } = controller;
 
-        fetch(`/api/v3/itemdata/${currentItemId}`, { signal })
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<Item>;
-            })
+        getItemdataItemId(currentItemId, { signal })
             .then((data) => {
                 setItemData(data);
                 setFriends([]);
@@ -88,16 +84,10 @@ export default function ItemDetailsModal({
                 setFetchError(null);
                 setLoadedForItemId(currentItemId);
                 return Promise.all([
-                    fetch(`/api/v3/itemdata/${currentItemId}/friends`, {
-                        signal,
-                    })
-                        .then((r) => r.json() as Promise<RelatedItem[]>)
+                    getItemdataItemIdFriends(currentItemId, { signal })
                         .then(setFriends)
                         .catch(() => {}),
-                    fetch(`/api/v3/itemdata/${currentItemId}/locations`, {
-                        signal,
-                    })
-                        .then((r) => r.json() as Promise<RelatedItem[]>)
+                    getItemdataItemIdLocations(currentItemId, { signal })
                         .then(setLocations)
                         .catch(() => {}),
                 ]);

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 
-import type { DebutYear } from '../../../bindings/DebutYear';
+import type { DebutYear } from 'bindings/DebutYear';
+import { getStatsDebutClusters } from 'bindings/api/GetStatsDebutClusters';
+
 import ItemDetailsModal from './ItemDetailsModal';
 
 export default function DebutYears() {
@@ -10,11 +12,7 @@ export default function DebutYears() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/debut-clusters')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<DebutYear[]>;
-            })
+        getStatsDebutClusters()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

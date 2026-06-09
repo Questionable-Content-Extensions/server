@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { ComebackLocation } from '../../../bindings/ComebackLocation';
+import type { ComebackLocation } from 'bindings/ComebackLocation';
+import { getStatsComebackLocations } from 'bindings/api/GetStatsComebackLocations';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -29,11 +31,7 @@ export default function ComebackLocations() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/comeback-locations')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<ComebackLocation[]>;
-            })
+        getStatsComebackLocations()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

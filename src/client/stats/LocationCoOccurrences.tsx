@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { LocationCoOccurrenceResponse } from '../../../bindings/LocationCoOccurrenceResponse';
+import type { LocationCoOccurrenceResponse } from 'bindings/LocationCoOccurrenceResponse';
+import { getStatsLocationCoOccurrences } from 'bindings/api/GetStatsLocationCoOccurrences';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -25,11 +27,7 @@ export default function LocationCoOccurrences() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/location-co-occurrences')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<LocationCoOccurrenceResponse>;
-            })
+        getStatsLocationCoOccurrences()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

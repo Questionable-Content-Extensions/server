@@ -16,7 +16,12 @@
         "isolatedModules": true,
         "moduleDetection": "force",
         "noEmit": true,
-        "jsx": "preserve"
+        "jsx": "preserve",
+        "paths": {
+            "bindings/*": ["./bindings/*"],
+            "endpoints/*": ["./bindings/endpoints/*"],
+            "services/*": ["./src/client/services/*"]
+        }
     },
-    "include": ["src"]
+    "include": ["src", "bindings"]
 }

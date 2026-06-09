@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { LonerEntry } from '../../../bindings/LonerEntry';
+import type { LonerEntry } from 'bindings/LonerEntry';
+import { getStatsLonerIndex } from 'bindings/api/GetStatsLonerIndex';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -20,11 +22,7 @@ export default function LonerIndex() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/loner-index')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<LonerEntry[]>;
-            })
+        getStatsLonerIndex()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

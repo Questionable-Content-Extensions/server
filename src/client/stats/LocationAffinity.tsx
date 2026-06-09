@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 
-import type { LocationAffinity } from '../../../bindings/LocationAffinity';
+import type { LocationAffinity } from 'bindings/LocationAffinity';
+import { getStatsLocationAffinity } from 'bindings/api/GetStatsLocationAffinity';
+
 import ItemDetailsModal from './ItemDetailsModal';
 
 export default function LocationAffinityPage() {
@@ -10,11 +12,7 @@ export default function LocationAffinityPage() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/location-affinity')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<LocationAffinity[]>;
-            })
+        getStatsLocationAffinity()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

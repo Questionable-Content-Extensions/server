@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { PublicationStreak } from '../../../bindings/PublicationStreak';
+import type { PublicationStreak } from 'bindings/PublicationStreak';
+import { getStatsPublicationStreaks } from 'bindings/api/GetStatsPublicationStreaks';
+
 import {
     SortableHeader,
     StaticHeader,
@@ -24,11 +26,7 @@ export default function PublicationStreaks() {
     const [sort, handleSort] = useSortState<SortKey>('days', 'desc');
 
     useEffect(() => {
-        fetch('/api/v3/stats/publication-streaks')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<PublicationStreak[]>;
-            })
+        getStatsPublicationStreaks()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

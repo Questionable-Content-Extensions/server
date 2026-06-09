@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { LocationRegularity } from '../../../bindings/LocationRegularity';
+import type { LocationRegularity } from 'bindings/LocationRegularity';
+import { getStatsLocationRegularity } from 'bindings/api/GetStatsLocationRegularity';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -27,11 +29,7 @@ export default function LocationRegularityPage() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/location-regularity')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<LocationRegularity[]>;
-            })
+        getStatsLocationRegularity()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

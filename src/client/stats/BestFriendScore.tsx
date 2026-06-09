@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { BestFriendResponse } from '../../../bindings/BestFriendResponse';
+import type { BestFriendResponse } from 'bindings/BestFriendResponse';
+import { getStatsBestFriendScore } from 'bindings/api/GetStatsBestFriendScore';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -35,11 +37,7 @@ export default function BestFriendScore() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/best-friend-score')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<BestFriendResponse>;
-            })
+        getStatsBestFriendScore()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

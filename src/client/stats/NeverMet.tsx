@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { NeverMetPair } from '../../../bindings/NeverMetPair';
+import type { NeverMetPair } from 'bindings/NeverMetPair';
+import { getStatsNeverMet } from 'bindings/api/GetStatsNeverMet';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -20,11 +22,7 @@ export default function NeverMet() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/never-met')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<NeverMetPair[]>;
-            })
+        getStatsNeverMet()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

@@ -1,7 +1,9 @@
 use crate::api::v3::models::{ComicList, Exclusion, Item, ItemColor, ItemType, RelatedItem};
 use crate::models::ItemId;
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::web::Json;
+use actix_web::{Result, error, web};
 use anyhow::anyhow;
+use api_macros::api_endpoint;
 use database::DbPool;
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, RelatedItem as RelatedDatabaseItem,
@@ -11,12 +13,13 @@ use std::convert::{TryFrom, TryInto};
 use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
+#[api_endpoint(method = "GET", path = "itemdata/{itemId}")]
 #[expect(
     clippy::cast_precision_loss,
     reason = "comic/item counts are well within f64 mantissa precision"
 )]
 #[tracing::instrument(skip(pool))]
-pub async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Result<HttpResponse> {
+pub async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Result<Json<Item>> {
     let item_id = item_id.into_inner();
 
     let mut conn = pool
@@ -73,21 +76,29 @@ pub async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Resul
         primary_image,
     };
 
-    Ok(HttpResponse::Ok().json(item))
+    Ok(Json(item))
 }
 
+#[api_endpoint(method = "GET", path = "itemdata/{itemId}/friends")]
 #[tracing::instrument(skip(pool))]
-pub async fn friends(pool: web::Data<DbPool>, item_id: web::Path<u16>) -> Result<HttpResponse> {
+pub async fn friends(
+    pool: web::Data<DbPool>,
+    item_id: web::Path<u16>,
+) -> Result<Json<Vec<RelatedItem>>> {
     let items = related_items(pool, *item_id, ItemType::Cast, 5).await?;
 
-    Ok(HttpResponse::Ok().json(items))
+    Ok(Json(items))
 }
 
+#[api_endpoint(method = "GET", path = "itemdata/{itemId}/locations")]
 #[tracing::instrument(skip(pool))]
-pub async fn locations(pool: web::Data<DbPool>, item_id: web::Path<u16>) -> Result<HttpResponse> {
+pub async fn locations(
+    pool: web::Data<DbPool>,
+    item_id: web::Path<u16>,
+) -> Result<Json<Vec<RelatedItem>>> {
     let items = related_items(pool, *item_id, ItemType::Location, 5).await?;
 
-    Ok(HttpResponse::Ok().json(items))
+    Ok(Json(items))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -116,8 +127,12 @@ async fn related_items(
     .map_err(error::ErrorInternalServerError)
 }
 
+#[api_endpoint(method = "GET", path = "itemdata/{itemId}/comics")]
 #[tracing::instrument(skip(pool))]
-pub async fn comics(pool: web::Data<DbPool>, item_id: web::Path<u16>) -> Result<HttpResponse> {
+pub async fn comics(
+    pool: web::Data<DbPool>,
+    item_id: web::Path<u16>,
+) -> Result<Json<Vec<ComicList>>> {
     let item_id = item_id.into_inner();
 
     let comics: Vec<ComicList> =
@@ -125,7 +140,7 @@ pub async fn comics(pool: web::Data<DbPool>, item_id: web::Path<u16>) -> Result<
             .await
             .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(comics))
+    Ok(Json(comics))
 }
 
 const fn exclusion_to_filter_options(exclude: Option<Exclusion>) -> (Option<bool>, Option<bool>) {
@@ -136,12 +151,13 @@ const fn exclusion_to_filter_options(exclude: Option<Exclusion>) -> (Option<bool
     }
 }
 
+#[api_endpoint(method = "GET", path = "itemdata/{itemId}/comics/random")]
 #[tracing::instrument(skip(pool))]
 pub async fn random_comic(
     pool: web::Data<DbPool>,
     item_id: web::Path<u16>,
     query: web::Query<RandomItemComicQuery>,
-) -> Result<HttpResponse> {
+) -> Result<Json<Option<u16>>> {
     let item_id = item_id.into_inner();
     let (include_guest_comics, include_non_canon_comics) =
         exclusion_to_filter_options(query.exclude);
@@ -156,7 +172,7 @@ pub async fn random_comic(
     .await
     .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(comic_id))
+    Ok(Json(comic_id))
 }
 
 #[cfg(test)]

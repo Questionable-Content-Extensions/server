@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 
-import type { LocationSpotlightResponse } from '../../../bindings/LocationSpotlightResponse';
-import type { YearlySpotlightResponse } from '../../../bindings/YearlySpotlightResponse';
+import type { LocationSpotlightResponse } from 'bindings/LocationSpotlightResponse';
+import type { YearlySpotlightResponse } from 'bindings/YearlySpotlightResponse';
+import { getStatsLocationYearlySpotlight } from 'bindings/api/GetStatsLocationYearlySpotlight';
+
 import YearlyBarChart from './YearlyBarChart';
 import YearlyStreamgraph from './YearlyStreamgraph';
 
@@ -27,11 +29,7 @@ export default function LocationYearlySpotlight() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/location-yearly-spotlight')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<LocationSpotlightResponse>;
-            })
+        getStatsLocationYearlySpotlight()
             .then(setResponse)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

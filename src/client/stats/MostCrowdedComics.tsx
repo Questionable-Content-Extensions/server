@@ -10,7 +10,9 @@ import {
 } from 'chart.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { CrowdedComicsResponse } from '../../../bindings/CrowdedComicsResponse';
+import type { CrowdedComicsResponse } from 'bindings/CrowdedComicsResponse';
+import { getStatsCrowdedComics } from 'bindings/api/GetStatsCrowdedComics';
+
 import {
     SortableHeader,
     StaticHeader,
@@ -104,11 +106,7 @@ export default function MostCrowdedComics() {
     const [sort, handleSort] = useSortState<SortKey>('castCount', 'desc');
 
     useEffect(() => {
-        fetch('/api/v3/stats/crowded-comics')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<CrowdedComicsResponse>;
-            })
+        getStatsCrowdedComics()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

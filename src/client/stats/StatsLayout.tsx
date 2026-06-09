@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 
-import type { ItemStats } from '../../../bindings/ItemStats';
+import type { ItemStats } from 'bindings/ItemStats';
+import { getStatsCast } from 'bindings/api/GetStatsCast';
+import { getStatsLocations } from 'bindings/api/GetStatsLocations';
+
 import AppearanceDistribution from './AppearanceDistribution';
 import BestFriendScore from './BestFriendScore';
 import BreakoutYears from './BreakoutYears';
@@ -186,11 +189,7 @@ export default function StatsLayout() {
     const [locationsError, setLocationsError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/cast')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<ItemStats[]>;
-            })
+        getStatsCast()
             .then(setCastData)
             .catch((e: unknown) =>
                 setCastError(e instanceof Error ? e.message : String(e)),
@@ -198,11 +197,7 @@ export default function StatsLayout() {
     }, []);
 
     useEffect(() => {
-        fetch('/api/v3/stats/locations')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<ItemStats[]>;
-            })
+        getStatsLocations()
             .then(setLocationsData)
             .catch((e: unknown) =>
                 setLocationsError(e instanceof Error ? e.message : String(e)),

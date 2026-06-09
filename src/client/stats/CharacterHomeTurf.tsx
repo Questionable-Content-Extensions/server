@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { CharacterHomeTurfEntry } from '../../../bindings/CharacterHomeTurfEntry';
+import type { CharacterHomeTurfEntry } from 'bindings/CharacterHomeTurfEntry';
+import { getStatsCharacterHomeTurf } from 'bindings/api/GetStatsCharacterHomeTurf';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -20,11 +22,7 @@ export default function CharacterHomeTurf() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/character-home-turf')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<CharacterHomeTurfEntry[]>;
-            })
+        getStatsCharacterHomeTurf()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

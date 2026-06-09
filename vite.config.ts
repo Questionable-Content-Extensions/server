@@ -4,6 +4,10 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
     plugins: [tailwindcss(), react()],
+    resolve: {
+        tsconfigPaths: true,
+        preserveSymlinks: true,
+    },
     server: {
         proxy: {
             '/api': {

@@ -375,6 +375,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
+name = "api-macros"
+version = "0.1.0"
+source = "git+https://github.com/ilyvion/api-macros#0cc1e1de0618cccaab015f52906b3d168e49a821"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
 name = "arc-swap"
 version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2713,6 +2724,7 @@ dependencies = [
  "actix-web-grants",
  "actix-web-lab",
  "anyhow",
+ "api-macros",
  "arc-swap",
  "bitflags 2.12.1",
  "chrono",

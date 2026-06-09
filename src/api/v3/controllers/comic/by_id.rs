@@ -8,8 +8,10 @@ use crate::api::v3::models::{
 };
 use crate::models::{ComicId, False, Token, True};
 use crate::util::NewsUpdater;
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::web::Json;
+use actix_web::{Result, error, web};
 use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
+use api_macros::api_endpoint;
 use chrono::{TimeZone, Utc};
 use database::DbPool;
 use database::models::{Comic as DatabaseComic, Item as DatabaseItem};
@@ -19,6 +21,7 @@ use std::convert::TryInto;
 use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
+#[api_endpoint(method = "GET", path = "comicdata/{comicId}")]
 #[tracing::instrument(skip(pool, news_updater, auth), fields(permissions = ?auth.authorities))]
 #[expect(clippy::too_many_lines)]
 pub async fn by_id(
@@ -27,7 +30,7 @@ pub async fn by_id(
     query: web::Query<ByIdQuery>,
     comic_id: web::Path<ComicId>,
     auth: AuthDetails,
-) -> Result<HttpResponse> {
+) -> Result<Json<Comic>> {
     let comic_id = comic_id.into_inner();
 
     let mut conn = pool
@@ -154,7 +157,7 @@ pub async fn by_id(
         }
     };
 
-    Ok(HttpResponse::Ok().json(comic))
+    Ok(Json(comic))
 }
 
 #[derive(Debug, Deserialize, TS)]

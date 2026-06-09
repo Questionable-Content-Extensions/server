@@ -1,8 +1,10 @@
 use crate::models::{ComicId, ComicIdInvalidity, ItemId, ItemIdInvalidity, Token};
 use crate::util::{ensure_is_authorized, ensure_is_valid};
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::web::Json;
+use actix_web::{Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
+use api_macros::api_endpoint;
 use database::DbPool;
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence as DatabaseOccurrence,
@@ -14,12 +16,13 @@ use shared::token_permissions;
 use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
+#[api_endpoint(method = "POST", path = "comicdata/removeitem")]
 #[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 pub async fn remove_item(
     pool: web::Data<DbPool>,
     request: web::Json<RemoveItemFromComicBody>,
     auth: AuthDetails,
-) -> Result<HttpResponse> {
+) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_REMOVE_ITEM_FROM_COMIC)
         .map_err(error::ErrorForbidden)?;
 
@@ -77,7 +80,7 @@ pub async fn remove_item(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body(action))
+    Ok(Json(action))
 }
 
 #[derive(Debug, Deserialize, TS)]

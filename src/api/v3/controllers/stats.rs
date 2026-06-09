@@ -17,7 +17,9 @@ use crate::api::v3::models::stats::{
 };
 use crate::models::{ComicId, ItemId};
 use crate::util::environment;
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::web::Json;
+use actix_web::{Result, error, web};
+use api_macros::api_endpoint;
 use database::DbPool;
 use database::models::stats::{
     AvgCastPerYearRow as DbAvgCastPerYearRow, BreakoutYearRow as DbBreakoutYearRow,
@@ -43,59 +45,52 @@ use database::models::stats::{
 };
 use serde::Deserialize;
 use tracing::{Instrument, info_span};
+use ts_rs::TS;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::resource("/cast").route(web::get().to(cast)))
-        .service(web::resource("/locations").route(web::get().to(locations)))
-        .service(web::resource("/co-appearances").route(web::get().to(co_appearances)))
-        .service(web::resource("/yearly-spotlight").route(web::get().to(yearly_spotlight)))
-        .service(web::resource("/debuts-per-year").route(web::get().to(debuts_per_year)))
-        .service(web::resource("/yearly-overview").route(web::get().to(yearly_overview)))
-        .service(web::resource("/publication-calendar").route(web::get().to(publication_calendar)))
-        .service(web::resource("/comeback-characters").route(web::get().to(comeback_characters)))
-        .service(web::resource("/location-affinity").route(web::get().to(location_affinity)))
-        .service(web::resource("/crowded-comics").route(web::get().to(crowded_comics)))
-        .service(
-            web::resource("/location-yearly-spotlight")
-                .route(web::get().to(location_yearly_spotlight)),
-        )
-        .service(web::resource("/publication-gaps").route(web::get().to(publication_gaps)))
-        .service(web::resource("/debut-clusters").route(web::get().to(debut_clusters)))
-        .service(web::resource("/ensemble-ratio").route(web::get().to(ensemble_ratio)))
-        .service(web::resource("/character-regularity").route(web::get().to(character_regularity)))
-        .service(web::resource("/location-regularity").route(web::get().to(location_regularity)))
-        .service(
-            web::resource("/location-co-occurrences").route(web::get().to(location_co_occurrences)),
-        )
-        .service(web::resource("/best-friend-score").route(web::get().to(best_friend_score)))
-        .service(web::resource("/social-hub").route(web::get().to(social_hub)))
-        .service(web::resource("/trending-characters").route(web::get().to(trending_characters)))
-        .service(web::resource("/trending-locations").route(web::get().to(trending_locations)))
-        .service(web::resource("/cast-turnover").route(web::get().to(cast_turnover)))
-        .service(web::resource("/character-seasons").route(web::get().to(character_seasons)))
-        .service(web::resource("/breakout-years").route(web::get().to(breakout_years)))
-        .service(web::resource("/character-home-turf").route(web::get().to(character_home_turf)))
-        .service(web::resource("/pair-evolution").route(web::get().to(pair_evolution)))
-        .service(web::resource("/loner-index").route(web::get().to(loner_index)))
-        .service(web::resource("/never-met").route(web::get().to(never_met)))
-        .service(web::resource("/schedule-evolution").route(web::get().to(schedule_evolution)))
-        .service(
-            web::resource("/publish-time-evolution").route(web::get().to(publish_time_evolution)),
-        )
-        .service(web::resource("/publication-streaks").route(web::get().to(publication_streaks)))
-        .service(web::resource("/monthly-heatmap").route(web::get().to(monthly_heatmap)))
-        .service(web::resource("/milestones").route(web::get().to(milestones)))
-        .service(web::resource("/comeback-locations").route(web::get().to(comeback_locations)))
-        .service(web::resource("/location-seasons").route(web::get().to(location_seasons)))
-        .service(
-            web::resource("/location-breakout-years").route(web::get().to(location_breakout_years)),
-        )
-        .service(web::resource("/location-social-hub").route(web::get().to(location_social_hub)))
-        .service(web::resource("/location-turnover").route(web::get().to(location_turnover)));
+    cfg.service(cast)
+        .service(locations)
+        .service(co_appearances)
+        .service(yearly_spotlight)
+        .service(debuts_per_year)
+        .service(yearly_overview)
+        .service(publication_calendar)
+        .service(comeback_characters)
+        .service(location_affinity)
+        .service(crowded_comics)
+        .service(location_yearly_spotlight)
+        .service(publication_gaps)
+        .service(debut_clusters)
+        .service(ensemble_ratio)
+        .service(character_regularity)
+        .service(location_regularity)
+        .service(location_co_occurrences)
+        .service(best_friend_score)
+        .service(social_hub)
+        .service(trending_characters)
+        .service(trending_locations)
+        .service(cast_turnover)
+        .service(character_seasons)
+        .service(breakout_years)
+        .service(character_home_turf)
+        .service(pair_evolution)
+        .service(loner_index)
+        .service(never_met)
+        .service(schedule_evolution)
+        .service(publish_time_evolution)
+        .service(publication_streaks)
+        .service(monthly_heatmap)
+        .service(milestones)
+        .service(comeback_locations)
+        .service(location_seasons)
+        .service(location_breakout_years)
+        .service(location_social_hub)
+        .service(location_turnover);
 }
 
+#[api_endpoint(method = "GET", path = "stats/cast")]
 #[tracing::instrument(skip(pool))]
-async fn cast(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn cast(pool: web::Data<DbPool>) -> Result<Json<Vec<ItemStats>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -106,11 +101,16 @@ async fn cast(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(rows.into_iter().map(item_stats_from_db).collect::<Vec<_>>()))
+    Ok(Json(
+        rows.into_iter()
+            .filter_map(item_stats_from_db)
+            .collect::<Vec<_>>(),
+    ))
 }
 
+#[api_endpoint(method = "GET", path = "stats/locations")]
 #[tracing::instrument(skip(pool))]
-async fn locations(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn locations(pool: web::Data<DbPool>) -> Result<Json<Vec<ItemStats>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -121,11 +121,16 @@ async fn locations(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(rows.into_iter().map(item_stats_from_db).collect::<Vec<_>>()))
+    Ok(Json(
+        rows.into_iter()
+            .filter_map(item_stats_from_db)
+            .collect::<Vec<_>>(),
+    ))
 }
 
+#[api_endpoint(method = "GET", path = "stats/co-appearances")]
 #[tracing::instrument(skip(pool))]
-async fn co_appearances(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn co_appearances(pool: web::Data<DbPool>) -> Result<Json<CoAppearancesResponse>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -136,11 +141,12 @@ async fn co_appearances(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_co_appearances_response(rows)))
+    Ok(Json(build_co_appearances_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/yearly-spotlight")]
 #[tracing::instrument(skip(pool))]
-async fn yearly_spotlight(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn yearly_spotlight(pool: web::Data<DbPool>) -> Result<Json<YearlySpotlightResponse>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -151,11 +157,12 @@ async fn yearly_spotlight(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_yearly_spotlight_response(rows)))
+    Ok(Json(build_yearly_spotlight_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/debuts-per-year")]
 #[tracing::instrument(skip(pool))]
-async fn debuts_per_year(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn debuts_per_year(pool: web::Data<DbPool>) -> Result<Json<Vec<DebutsPerYear>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -177,11 +184,12 @@ async fn debuts_per_year(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/yearly-overview")]
 #[tracing::instrument(skip(pool))]
-async fn yearly_overview(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn yearly_overview(pool: web::Data<DbPool>) -> Result<Json<Vec<YearlyOverview>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -203,11 +211,12 @@ async fn yearly_overview(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/publication-calendar")]
 #[tracing::instrument(skip(pool))]
-async fn publication_calendar(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn publication_calendar(pool: web::Data<DbPool>) -> Result<Json<PublicationCalendar>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -242,11 +251,12 @@ async fn publication_calendar(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(PublicationCalendar { monthly, daily }))
+    Ok(Json(PublicationCalendar { monthly, daily }))
 }
 
+#[api_endpoint(method = "GET", path = "stats/comeback-characters")]
 #[tracing::instrument(skip(pool))]
-async fn comeback_characters(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn comeback_characters(pool: web::Data<DbPool>) -> Result<Json<Vec<ComebackCharacter>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -270,11 +280,12 @@ async fn comeback_characters(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/location-affinity")]
 #[tracing::instrument(skip(pool))]
-async fn location_affinity(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn location_affinity(pool: web::Data<DbPool>) -> Result<Json<Vec<LocationAffinity>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -285,11 +296,12 @@ async fn location_affinity(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_location_affinity_response(rows)))
+    Ok(Json(build_location_affinity_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/crowded-comics")]
 #[tracing::instrument(skip(pool))]
-async fn crowded_comics(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn crowded_comics(pool: web::Data<DbPool>) -> Result<Json<CrowdedComicsResponse>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -322,14 +334,17 @@ async fn crowded_comics(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(CrowdedComicsResponse {
+    Ok(Json(CrowdedComicsResponse {
         top_comics,
         avg_per_year,
     }))
 }
 
+#[api_endpoint(method = "GET", path = "stats/location-yearly-spotlight")]
 #[tracing::instrument(skip(pool))]
-async fn location_yearly_spotlight(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn location_yearly_spotlight(
+    pool: web::Data<DbPool>,
+) -> Result<Json<LocationSpotlightResponse>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -340,11 +355,12 @@ async fn location_yearly_spotlight(pool: web::Data<DbPool>) -> Result<HttpRespon
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_location_spotlight_response(rows)))
+    Ok(Json(build_location_spotlight_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/publication-gaps")]
 #[tracing::instrument(skip(pool))]
-async fn publication_gaps(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn publication_gaps(pool: web::Data<DbPool>) -> Result<Json<Vec<PublicationGap>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -366,11 +382,12 @@ async fn publication_gaps(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/debut-clusters")]
 #[tracing::instrument(skip(pool))]
-async fn debut_clusters(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn debut_clusters(pool: web::Data<DbPool>) -> Result<Json<Vec<DebutYear>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -381,11 +398,12 @@ async fn debut_clusters(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_debut_clusters_response(rows)))
+    Ok(Json(build_debut_clusters_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/ensemble-ratio")]
 #[tracing::instrument(skip(pool))]
-async fn ensemble_ratio(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn ensemble_ratio(pool: web::Data<DbPool>) -> Result<Json<Vec<EnsembleRatio>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -410,11 +428,12 @@ async fn ensemble_ratio(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/character-regularity")]
 #[tracing::instrument(skip(pool))]
-async fn character_regularity(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn character_regularity(pool: web::Data<DbPool>) -> Result<Json<Vec<CharacterRegularity>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -438,11 +457,12 @@ async fn character_regularity(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/location-regularity")]
 #[tracing::instrument(skip(pool))]
-async fn location_regularity(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn location_regularity(pool: web::Data<DbPool>) -> Result<Json<Vec<LocationRegularity>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -466,11 +486,14 @@ async fn location_regularity(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/location-co-occurrences")]
 #[tracing::instrument(skip(pool))]
-async fn location_co_occurrences(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn location_co_occurrences(
+    pool: web::Data<DbPool>,
+) -> Result<Json<LocationCoOccurrenceResponse>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -481,11 +504,12 @@ async fn location_co_occurrences(pool: web::Data<DbPool>) -> Result<HttpResponse
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_location_co_occurrences_response(rows)))
+    Ok(Json(build_location_co_occurrences_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/best-friend-score")]
 #[tracing::instrument(skip(pool))]
-async fn best_friend_score(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn best_friend_score(pool: web::Data<DbPool>) -> Result<Json<BestFriendResponse>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -496,7 +520,7 @@ async fn best_friend_score(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_best_friend_response(rows)))
+    Ok(Json(build_best_friend_response(rows)))
 }
 
 fn item_stats_from_db(row: DbItemStats) -> Option<ItemStats> {
@@ -581,7 +605,7 @@ fn build_yearly_spotlight_response(rows: Vec<DbYearlyAppearanceRow>) -> YearlySp
 fn build_location_spotlight_response(
     rows: Vec<DbLocationYearlyAppearanceRow>,
 ) -> LocationSpotlightResponse {
-    let mut locations: HashMap<u16, CharacterMeta> = HashMap::new();
+    let mut location_map: HashMap<u16, CharacterMeta> = HashMap::new();
     let mut years: Vec<LocationSpotlightYear> = Vec::new();
 
     for row in rows {
@@ -590,7 +614,7 @@ fn build_location_spotlight_response(
         match years.last_mut() {
             Some(spotlight) if spotlight.year == year => {
                 if spotlight.locations.len() < 5 {
-                    locations.entry(row.id).or_insert_with(|| CharacterMeta {
+                    location_map.entry(row.id).or_insert_with(|| CharacterMeta {
                         name: row.name,
                         color: ItemColor(row.color_red, row.color_green, row.color_blue),
                     });
@@ -601,7 +625,7 @@ fn build_location_spotlight_response(
                 }
             }
             _ => {
-                locations.entry(row.id).or_insert_with(|| CharacterMeta {
+                location_map.entry(row.id).or_insert_with(|| CharacterMeta {
                     name: row.name,
                     color: ItemColor(row.color_red, row.color_green, row.color_blue),
                 });
@@ -616,7 +640,10 @@ fn build_location_spotlight_response(
         }
     }
 
-    LocationSpotlightResponse { locations, years }
+    LocationSpotlightResponse {
+        locations: location_map,
+        years,
+    }
 }
 
 fn build_debut_clusters_response(rows: Vec<DbDebutDetailRow>) -> Vec<DebutYear> {
@@ -650,18 +677,18 @@ fn build_debut_clusters_response(rows: Vec<DbDebutDetailRow>) -> Vec<DebutYear> 
 fn build_location_co_occurrences_response(
     rows: Vec<DbLocationCoOccurrenceRow>,
 ) -> LocationCoOccurrenceResponse {
-    let mut locations: HashMap<u16, LocationCoOccurrenceEntry> = HashMap::new();
+    let mut location_map: HashMap<u16, LocationCoOccurrenceEntry> = HashMap::new();
     let mut pairs = Vec::with_capacity(rows.len());
 
     for row in rows {
-        locations
+        location_map
             .entry(row.location1_id)
             .or_insert_with(|| LocationCoOccurrenceEntry {
                 id: ItemId::from(row.location1_id),
                 name: row.location1_name.clone(),
                 appearances: u32::try_from(row.location1_appearances).unwrap_or(u32::MAX),
             });
-        locations
+        location_map
             .entry(row.location2_id)
             .or_insert_with(|| LocationCoOccurrenceEntry {
                 id: ItemId::from(row.location2_id),
@@ -675,7 +702,10 @@ fn build_location_co_occurrences_response(
         });
     }
 
-    LocationCoOccurrenceResponse { locations, pairs }
+    LocationCoOccurrenceResponse {
+        locations: location_map,
+        pairs,
+    }
 }
 
 fn build_best_friend_response(rows: Vec<DbCoAppearance>) -> BestFriendResponse {
@@ -705,8 +735,9 @@ fn build_best_friend_response(rows: Vec<DbCoAppearance>) -> BestFriendResponse {
     BestFriendResponse { characters, pairs }
 }
 
+#[api_endpoint(method = "GET", path = "stats/social-hub")]
 #[tracing::instrument(skip(pool))]
-async fn social_hub(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn social_hub(pool: web::Data<DbPool>) -> Result<Json<Vec<SocialHubEntry>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -726,11 +757,12 @@ async fn social_hub(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             distinct_partners: u32::try_from(r.distinct_partners).unwrap_or(u32::MAX),
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/trending-characters")]
 #[tracing::instrument(skip(pool))]
-async fn trending_characters(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn trending_characters(pool: web::Data<DbPool>) -> Result<Json<Vec<TrendingItem>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -741,11 +773,12 @@ async fn trending_characters(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_trending_response(rows)))
+    Ok(Json(build_trending_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/trending-locations")]
 #[tracing::instrument(skip(pool))]
-async fn trending_locations(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn trending_locations(pool: web::Data<DbPool>) -> Result<Json<Vec<TrendingItem>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -756,11 +789,12 @@ async fn trending_locations(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_trending_response(rows)))
+    Ok(Json(build_trending_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/cast-turnover")]
 #[tracing::instrument(skip(pool))]
-async fn cast_turnover(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn cast_turnover(pool: web::Data<DbPool>) -> Result<Json<Vec<CastTurnoverYear>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -783,11 +817,12 @@ async fn cast_turnover(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             })
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/character-seasons")]
 #[tracing::instrument(skip(pool))]
-async fn character_seasons(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn character_seasons(pool: web::Data<DbPool>) -> Result<Json<Vec<CharacterSeasonEntry>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -798,11 +833,12 @@ async fn character_seasons(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_character_seasons_response(rows)))
+    Ok(Json(build_character_seasons_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/breakout-years")]
 #[tracing::instrument(skip(pool))]
-async fn breakout_years(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn breakout_years(pool: web::Data<DbPool>) -> Result<Json<Vec<BreakoutYear>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -817,7 +853,7 @@ async fn breakout_years(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .into_iter()
         .filter_map(|r| {
             let avg = r.avg_per_year.unwrap_or(0.0);
-            let breakout_years = r
+            let year_list = r
                 .breakout_years?
                 .split(',')
                 .filter_map(|s| s.parse::<i32>().ok())
@@ -825,7 +861,7 @@ async fn breakout_years(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             Some(BreakoutYear {
                 id: ItemId::from(r.id),
                 name: r.name,
-                breakout_years,
+                breakout_years: year_list,
                 breakout_count: u32::try_from(r.breakout_count).unwrap_or(u32::MAX),
                 avg_per_year: avg,
                 #[expect(clippy::cast_precision_loss, reason = "ratio is approximate by nature")]
@@ -837,11 +873,12 @@ async fn breakout_years(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             })
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/character-home-turf")]
 #[tracing::instrument(skip(pool))]
-async fn character_home_turf(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn character_home_turf(pool: web::Data<DbPool>) -> Result<Json<Vec<CharacterHomeTurfEntry>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -872,20 +909,22 @@ async fn character_home_turf(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             character_appearances: u32::try_from(r.character_appearances).unwrap_or(u32::MAX),
         });
     }
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, TS)]
+#[ts(export)]
 struct PairEvolutionQuery {
     char1: u16,
     char2: u16,
 }
 
+#[api_endpoint(method = "GET", path = "stats/pair-evolution")]
 #[tracing::instrument(skip(pool))]
 async fn pair_evolution(
     pool: web::Data<DbPool>,
     query: web::Query<PairEvolutionQuery>,
-) -> Result<HttpResponse> {
+) -> Result<Json<Vec<PairEvolutionYear>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -905,11 +944,12 @@ async fn pair_evolution(
             })
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/loner-index")]
 #[tracing::instrument(skip(pool))]
-async fn loner_index(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn loner_index(pool: web::Data<DbPool>) -> Result<Json<Vec<LonerEntry>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -929,11 +969,12 @@ async fn loner_index(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             avg_co_cast: r.avg_co_cast.unwrap_or(0.0),
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/never-met")]
 #[tracing::instrument(skip(pool))]
-async fn never_met(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn never_met(pool: web::Data<DbPool>) -> Result<Json<Vec<NeverMetPair>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -956,11 +997,12 @@ async fn never_met(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             comics_together: u32::try_from(r.comics_together.unwrap_or(0)).unwrap_or(u32::MAX),
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/schedule-evolution")]
 #[tracing::instrument(skip(pool))]
-async fn schedule_evolution(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn schedule_evolution(pool: web::Data<DbPool>) -> Result<Json<Vec<ScheduleEvolutionYear>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -971,11 +1013,12 @@ async fn schedule_evolution(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_schedule_evolution_response(rows)))
+    Ok(Json(build_schedule_evolution_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/publish-time-evolution")]
 #[tracing::instrument(skip(pool))]
-async fn publish_time_evolution(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn publish_time_evolution(pool: web::Data<DbPool>) -> Result<Json<Vec<PublishTimeYear>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -986,11 +1029,12 @@ async fn publish_time_evolution(pool: web::Data<DbPool>) -> Result<HttpResponse>
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_publish_time_response(rows)))
+    Ok(Json(build_publish_time_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/publication-streaks")]
 #[tracing::instrument(skip(pool))]
-async fn publication_streaks(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn publication_streaks(pool: web::Data<DbPool>) -> Result<Json<Vec<PublicationStreak>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -1002,11 +1046,12 @@ async fn publication_streaks(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .map_err(error::ErrorInternalServerError)?;
 
     let dates: Vec<String> = rows.into_iter().filter_map(|r| r.pub_date).collect();
-    Ok(HttpResponse::Ok().json(build_publication_streaks(&dates)))
+    Ok(Json(build_publication_streaks(&dates)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/monthly-heatmap")]
 #[tracing::instrument(skip(pool))]
-async fn monthly_heatmap(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn monthly_heatmap(pool: web::Data<DbPool>) -> Result<Json<Vec<MonthlyHeatmapEntry>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -1027,11 +1072,12 @@ async fn monthly_heatmap(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             })
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/milestones")]
 #[tracing::instrument(skip(pool))]
-async fn milestones(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn milestones(pool: web::Data<DbPool>) -> Result<Json<Vec<MilestoneComic>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -1052,7 +1098,7 @@ async fn milestones(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             is_non_canon: r.is_non_canon != 0,
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
 fn build_trending_response(rows: Vec<DbTrendingItemRow>) -> Vec<TrendingItem> {
@@ -1067,8 +1113,9 @@ fn build_trending_response(rows: Vec<DbTrendingItemRow>) -> Vec<TrendingItem> {
         .collect()
 }
 
+#[api_endpoint(method = "GET", path = "stats/comeback-locations")]
 #[tracing::instrument(skip(pool))]
-async fn comeback_locations(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn comeback_locations(pool: web::Data<DbPool>) -> Result<Json<Vec<ComebackLocation>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -1092,11 +1139,12 @@ async fn comeback_locations(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         })
         .collect();
 
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/location-seasons")]
 #[tracing::instrument(skip(pool))]
-async fn location_seasons(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn location_seasons(pool: web::Data<DbPool>) -> Result<Json<Vec<LocationSeasonEntry>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -1107,11 +1155,14 @@ async fn location_seasons(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(build_location_seasons_response(rows)))
+    Ok(Json(build_location_seasons_response(rows)))
 }
 
+#[api_endpoint(method = "GET", path = "stats/location-breakout-years")]
 #[tracing::instrument(skip(pool))]
-async fn location_breakout_years(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn location_breakout_years(
+    pool: web::Data<DbPool>,
+) -> Result<Json<Vec<LocationBreakoutYear>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -1126,7 +1177,7 @@ async fn location_breakout_years(pool: web::Data<DbPool>) -> Result<HttpResponse
         .into_iter()
         .filter_map(|r| {
             let avg = r.avg_per_year.unwrap_or(0.0);
-            let breakout_years = r
+            let year_list = r
                 .breakout_years?
                 .split(',')
                 .filter_map(|s| s.parse::<i32>().ok())
@@ -1134,7 +1185,7 @@ async fn location_breakout_years(pool: web::Data<DbPool>) -> Result<HttpResponse
             Some(LocationBreakoutYear {
                 id: ItemId::from(r.id),
                 name: r.name,
-                breakout_years,
+                breakout_years: year_list,
                 breakout_count: u32::try_from(r.breakout_count).unwrap_or(u32::MAX),
                 avg_per_year: avg,
                 #[expect(clippy::cast_precision_loss, reason = "ratio is approximate by nature")]
@@ -1146,11 +1197,12 @@ async fn location_breakout_years(pool: web::Data<DbPool>) -> Result<HttpResponse
             })
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/location-social-hub")]
 #[tracing::instrument(skip(pool))]
-async fn location_social_hub(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn location_social_hub(pool: web::Data<DbPool>) -> Result<Json<Vec<LocationSocialHubEntry>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -1170,11 +1222,12 @@ async fn location_social_hub(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             distinct_characters: u32::try_from(r.distinct_characters).unwrap_or(u32::MAX),
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
+#[api_endpoint(method = "GET", path = "stats/location-turnover")]
 #[tracing::instrument(skip(pool))]
-async fn location_turnover(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+async fn location_turnover(pool: web::Data<DbPool>) -> Result<Json<Vec<LocationTurnoverYear>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -1198,7 +1251,7 @@ async fn location_turnover(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             })
         })
         .collect();
-    Ok(HttpResponse::Ok().json(result))
+    Ok(Json(result))
 }
 
 fn build_location_seasons_response(rows: Vec<DbLocationSeasonRow>) -> Vec<LocationSeasonEntry> {
@@ -1420,10 +1473,10 @@ fn build_publication_streaks(dates: &[String]) -> Vec<PublicationStreak> {
 }
 
 fn build_location_affinity_response(rows: Vec<DbLocationAffinityRow>) -> Vec<LocationAffinity> {
-    let mut locations: Vec<LocationAffinity> = Vec::new();
+    let mut location_entries: Vec<LocationAffinity> = Vec::new();
 
     for row in rows {
-        match locations.last_mut() {
+        match location_entries.last_mut() {
             Some(loc) if loc.location_id.into_inner() == row.location_id => {
                 if loc.top_characters.len() < 5 {
                     loc.top_characters.push(LocationAffinityCharacter {
@@ -1434,7 +1487,7 @@ fn build_location_affinity_response(rows: Vec<DbLocationAffinityRow>) -> Vec<Loc
                 }
             }
             _ => {
-                locations.push(LocationAffinity {
+                location_entries.push(LocationAffinity {
                     location_id: ItemId::from(row.location_id),
                     location_name: row.location_name,
                     top_characters: vec![LocationAffinityCharacter {
@@ -1447,7 +1500,7 @@ fn build_location_affinity_response(rows: Vec<DbLocationAffinityRow>) -> Vec<Loc
         }
     }
 
-    locations
+    location_entries
 }
 
 #[cfg(test)]

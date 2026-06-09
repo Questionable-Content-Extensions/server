@@ -1,9 +1,11 @@
 use crate::api::v3::models::ItemImageList;
 use crate::models::{ImageId, Token};
 use crate::util::ensure_is_authorized;
+use actix_web::web::Json;
 use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
+use api_macros::api_endpoint;
 use database::DbPool;
 use database::models::{Item as DatabaseItem, LogEntry};
 use serde::Deserialize;
@@ -23,14 +25,18 @@ fn detect_mime_type(bytes: &[u8]) -> &'static str {
     }
 }
 
+#[api_endpoint(method = "GET", path = "itemdata/{itemId}/images")]
 #[tracing::instrument(skip(pool))]
-pub async fn images(pool: web::Data<DbPool>, item_id: web::Path<u16>) -> Result<HttpResponse> {
+pub async fn images(
+    pool: web::Data<DbPool>,
+    item_id: web::Path<u16>,
+) -> Result<Json<Vec<ItemImageList>>> {
     let item_image_list =
         DatabaseItem::image_metadatas_by_id_with_mapping(&***pool, *item_id, ItemImageList::from)
             .await
             .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().json(item_image_list))
+    Ok(Json(item_image_list))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -46,13 +52,14 @@ pub async fn image(pool: web::Data<DbPool>, image_id: web::Path<u32>) -> Result<
     Ok(HttpResponse::Ok().content_type(content_type).body(image))
 }
 
+#[api_endpoint(method = "DELETE", path = "itemdata/image/{imageId}")]
 #[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 pub async fn delete(
     pool: web::Data<DbPool>,
     image_id: web::Path<u32>,
     request: web::Json<DeleteImageBody>,
     auth: AuthDetails,
-) -> Result<HttpResponse> {
+) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_REMOVE_IMAGE_FROM_ITEM)
         .map_err(error::ErrorForbidden)?;
 
@@ -95,15 +102,16 @@ pub async fn delete(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body(format!("Deleted image #{image_id}")))
+    Ok(Json(format!("Deleted image #{image_id}")))
 }
 
+#[api_endpoint(method = "POST", path = "itemdata/{itemId}/images/primary")]
 pub async fn set_primary(
     pool: web::Data<DbPool>,
     item_id: web::Path<u16>,
     request: web::Json<SetPrimaryImageBody>,
     auth: AuthDetails,
-) -> Result<HttpResponse> {
+) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_ITEM_DATA)
         .map_err(error::ErrorForbidden)?;
 
@@ -151,7 +159,7 @@ pub async fn set_primary(
         .await
         .map_err(error::ErrorInternalServerError)?;
 
-    Ok(HttpResponse::Ok().body(format!("Primary image changed for item {item_id}")))
+    Ok(Json(format!("Primary image changed for item {item_id}")))
 }
 
 #[derive(Debug, Deserialize, TS)]

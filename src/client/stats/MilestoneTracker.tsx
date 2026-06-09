@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { MilestoneComic } from '../../../bindings/MilestoneComic';
+import type { MilestoneComic } from 'bindings/MilestoneComic';
+import { getStatsMilestones } from 'bindings/api/GetStatsMilestones';
+
 import {
     SortableHeader,
     StaticHeader,
@@ -18,11 +20,7 @@ export default function MilestoneTracker() {
     const [sort, handleSort] = useSortState<SortKey>('comicId', 'asc');
 
     useEffect(() => {
-        fetch('/api/v3/stats/milestones')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<MilestoneComic[]>;
-            })
+        getStatsMilestones()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

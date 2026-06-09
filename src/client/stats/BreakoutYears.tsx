@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { BreakoutYear } from '../../../bindings/BreakoutYear';
+import type { BreakoutYear } from 'bindings/BreakoutYear';
+import { getStatsBreakoutYears } from 'bindings/api/GetStatsBreakoutYears';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -20,11 +22,7 @@ export default function BreakoutYears() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/breakout-years')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<BreakoutYear[]>;
-            })
+        getStatsBreakoutYears()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

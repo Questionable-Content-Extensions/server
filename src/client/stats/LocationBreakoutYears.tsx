@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { LocationBreakoutYear } from '../../../bindings/LocationBreakoutYear';
+import type { LocationBreakoutYear } from 'bindings/LocationBreakoutYear';
+import { getStatsLocationBreakoutYears } from 'bindings/api/GetStatsLocationBreakoutYears';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -20,11 +22,7 @@ export default function LocationBreakoutYears() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/location-breakout-years')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<LocationBreakoutYear[]>;
-            })
+        getStatsLocationBreakoutYears()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

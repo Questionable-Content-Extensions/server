@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { ComebackCharacter } from '../../../bindings/ComebackCharacter';
+import type { ComebackCharacter } from 'bindings/ComebackCharacter';
+import { getStatsComebackCharacters } from 'bindings/api/GetStatsComebackCharacters';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -29,11 +31,7 @@ export default function ComebackCharacters() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/comeback-characters')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<ComebackCharacter[]>;
-            })
+        getStatsComebackCharacters()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

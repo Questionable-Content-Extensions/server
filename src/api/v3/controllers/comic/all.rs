@@ -1,5 +1,7 @@
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::web::Json;
+use actix_web::{Result, error, web};
 use actix_web_lab::extract::Query;
+use api_macros::api_endpoint;
 use database::DbPool;
 use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence};
 use serde::Deserialize;
@@ -10,8 +12,12 @@ use ts_rs::TS;
 use crate::api::v3::models::{ComicList, Exclusion};
 use crate::models::ItemId;
 
+#[api_endpoint(method = "GET", path = "comicdata/")]
 #[tracing::instrument(skip(pool))]
-pub async fn all(pool: web::Data<DbPool>, query: web::Query<AllQuery>) -> Result<HttpResponse> {
+pub async fn all(
+    pool: web::Data<DbPool>,
+    query: web::Query<AllQuery>,
+) -> Result<Json<Vec<ComicList>>> {
     let (is_guest_comic, is_non_canon) = match query.exclude {
         None => (None, None),
         Some(Exclusion::Guest) => (Some(false), None),
@@ -24,14 +30,17 @@ pub async fn all(pool: web::Data<DbPool>, query: web::Query<AllQuery>) -> Result
         is_non_canon.is_some_and(|v| !v)
     );
 
-    Ok(HttpResponse::Ok().json(fetch_comic_list(&pool, is_guest_comic, is_non_canon).await?))
+    Ok(Json(
+        fetch_comic_list(&pool, is_guest_comic, is_non_canon).await?,
+    ))
 }
 
+#[api_endpoint(method = "GET", path = "comicdata/excluded")]
 #[tracing::instrument(skip(pool))]
 pub async fn excluded(
     pool: web::Data<DbPool>,
     query: web::Query<ExcludedQuery>,
-) -> Result<HttpResponse> {
+) -> Result<Json<Vec<ComicList>>> {
     let (is_guest_comic, is_non_canon) = match query.exclusion {
         None => {
             return Err(error::ErrorBadRequest(
@@ -51,16 +60,19 @@ pub async fn excluded(
         }
     );
 
-    Ok(HttpResponse::Ok().json(fetch_comic_list(&pool, is_guest_comic, is_non_canon).await?))
+    Ok(Json(
+        fetch_comic_list(&pool, is_guest_comic, is_non_canon).await?,
+    ))
 }
 
+#[api_endpoint(method = "GET", path = "comicdata/containing-items")]
 #[tracing::instrument(skip(pool))]
 pub async fn containing_items(
     pool: web::Data<DbPool>,
     query: Query<FilteredQuery>,
-) -> Result<HttpResponse> {
+) -> Result<Json<HashSet<u16>>> {
     if query.item_ids.is_empty() {
-        return Ok(HttpResponse::Ok().json([(); 0]));
+        return Ok(Json(HashSet::new()));
     }
 
     let mut appearances = Vec::new();
@@ -85,7 +97,7 @@ pub async fn containing_items(
         }
     }
 
-    Ok(HttpResponse::Ok().json(appearances.remove(0)))
+    Ok(Json(appearances.remove(0)))
 }
 
 #[tracing::instrument(skip(pool))]

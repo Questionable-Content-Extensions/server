@@ -9,8 +9,10 @@ import {
 } from 'chart.js';
 import { useEffect, useRef, useState } from 'react';
 
-import type { PublishTimeYear } from '../../../bindings/PublishTimeYear';
-import type { ScheduleEvolutionYear } from '../../../bindings/ScheduleEvolutionYear';
+import type { PublishTimeYear } from 'bindings/PublishTimeYear';
+import type { ScheduleEvolutionYear } from 'bindings/ScheduleEvolutionYear';
+import { getStatsPublishTimeEvolution } from 'bindings/api/GetStatsPublishTimeEvolution';
+import { getStatsScheduleEvolution } from 'bindings/api/GetStatsScheduleEvolution';
 
 Chart.register(
     BarController,
@@ -182,21 +184,13 @@ export default function ScheduleEvolution() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/schedule-evolution')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<ScheduleEvolutionYear[]>;
-            })
+        getStatsScheduleEvolution()
             .then(setDowData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),
             );
 
-        fetch('/api/v3/stats/publish-time-evolution')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<PublishTimeYear[]>;
-            })
+        getStatsPublishTimeEvolution()
             .then(setTimeData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

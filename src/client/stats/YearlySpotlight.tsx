@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 
-import type { YearlySpotlightResponse } from '../../../bindings/YearlySpotlightResponse';
+import type { YearlySpotlightResponse } from 'bindings/YearlySpotlightResponse';
+import { getStatsYearlySpotlight } from 'bindings/api/GetStatsYearlySpotlight';
+
 import YearlyBarChart from './YearlyBarChart';
 import YearlyStreamgraph from './YearlyStreamgraph';
 
@@ -14,11 +16,7 @@ export default function YearlySpotlight() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/yearly-spotlight')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<YearlySpotlightResponse>;
-            })
+        getStatsYearlySpotlight()
             .then(setResponse)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

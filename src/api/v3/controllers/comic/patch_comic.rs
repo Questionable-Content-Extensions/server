@@ -1,7 +1,9 @@
 use crate::models::{ComicId, Token};
 use crate::util::{andify_comma_string, ensure_is_authorized};
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::web::Json;
+use actix_web::{Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
+use api_macros::api_endpoint;
 use chrono::{DateTime, TimeZone, Utc};
 use database::models::{Comic as DatabaseComic, LogEntry};
 use database::{DbPool, DbTransaction};
@@ -10,6 +12,7 @@ use shared::token_permissions;
 use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
+#[api_endpoint(method = "PATCH", path = "comicdata/{comicId}")]
 #[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 #[expect(clippy::too_many_lines)]
 pub async fn patch_comic(
@@ -17,7 +20,7 @@ pub async fn patch_comic(
     request: web::Json<PatchComicBody>,
     comic_id: web::Path<ComicId>,
     auth: AuthDetails,
-) -> Result<HttpResponse> {
+) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
         .map_err(error::ErrorForbidden)?;
 
@@ -177,7 +180,7 @@ pub async fn patch_comic(
     let mut changed = updated.join(", ");
     andify_comma_string(&mut changed);
 
-    Ok(HttpResponse::Ok().body(format!("Updated {changed} for comic {comic_id}")))
+    Ok(Json(format!("Updated {changed} for comic {comic_id}")))
 }
 
 #[tracing::instrument(skip(transaction))]

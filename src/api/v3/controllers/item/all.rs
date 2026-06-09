@@ -1,12 +1,15 @@
 use crate::api::v3::models::{ItemColor, ItemList, ItemType};
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::web::Json;
+use actix_web::{Result, error, web};
+use api_macros::api_endpoint;
 use database::DbPool;
 use database::models::Item as DatabaseItem;
 use std::convert::TryFrom;
 use tracing::{Instrument, info_span};
 
+#[api_endpoint(method = "GET", path = "itemdata/")]
 #[tracing::instrument(skip(pool))]
-pub async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
+pub async fn all(pool: web::Data<DbPool>) -> Result<Json<Vec<ItemList>>> {
     let mut conn = pool
         .acquire()
         .instrument(info_span!("Pool::acquire"))
@@ -29,5 +32,5 @@ pub async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         });
     }
 
-    Ok(HttpResponse::Ok().json(items))
+    Ok(Json(items))
 }

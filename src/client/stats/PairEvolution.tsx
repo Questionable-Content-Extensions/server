@@ -9,8 +9,9 @@ import {
 } from 'chart.js';
 import { useEffect, useRef, useState } from 'react';
 
-import type { ItemStats } from '../../../bindings/ItemStats';
-import type { PairEvolutionYear } from '../../../bindings/PairEvolutionYear';
+import type { ItemStats } from 'bindings/ItemStats';
+import type { PairEvolutionYear } from 'bindings/PairEvolutionYear';
+import { getStatsPairEvolution } from 'bindings/api/GetStatsPairEvolution';
 
 Chart.register(
     BarController,
@@ -101,16 +102,10 @@ export default function PairEvolution({ castData, castError }: Props) {
     useEffect(() => {
         if (char1Id === null || char2Id === null || char1Id === char2Id) return;
         const controller = new AbortController();
-        fetch(
-            `/api/v3/stats/pair-evolution?char1=${char1Id}&char2=${char2Id}`,
-            {
-                signal: controller.signal,
-            },
+        getStatsPairEvolution(
+            { char1: char1Id, char2: char2Id },
+            { signal: controller.signal },
         )
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<PairEvolutionYear[]>;
-            })
             .then((d) => {
                 setPairData(d);
                 setFetchError(null);

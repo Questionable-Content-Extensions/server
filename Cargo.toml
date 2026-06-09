@@ -24,6 +24,7 @@ actix-web = "4"
 actix-web-grants = "4.1"
 actix-web-lab = "0.26"
 anyhow = "1.0"
+api-macros = { git = "https://github.com/ilyvion/api-macros" }
 arc-swap = "1"
 bitflags = "2"
 chrono-tz = "0.10"
@@ -53,6 +54,9 @@ tracing-opentelemetry = "0.17.0"
 tracing-subscriber = { version = "0.3", features = ["std"] }
 ts-rs = { version = "7.0", git = "https://github.com/ilyvion-contrib/ts-rs", branch = "flatten-untagged-hack" }
 uuid = { version = "1", features = ["serde"] }
+
+# [patch."https://github.com/ilyvion/api-macros"]
+# api-macros = { path = "../api-macros" }
 
 [workspace]
 members = ["database", "shared"]

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { TrendingItem } from '../../../bindings/TrendingItem';
+import type { TrendingItem } from 'bindings/TrendingItem';
+import { getStatsTrendingCharacters } from 'bindings/api/GetStatsTrendingCharacters';
+
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,
@@ -27,11 +29,7 @@ export default function TrendingCharacters() {
     const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/trending-characters')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<TrendingItem[]>;
-            })
+        getStatsTrendingCharacters()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

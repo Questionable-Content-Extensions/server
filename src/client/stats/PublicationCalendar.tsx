@@ -8,7 +8,8 @@ import {
 } from 'chart.js';
 import { useEffect, useRef, useState } from 'react';
 
-import type { PublicationCalendar } from '../../../bindings/PublicationCalendar';
+import type { PublicationCalendar } from 'bindings/PublicationCalendar';
+import { getStatsPublicationCalendar } from 'bindings/api/GetStatsPublicationCalendar';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
 
@@ -98,11 +99,7 @@ export default function PublicationCalendarPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/publication-calendar')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<PublicationCalendar>;
-            })
+        getStatsPublicationCalendar()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

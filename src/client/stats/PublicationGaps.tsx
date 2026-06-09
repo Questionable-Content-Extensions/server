@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import type { PublicationGap } from '../../../bindings/PublicationGap';
+import type { PublicationGap } from 'bindings/PublicationGap';
+import { getStatsPublicationGaps } from 'bindings/api/GetStatsPublicationGaps';
+
 import {
     SortableHeader,
     StaticHeader,
@@ -27,11 +29,7 @@ export default function PublicationGaps() {
     const [sort, handleSort] = useSortState<SortKey>('gapDays', 'desc');
 
     useEffect(() => {
-        fetch('/api/v3/stats/publication-gaps')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<PublicationGap[]>;
-            })
+        getStatsPublicationGaps()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

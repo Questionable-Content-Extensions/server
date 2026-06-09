@@ -9,7 +9,8 @@ import {
 } from 'chart.js';
 import { useEffect, useRef, useState } from 'react';
 
-import type { EnsembleRatio } from '../../../bindings/EnsembleRatio';
+import type { EnsembleRatio } from 'bindings/EnsembleRatio';
+import { getStatsEnsembleRatio } from 'bindings/api/GetStatsEnsembleRatio';
 
 Chart.register(
     BarController,
@@ -126,11 +127,7 @@ export default function EnsembleRatioPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetch('/api/v3/stats/ensemble-ratio')
-            .then((r) => {
-                if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                return r.json() as Promise<EnsembleRatio[]>;
-            })
+        getStatsEnsembleRatio()
             .then(setData)
             .catch((e: unknown) =>
                 setError(e instanceof Error ? e.message : String(e)),

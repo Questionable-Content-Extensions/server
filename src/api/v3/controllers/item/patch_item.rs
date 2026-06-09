@@ -1,9 +1,11 @@
 use crate::api::v3::models::{ItemColor, ItemType};
 use crate::models::{ItemId, Token};
 use crate::util::{andify_comma_string, ensure_is_authorized};
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::web::Json;
+use actix_web::{Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
+use api_macros::api_endpoint;
 use database::DbPool;
 use database::models::{Item as DatabaseItem, LogEntry};
 use serde::Deserialize;
@@ -11,6 +13,7 @@ use shared::token_permissions;
 use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
+#[api_endpoint(method = "PATCH", path = "itemdata/{itemId}")]
 #[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 #[expect(clippy::too_many_lines)]
 pub async fn patch_item(
@@ -18,7 +21,7 @@ pub async fn patch_item(
     request: web::Json<PatchItemBody>,
     item_id: web::Path<ItemId>,
     auth: AuthDetails,
-) -> Result<HttpResponse> {
+) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_ITEM_DATA)
         .map_err(error::ErrorForbidden)?;
 
@@ -183,7 +186,7 @@ pub async fn patch_item(
     let mut changed = updated.join(", ");
     andify_comma_string(&mut changed);
 
-    Ok(HttpResponse::Ok().body(format!(
+    Ok(Json(format!(
         "Updated {} for {} {item_id} ({})",
         changed,
         r#type.map_or(&*old_item.r#type, |t| t.as_str()),
