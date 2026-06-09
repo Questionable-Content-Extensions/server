@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "UPDATE `stats_cache_meta` SET `needs_refresh` = 0 WHERE `cache_key` = 'cast_rank_stints'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "917ba1a67e045fc1cb928cc36e946cca833582ef284c6668afe1a4e3f8e895a0"
+}

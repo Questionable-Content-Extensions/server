@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT `needs_refresh`\n                FROM `stats_cache_meta`\n                WHERE `cache_key` = 'cast_rank_stints'\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "needs_refresh",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 3
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f85416c6ae4e664ca655210bfb77805c8db2b3054d895500856e615f49060c26"
+}

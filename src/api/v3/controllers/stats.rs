@@ -12,11 +12,10 @@ use crate::api::v3::models::stats::{
     LocationSpotlightResponse, LocationSpotlightYear, LocationTurnoverYear, LonerEntry,
     MilestoneComic, MonthlyComics, MonthlyHeatmapEntry, MostCrowdedComic, NeverMetPair,
     PairEvolutionYear, PublicationCalendar, PublicationGap, PublicationStreak, PublishTimeYear,
-    ScheduleEvolutionYear, SocialHubEntry, TrendingItem, YearlyOverview, YearlyRankEntry,
-    YearlySpotlightResponse, YearlySpotlightYear,
+    ScheduleEvolutionYear, SocialHubEntry, TopRankedOverTimeResponse, TrendingItem, YearlyOverview,
+    YearlyRankEntry, YearlySpotlightResponse, YearlySpotlightYear,
 };
 use crate::models::{ComicId, ItemId};
-use crate::util::environment;
 use actix_web::web::Json;
 use actix_web::{Result, error, web};
 use api_macros::api_endpoint;
@@ -40,8 +39,9 @@ use database::models::stats::{
     PublicationDowRow as DbPublicationDowRow, PublicationGapRow as DbPublicationGapRow,
     PublicationMonthRow as DbPublicationMonthRow, PublishTimeRow as DbPublishTimeRow,
     PublishedDateRow as DbPublishedDateRow, ScheduleEvolutionRow as DbScheduleEvolutionRow,
-    SocialHubRow as DbSocialHubRow, TrendingItemRow as DbTrendingItemRow,
-    YearlyAppearanceRow as DbYearlyAppearanceRow, YearlyOverviewRow as DbYearlyOverviewRow,
+    SocialHubRow as DbSocialHubRow, TopRankedStintRow as DbTopRankedStintRow,
+    TrendingItemRow as DbTrendingItemRow, YearlyAppearanceRow as DbYearlyAppearanceRow,
+    YearlyOverviewRow as DbYearlyOverviewRow,
 };
 use serde::Deserialize;
 use tracing::{Instrument, info_span};
@@ -85,7 +85,8 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(location_seasons)
         .service(location_breakout_years)
         .service(location_social_hub)
-        .service(location_turnover);
+        .service(location_turnover)
+        .service(top_ranked_over_time);
 }
 
 #[api_endpoint(method = "GET", path = "stats/cast")]
@@ -1472,6 +1473,48 @@ fn build_publication_streaks(dates: &[String]) -> Vec<PublicationStreak> {
     streaks
 }
 
+#[api_endpoint(method = "GET", path = "stats/top-ranked-over-time")]
+#[tracing::instrument(skip(pool))]
+async fn top_ranked_over_time(pool: web::Data<DbPool>) -> Result<Json<TopRankedOverTimeResponse>> {
+    let mut conn = pool
+        .acquire()
+        .instrument(info_span!("Pool::acquire"))
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let rows = DbTopRankedStintRow::all(&mut *conn)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(Json(build_top_ranked_over_time_response(rows)))
+}
+
+fn build_top_ranked_over_time_response(
+    rows: Vec<DbTopRankedStintRow>,
+) -> TopRankedOverTimeResponse {
+    use crate::api::v3::models::stats::TopRankedStint;
+
+    let mut characters: HashMap<u16, CharacterMeta> = HashMap::new();
+    let mut stints: Vec<TopRankedStint> = Vec::new();
+
+    for row in rows {
+        characters
+            .entry(row.item_id)
+            .or_insert_with(|| CharacterMeta {
+                name: row.name.clone(),
+                color: ItemColor(row.color_red, row.color_green, row.color_blue),
+            });
+        stints.push(TopRankedStint {
+            from_comic: ComicId::from_trusted(row.from_comic),
+            to_comic_exclusive: row.to_comic_exclusive.map(ComicId::from_trusted),
+            item_id: ItemId::from(row.item_id),
+            appearances_at_takeover: row.appearances_at_takeover,
+        });
+    }
+
+    TopRankedOverTimeResponse { stints, characters }
+}
+
 fn build_location_affinity_response(rows: Vec<DbLocationAffinityRow>) -> Vec<LocationAffinity> {
     let mut location_entries: Vec<LocationAffinity> = Vec::new();
 
@@ -1817,5 +1860,51 @@ mod tests {
         assert_eq!(result.characters.len(), 3);
         assert_eq!(result.pairs.len(), 2);
         assert_eq!(result.characters[&1].appearances, 100);
+    }
+
+    #[test]
+    fn build_top_ranked_over_time_collects_stints_and_characters() {
+        let rows = vec![
+            DbTopRankedStintRow {
+                from_comic: 1,
+                to_comic_exclusive: Some(101),
+                item_id: 1,
+                name: "Alice".to_string(),
+                color_red: 255,
+                color_green: 0,
+                color_blue: 0,
+                appearances_at_takeover: 1,
+            },
+            DbTopRankedStintRow {
+                from_comic: 101,
+                to_comic_exclusive: Some(250),
+                item_id: 2,
+                name: "Bob".to_string(),
+                color_red: 0,
+                color_green: 0,
+                color_blue: 255,
+                appearances_at_takeover: 51,
+            },
+            DbTopRankedStintRow {
+                from_comic: 250,
+                to_comic_exclusive: None,
+                item_id: 1,
+                name: "Alice".to_string(),
+                color_red: 255,
+                color_green: 0,
+                color_blue: 0,
+                appearances_at_takeover: 201,
+            },
+        ];
+        let result = build_top_ranked_over_time_response(rows);
+        assert_eq!(result.stints.len(), 3);
+        assert_eq!(result.characters.len(), 2);
+        assert_eq!(result.stints[0].item_id.into_inner(), 1);
+        assert_eq!(
+            result.stints[0].to_comic_exclusive.map(ComicId::into_inner),
+            Some(101)
+        );
+        assert_eq!(result.stints[2].to_comic_exclusive, None);
+        assert_eq!(result.stints[2].appearances_at_takeover, 201);
     }
 }

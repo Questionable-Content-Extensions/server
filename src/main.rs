@@ -11,6 +11,7 @@ use actix_web_grants::GrantsMiddleware;
 use anyhow::{Context as _, Result, anyhow};
 use database::DbPool;
 use database::models::Token as DatabaseToken;
+use database::models::stats::TopRankedStintRow as DbTopRankedStintRow;
 use futures::stream::{FuturesUnordered, StreamExt};
 use futures::{FutureExt, pin_mut};
 use opentelemetry::KeyValue;
@@ -107,6 +108,7 @@ async fn main() -> Result<()> {
     let mut shutdown_futures = FuturesUnordered::new();
     if environment::background_services_bool() {
         let background_news_updater_db_pool = db_pool.clone();
+        let background_rank_stints_pool = db_pool.clone();
         let background_comic_updater_db_pool = db_pool;
 
         let background_news_updater = Arc::clone(&news_updater);
@@ -148,8 +150,60 @@ async fn main() -> Result<()> {
             }
         });
 
+        let mut background_rank_stints_shutdown = shutdown_sender.subscribe();
+        let background_rank_stints_refresher = tokio::task::spawn(async move {
+            info!("Background rank stints refresher starting...");
+            loop {
+                tokio::select! {
+                    () = sleep(Duration::from_secs(30)) => {}
+                    _ = background_rank_stints_shutdown.recv() => {
+                        info!("Background rank stints refresher shutting down.");
+                        break;
+                    }
+                }
+                let conn = background_rank_stints_pool.acquire().await;
+                let mut conn = match conn {
+                    Ok(c) => c,
+                    Err(e) => {
+                        error!("rank stints refresher: pool acquire failed: {e}");
+                        continue;
+                    }
+                };
+                let dirty = match DbTopRankedStintRow::needs_refresh(&mut *conn).await {
+                    Ok(v) => v,
+                    Err(e) => {
+                        error!("rank stints refresher: needs_refresh check failed: {e}");
+                        continue;
+                    }
+                };
+                if !dirty {
+                    continue;
+                }
+                match DbTopRankedStintRow::refresh_cache(&mut conn).await {
+                    Ok(()) => info!("rank stints refresher: cache refreshed"),
+                    Err(e) => error!("rank stints refresher: refresh_cache failed: {e}"),
+                }
+            }
+        });
+
         shutdown_futures.push(Either::Right(background_news_updater));
         shutdown_futures.push(Either::Right(background_comic_updater));
+        shutdown_futures.push(Either::Right(background_rank_stints_refresher));
+    } else {
+        // Background services are off (dev mode): do a one-time startup refresh so the
+        // stints cache is current without needing the background task running.
+        let mut conn = db_pool.acquire().await?;
+        match DbTopRankedStintRow::needs_refresh(&mut *conn).await {
+            Ok(true) => {
+                info!("Refreshing rank stints cache on startup (dev mode)...");
+                match DbTopRankedStintRow::refresh_cache(&mut conn).await {
+                    Ok(()) => info!("Startup rank stints refresh complete."),
+                    Err(e) => error!("Startup rank stints refresh failed: {e}"),
+                }
+            }
+            Ok(false) => {}
+            Err(e) => error!("Startup rank stints refresh: needs_refresh check failed: {e}"),
+        }
     }
 
     let http_server = start_http_server()?;

@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "DELETE FROM `cast_rank_leadership_stints`",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": []
+  },
+  "hash": "f09915af675c65fef70bf5a235533375d8297edc03104324402e363f9a52fe34"
+}

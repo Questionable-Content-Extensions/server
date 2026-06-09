@@ -489,3 +489,21 @@ pub struct MilestoneComic {
     pub is_guest_comic: bool,
     pub is_non_canon: bool,
 }
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TopRankedStint {
+    pub from_comic: ComicId,
+    pub to_comic_exclusive: Option<ComicId>,
+    pub item_id: ItemId,
+    pub appearances_at_takeover: u32,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct TopRankedOverTimeResponse {
+    pub stints: Vec<TopRankedStint>,
+    pub characters: HashMap<u16, CharacterMeta>,
+}

@@ -1,0 +1,94 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `s`.`from_comic`,\n                    `s`.`to_comic_exclusive`,\n                    `s`.`item_id`,\n                    `i`.`name`,\n                    `i`.`color_red`,\n                    `i`.`color_green`,\n                    `i`.`color_blue`,\n                    `s`.`appearances_at_takeover`\n                FROM `cast_rank_leadership_stints` `s`\n                JOIN `Item` `i` ON `i`.`id` = `s`.`item_id`\n                ORDER BY `s`.`from_comic`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "from_comic",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "to_comic_exclusive",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "item_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | MULTIPLE_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "color_red",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 3
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "color_green",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 3
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "color_blue",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 3
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "appearances_at_takeover",
+        "type_info": {
+          "type": "Long",
+          "flags": "NOT_NULL | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 10
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "f30f541bfec470a4835683fb967c42b1f22e1c2c8fdb4172e5752661f72f8fdb"
+}

@@ -1929,3 +1929,214 @@ impl LocationTurnoverRow {
         .await
     }
 }
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct TopRankedStintRow {
+    pub from_comic: u16,
+    pub to_comic_exclusive: Option<u16>,
+    pub item_id: u16,
+    pub name: String,
+    pub color_red: u8,
+    pub color_green: u8,
+    pub color_blue: u8,
+    pub appearances_at_takeover: u32,
+}
+
+impl TopRankedStintRow {
+    /// Atomically claims the dirty flag, deletes stale rows, and recomputes the cache.
+    ///
+    /// Everything runs inside a single transaction so readers never observe an empty
+    /// table and a failed recompute rolls the delete back automatically.  Any trigger
+    /// that fires on `Occurrence` during the refresh blocks on the row lock and sets
+    /// `needs_refresh = 1` again after our commit, so the next cycle picks it up.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if any step fails; the transaction is rolled back.
+    #[tracing::instrument(skip(conn))]
+    pub async fn refresh_cache(conn: &mut sqlx::MySqlConnection) -> sqlx::Result<()> {
+        use sqlx::Acquire as _;
+        let mut tx = conn.begin().await?;
+        Self::clear_needs_refresh(&mut *tx).await?;
+        Self::delete_cached(&mut *tx).await?;
+        Self::insert_from_cte(&mut *tx).await?;
+        tx.commit().await?;
+        Ok(())
+    }
+
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn needs_refresh<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<bool>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_scalar!(
+            r#"
+                SELECT `needs_refresh`
+                FROM `stats_cache_meta`
+                WHERE `cache_key` = 'cast_rank_stints'
+            "#,
+        )
+        .fetch_optional(executor)
+        .await
+        .map(|opt| opt.is_some_and(|v: u8| v > 0))
+    }
+
+    /// Sets `needs_refresh = 0` to claim the refresh slot before rebuilding the cache.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn clear_needs_refresh<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<()>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query!(
+            "UPDATE `stats_cache_meta` SET `needs_refresh` = 0 WHERE `cache_key` = 'cast_rank_stints'",
+        )
+        .execute(executor)
+        .await
+        .map(|_| ())
+    }
+
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn latest_cast_comic_id<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Option<u16>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_scalar!(
+            r#"
+                SELECT MAX(`o`.`comic_id`)
+                FROM `Occurrence` `o`
+                JOIN `Item` `i` ON `i`.`id` = `o`.`item_id`
+                WHERE `i`.`type` = 'cast'
+            "#,
+        )
+        .fetch_one(executor)
+        .await
+    }
+
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn delete_cached<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<()>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query!("DELETE FROM `cast_rank_leadership_stints`")
+            .execute(executor)
+            .await
+            .map(|_| ())
+    }
+
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn insert_from_cte<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<()>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query!(
+            r#"
+                INSERT INTO `cast_rank_leadership_stints`
+                    (`from_comic`, `to_comic_exclusive`, `item_id`, `appearances_at_takeover`)
+                WITH `cast_occurrences` AS (
+                    SELECT `o`.`comic_id`, `o`.`item_id`
+                    FROM `Occurrence` `o`
+                    JOIN `Item` `i` ON `i`.`id` = `o`.`item_id`
+                    WHERE `i`.`type` = 'cast'
+                ),
+                `running_counts` AS (
+                    SELECT
+                        `comic_id`,
+                        `item_id`,
+                        COUNT(*) OVER (
+                            PARTITION BY `item_id`
+                            ORDER BY `comic_id`
+                        ) AS `cnt`
+                    FROM `cast_occurrences`
+                ),
+                `new_global_highs` AS (
+                    SELECT `comic_id`, `item_id`, `cnt`
+                    FROM (
+                        SELECT
+                            `comic_id`,
+                            `item_id`,
+                            `cnt`,
+                            MAX(`cnt`) OVER (
+                                ORDER BY `comic_id`, `cnt` DESC, `item_id`
+                                ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+                            ) AS `prev_global_max`
+                        FROM `running_counts`
+                    ) `t`
+                    WHERE `cnt` > COALESCE(`prev_global_max`, 0)
+                ),
+                `leader_changes` AS (
+                    SELECT
+                        `comic_id`,
+                        `item_id`,
+                        `cnt`,
+                        LAG(`item_id`) OVER (ORDER BY `comic_id`) AS `prev_item_id`
+                    FROM `new_global_highs`
+                ),
+                `stints` AS (
+                    SELECT
+                        `comic_id` AS `from_comic`,
+                        LEAD(`comic_id`) OVER (ORDER BY `comic_id`) AS `to_comic_exclusive`,
+                        `item_id`,
+                        CAST(`cnt` AS UNSIGNED) AS `appearances_at_takeover`
+                    FROM `leader_changes`
+                    WHERE `prev_item_id` IS NULL OR `item_id` != `prev_item_id`
+                )
+                SELECT
+                    CAST(`s`.`from_comic`         AS UNSIGNED) AS `from_comic`,
+                    `s`.`to_comic_exclusive`,
+                    CAST(`s`.`item_id`            AS UNSIGNED) AS `item_id`,
+                    `s`.`appearances_at_takeover`
+                FROM `stints` `s`
+            "#,
+        )
+        .execute(executor)
+        .await
+        .map(|_| ())
+    }
+
+    /// Reads all stints from the pre-computed cache table.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn all<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Vec<Self>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT
+                    `s`.`from_comic`,
+                    `s`.`to_comic_exclusive`,
+                    `s`.`item_id`,
+                    `i`.`name`,
+                    `i`.`color_red`,
+                    `i`.`color_green`,
+                    `i`.`color_blue`,
+                    `s`.`appearances_at_takeover`
+                FROM `cast_rank_leadership_stints` `s`
+                JOIN `Item` `i` ON `i`.`id` = `s`.`item_id`
+                ORDER BY `s`.`from_comic`
+            "#,
+        )
+        .fetch_all(executor)
+        .await
+    }
+}

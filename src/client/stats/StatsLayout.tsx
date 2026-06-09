@@ -48,6 +48,7 @@ import RetiredCharacters from './RetiredCharacters';
 import RetiredLocations from './RetiredLocations';
 import ScheduleEvolution from './ScheduleEvolution';
 import SocialHub from './SocialHub';
+import TopRankedOverTime from './TopRankedOverTime';
 import TrendingCharacters from './TrendingCharacters';
 import TrendingLocations from './TrendingLocations';
 import YearlySpotlight from './YearlySpotlight';
@@ -115,6 +116,9 @@ function StatsNav() {
                     Appearance Distribution
                 </TabLink>
                 <TabLink to="/stats/yearly-spotlight">Yearly Spotlight</TabLink>
+                <TabLink to="/stats/top-ranked-over-time">
+                    Top Rank Over Time
+                </TabLink>
             </NavRow>
             <NavRow label="Locations">
                 <TabLink to="/stats/locations">Rankings</TabLink>
@@ -412,6 +416,10 @@ export default function StatsLayout() {
                 />
                 <Route path="monthly-heatmap" element={<MonthlyHeatmap />} />
                 <Route path="milestones" element={<MilestoneTracker />} />
+                <Route
+                    path="top-ranked-over-time"
+                    element={<TopRankedOverTime />}
+                />
             </Routes>
         </div>
     );

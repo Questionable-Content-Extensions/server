@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO `stats_cache_meta` (`cache_key`, `last_comic_id`)\n                VALUES ('cast_rank_stints', ?)\n                ON DUPLICATE KEY UPDATE `last_comic_id` = VALUES(`last_comic_id`)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "b97367f45b96b6d03389797b19feca1ddbfccd54a741a6fd5c497a5762842692"
+}

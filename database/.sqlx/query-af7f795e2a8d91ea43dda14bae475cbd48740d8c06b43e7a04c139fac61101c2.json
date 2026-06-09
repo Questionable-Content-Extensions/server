@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT MAX(`o`.`comic_id`)\n                FROM `Occurrence` `o`\n                JOIN `Item` `i` ON `i`.`id` = `o`.`item_id`\n                WHERE `i`.`type` = 'cast'\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "MAX(`o`.`comic_id`)",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "max_size": 6
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "af7f795e2a8d91ea43dda14bae475cbd48740d8c06b43e7a04c139fac61101c2"
+}
