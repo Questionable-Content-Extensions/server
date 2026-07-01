@@ -132,6 +132,6 @@ pub struct ExcludedQuery {
 #[ts(export)]
 pub struct FilteredQuery {
     #[serde(default, rename = "item-id")]
-    #[ts(optional, rename = "item-id")]
+    #[ts(optional = nullable, rename = "item-id")]
     item_ids: Vec<ItemId>,
 }

@@ -52,11 +52,14 @@ tokio = "1"
 tracing-actix-web = { version = "0.7", features = ["opentelemetry_0_17"] }
 tracing-opentelemetry = "0.17.0"
 tracing-subscriber = { version = "0.3", features = ["std"] }
-ts-rs = { version = "7.0", git = "https://github.com/ilyvion-contrib/ts-rs", branch = "flatten-untagged-hack" }
+ts-rs = { version = "12.0", git = "https://github.com/ilyvion-contrib/ts-rs" }
 uuid = { version = "1", features = ["serde"] }
 
 # [patch."https://github.com/ilyvion/api-macros"]
 # api-macros = { path = "../api-macros" }
+
+# [patch."https://github.com/ilyvion-contrib/ts-rs"]
+# ts-rs = { path = "../Third-Party/ts-rs/ts-rs" }
 
 [workspace]
 members = ["database", "shared"]

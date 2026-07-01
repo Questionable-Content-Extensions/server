@@ -7,7 +7,7 @@ use api_macros::api_endpoint;
 use chrono::{DateTime, TimeZone, Utc};
 use database::models::{Comic as DatabaseComic, LogEntry};
 use database::{DbPool, DbTransaction};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use shared::token_permissions;
 use tracing::{Instrument, info_span};
 use ts_rs::TS;
@@ -461,11 +461,12 @@ pub struct PatchComicBody {
 pub struct PublishDatePatch {
     #[ts(type = "string")]
     pub publish_date: DateTime<Utc>,
-    #[ts(optional)]
     pub is_accurate_publish_date: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub enum FlagType {
     IsGuestComic,
     IsNonCanon,

@@ -3,12 +3,6 @@
 version = 4
 
 [[package]]
-name = "Inflector"
-version = "0.11.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
-
-[[package]]
 name = "actix-codec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -377,7 +371,7 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 [[package]]
 name = "api-macros"
 version = "0.1.0"
-source = "git+https://github.com/ilyvion/api-macros#0cc1e1de0618cccaab015f52906b3d168e49a821"
+source = "git+https://github.com/ilyvion/api-macros#dbc00743e7418e473b205e0901b4275078c8627d"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -1099,7 +1093,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2219,7 +2213,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3117,7 +3111,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3183,7 +3177,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3949,7 +3943,7 @@ dependencies = [
  "getrandom 0.4.2",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4396,19 +4390,19 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "ts-rs"
-version = "7.1.0"
-source = "git+https://github.com/ilyvion-contrib/ts-rs?branch=flatten-untagged-hack#a4128b5b756600e467a78ffee954b4228cde05cf"
+version = "12.0.1"
+source = "git+https://github.com/ilyvion-contrib/ts-rs#94c487e2dc79664184b4534667a6477aeaee42b9"
 dependencies = [
- "thiserror 1.0.69",
+ "thiserror 2.0.18",
  "ts-rs-macros",
 ]
 
 [[package]]
 name = "ts-rs-macros"
-version = "7.1.0"
-source = "git+https://github.com/ilyvion-contrib/ts-rs?branch=flatten-untagged-hack#a4128b5b756600e467a78ffee954b4228cde05cf"
+version = "12.0.1"
+source = "git+https://github.com/ilyvion-contrib/ts-rs#94c487e2dc79664184b4534667a6477aeaee42b9"
 dependencies = [
- "Inflector",
+ "indexmap 2.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.117",
@@ -4745,7 +4739,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]

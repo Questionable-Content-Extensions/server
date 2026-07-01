@@ -111,7 +111,7 @@ pub struct Comic {
     pub comic: ComicId,
     pub editor_data: EditorData,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    #[ts(optional)]
+    #[ts(optional = nullable)]
     pub all_items: Vec<ItemNavigationData>,
     #[serde(flatten)]
     pub data: ComicData,
@@ -229,6 +229,7 @@ pub struct ComicList {
     pub comic: ComicId,
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
     pub tagline: Option<String>,
     pub is_non_canon: bool,
     pub is_guest_comic: bool,

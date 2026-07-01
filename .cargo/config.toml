@@ -1,11 +1,11 @@
 [env]
-TS_RS_EXPORT_DIR = { value = "bindings/models", relative = true }
+TS_RS_EXPORT_DIR = "bindings/models"
 
-APIM_CALL_ENDPOINT_MODULE = "services/callEndpoint"
+APIM_CALL_ENDPOINT_MODULE = "../../services/callEndpoint"
 APIM_CALL_ENDPOINT_NAME   = "callEndpoint"
 APIM_UNWRAPPED_RESPONSE   = "true"
 APIM_EXPORT_DIR           = "bindings"
 APIM_ENDPOINTS_PATH       = "endpoints"
 APIM_API_PATH             = "api"
 APIM_DEPTH_DEFAULT        = "1"
-APIM_MODELS_PATH          = "../models/"
+APIM_MODELS_PATH          = "../models"
