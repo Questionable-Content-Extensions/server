@@ -6,19 +6,11 @@ on:
 jobs:
     promote:
         runs-on: ubuntu-latest
-        env:
-            GH_TOKEN: ${{ github.token }}
         steps:
-            - name: Find latest successful staging deployment
+            - uses: ilyvion-contrib/ci-utils/get-latest-deployment@main
               id: staging
-              run: |
-                  DEPLOYMENT_JSON=$(gh api \
-                    -H "Accept: application/vnd.github+json" \
-                        repos/${{ github.repository }}/deployments \
-                    --jq '.[] | select(.environment == "staging")' | head -n1)
-
-                  echo "ref=$(echo "$DEPLOYMENT_JSON" | jq -r '.ref')" >> "$GITHUB_OUTPUT"
-                  echo "sha=$(echo "$DEPLOYMENT_JSON" | jq -r '.sha')" >> "$GITHUB_OUTPUT"
+              with:
+                  environment: staging
 
             - uses: ilyvion-contrib/ci-utils/create-deployment@main
               id: deployment
@@ -40,20 +32,14 @@ jobs:
                     ${{ secrets.deploy_user }}@${{ secrets.deploy_target }} \
                     'cd ~/docker/questionablextensions/; sudo promote-staging-to-prod.sh'
 
-            - name: Mark deployment as success
+            - uses: ilyvion-contrib/ci-utils/update-deployment-status@main
               if: success()
-              run: |
-                  gh api \
-                    -X POST \
-                    -H "Accept: application/vnd.github+json" \
-                    repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
-                    -f state="success"
+              with:
+                  deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+                  state: success
 
-            - name: Mark deployment as failure
+            - uses: ilyvion-contrib/ci-utils/update-deployment-status@main
               if: failure()
-              run: |
-                  gh api \
-                    -X POST \
-                    -H "Accept: application/vnd.github+json" \
-                    repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
-                    -f state="failure"
+              with:
+                  deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+                  state: failure

@@ -22,8 +22,6 @@ jobs:
     deploy:
         runs-on: ubuntu-latest
         needs: build
-        env:
-            GH_TOKEN: ${{ github.token }}
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         steps:
             - uses: ilyvion-contrib/ci-utils/create-deployment@main
@@ -52,23 +50,17 @@ jobs:
                   ssh_port: ${{ secrets.deploy_port }}
                   image: questionablextensions
 
-            - name: Mark deployment as success
+            - uses: ilyvion-contrib/ci-utils/update-deployment-status@main
               if: success()
-              run: |
-                  gh api \
-                      -X POST \
-                      -H "Accept: application/vnd.github+json" \
-                      repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
-                      -f state="success"
+              with:
+                  deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+                  state: success
 
-            - name: Mark deployment as failure
+            - uses: ilyvion-contrib/ci-utils/update-deployment-status@main
               if: failure()
-              run: |
-                  gh api \
-                      -X POST \
-                      -H "Accept: application/vnd.github+json" \
-                      repos/${{ github.repository }}/deployments/${{ steps.deployment.outputs.deployment_id }}/statuses \
-                      -f state="failure"
+              with:
+                  deployment_id: ${{ steps.deployment.outputs.deployment_id }}
+                  state: failure
 
     cleanup_job:
         runs-on: ubuntu-latest
