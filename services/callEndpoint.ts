@@ -1,4 +1,4 @@
-import type { EndpointSpec } from '@endpoints/EndpointSpec';
+import { EndpointSpec } from 'bindings/endpoints/EndpointSpec';
 
 export async function callEndpoint<Q, B, P, R, Fe>(
     spec: EndpointSpec<Q, B, P, R, Fe>,
