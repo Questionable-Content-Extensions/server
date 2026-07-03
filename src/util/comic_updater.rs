@@ -1,5 +1,5 @@
 use crate::models::{ComicId, ImageType};
-use crate::util::NewsUpdater;
+use crate::util::{ComicUpdaterTrigger, NewsUpdater};
 use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Datelike, Duration, NaiveTime, TimeZone, Timelike, Utc, Weekday};
 use const_format::concatcp;
@@ -36,6 +36,7 @@ impl ComicUpdater {
         &self,
         db_pool: &DbPool,
         news_updater: &NewsUpdater,
+        trigger: &ComicUpdaterTrigger,
         shutdown_receiver: &mut broadcast::Receiver<()>,
     ) -> anyhow::Result<()> {
         // Wait a short period of time to avoid hammering the website on frequent restarts due to some
@@ -49,6 +50,7 @@ impl ComicUpdater {
                 now.format("%A, %d %B %Y")
             );
 
+            trigger.record_run();
             let comic_id = self.fetch_latest_comic_data(db_pool).await?;
             news_updater.check_for(comic_id);
 
@@ -63,6 +65,9 @@ impl ComicUpdater {
             {
                 select! {
                     () = sleep(delay.to_std().expect("valid delay")).fuse() => {},
+                    () = trigger.notified().fuse() => {
+                        info!("Manual run requested, updating comic data early");
+                    },
                     _ = shutdown_receiver.recv().fuse() => {
                         info!("Shutting down background comic updater");
                         break;

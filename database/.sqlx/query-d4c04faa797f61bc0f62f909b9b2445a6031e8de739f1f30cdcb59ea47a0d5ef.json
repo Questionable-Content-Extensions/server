@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT * FROM `Comic`\n                WHERE (? is NULL OR `is_guest_comic` = ?)\n                    AND (? is NULL OR `is_non_canon` = ?)\n                ORDER BY `id` ASC\n            ",
+  "query": "\n                SELECT * FROM `Comic`\n                WHERE `hidden`\n                ORDER BY `id` ASC\n            ",
   "describe": {
     "columns": [
       {
@@ -119,10 +119,19 @@
           "flags": "NOT_NULL",
           "max_size": 11
         }
+      },
+      {
+        "ordinal": 13,
+        "name": "hidden",
+        "type_info": {
+          "type": "Bit",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 1
+        }
       }
     ],
     "parameters": {
-      "Right": 4
+      "Right": 0
     },
     "nullable": [
       false,
@@ -137,8 +146,9 @@
       false,
       false,
       false,
+      false,
       false
     ]
   },
-  "hash": "0920be6a560231cf42cb184189a3aef674ebcab1abe97c7ca7e8a3e79b525d66"
+  "hash": "d4c04faa797f61bc0f62f909b9b2445a6031e8de739f1f30cdcb59ea47a0d5ef"
 }

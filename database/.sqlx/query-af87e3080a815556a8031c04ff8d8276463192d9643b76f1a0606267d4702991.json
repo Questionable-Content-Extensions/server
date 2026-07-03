@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `c`.`id`,\n                    `c`.`image_type`,\n                    `c`.`is_guest_comic`,\n                    `c`.`is_non_canon`,\n                    `c`.`has_no_cast`,\n                    `c`.`has_no_location`,\n                    `c`.`has_no_storyline`,\n                    `c`.`has_no_title`,\n                    `c`.`has_no_tagline`,\n                    `c`.`title`,\n                    `c`.`tagline`,\n                    `c`.`publish_date`,\n                    `c`.`is_accurate_publish_date`,\n                    (SELECT `id` FROM `Comic`\n                     WHERE `id` < `c`.`id`\n                       AND (? IS NULL OR `is_guest_comic` = ?)\n                       AND (? IS NULL OR `is_non_canon` = ?)\n                     ORDER BY `id` DESC LIMIT 1) AS `prev_id`,\n                    (SELECT `id` FROM `Comic`\n                     WHERE `id` > `c`.`id`\n                       AND (? IS NULL OR `is_guest_comic` = ?)\n                       AND (? IS NULL OR `is_non_canon` = ?)\n                     ORDER BY `id` ASC LIMIT 1) AS `next_id`,\n                    `n`.`news` AS `news`\n                FROM `Comic` `c`\n                LEFT JOIN `News` `n` ON `n`.`comic_id` = `c`.`id`\n                WHERE `c`.`id` = ?\n            ",
+  "query": "\n                SELECT\n                    `c`.`id`,\n                    `c`.`image_type`,\n                    `c`.`is_guest_comic`,\n                    `c`.`is_non_canon`,\n                    `c`.`has_no_cast`,\n                    `c`.`has_no_location`,\n                    `c`.`has_no_storyline`,\n                    `c`.`has_no_title`,\n                    `c`.`has_no_tagline`,\n                    `c`.`title`,\n                    `c`.`tagline`,\n                    `c`.`publish_date`,\n                    `c`.`is_accurate_publish_date`,\n                    (SELECT `id` FROM `Comic`\n                     WHERE `id` < `c`.`id`\n                       AND (? IS NULL OR `is_guest_comic` = ?)\n                       AND (? IS NULL OR `is_non_canon` = ?)\n                       AND NOT `hidden`\n                     ORDER BY `id` DESC LIMIT 1) AS `prev_id`,\n                    (SELECT `id` FROM `Comic`\n                     WHERE `id` > `c`.`id`\n                       AND (? IS NULL OR `is_guest_comic` = ?)\n                       AND (? IS NULL OR `is_non_canon` = ?)\n                       AND NOT `hidden`\n                     ORDER BY `id` ASC LIMIT 1) AS `next_id`,\n                    `n`.`news` AS `news`\n                FROM `Comic` `c`\n                LEFT JOIN `News` `n` ON `n`.`comic_id` = `c`.`id`\n                WHERE `c`.`id` = ? AND (? OR NOT `c`.`hidden`)\n            ",
   "describe": {
     "columns": [
       {
@@ -149,7 +149,7 @@
       }
     ],
     "parameters": {
-      "Right": 9
+      "Right": 10
     },
     "nullable": [
       false,
@@ -170,5 +170,5 @@
       true
     ]
   },
-  "hash": "70a8714a5d797063f8f24841792950c9b2d52018de439a9097c3c3d5b42fe579"
+  "hash": "af87e3080a815556a8031c04ff8d8276463192d9643b76f1a0606267d4702991"
 }

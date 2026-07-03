@@ -74,12 +74,22 @@
           "flags": "NOT_NULL | UNSIGNED",
           "max_size": 1
         }
+      },
+      {
+        "ordinal": 8,
+        "name": "can_add_advance_comic",
+        "type_info": {
+          "type": "Bit",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 1
+        }
       }
     ],
     "parameters": {
       "Right": 1
     },
     "nullable": [
+      false,
       false,
       false,
       false,

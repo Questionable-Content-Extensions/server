@@ -39,11 +39,13 @@ pub(crate) async fn by_id(
         Some(Exclusion::NonCanon) => (None, Some(false)),
     };
 
+    let include_hidden = auth.has_authority(token_permissions::HAS_VALID_TOKEN);
     let comic = DatabaseComic::by_id_with_navigation_and_news(
         &mut *conn,
         comic_id.into_inner(),
         include_guest_comics,
         include_non_canon_comics,
+        include_hidden,
     )
     .await
     .map_err(error::ErrorInternalServerError)?;
@@ -52,7 +54,7 @@ pub(crate) async fn by_id(
         news_updater.check_for(comic_id);
     }
 
-    let editor_data = if auth.has_authority(token_permissions::HAS_VALID_TOKEN) {
+    let editor_data = if include_hidden {
         Some(fetch_editor_data_for_comic(&mut conn, comic_id).await?)
     } else {
         None

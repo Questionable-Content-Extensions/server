@@ -272,6 +272,9 @@ impl Item {
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
+        // Hidden (advance) comics are always excluded here, even for editors —
+        // navigation targets must never surface a comic during normal
+        // browsing; only a direct by-id lookup may reveal one.
         sqlx::query_as!(
             ItemFirstLastCount,
             r#"
@@ -285,6 +288,7 @@ impl Item {
                 JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`
                     AND (? is NULL OR `c`.`is_guest_comic` = ?)
                     AND (? is NULL OR `c`.`is_non_canon` = ?)
+                    AND NOT `c`.`hidden`
                 GROUP by `i`.`id`
                 ORDER BY `count` DESC
             "#,
@@ -323,6 +327,7 @@ impl Item {
                 WHERE `c`.`id` < ?
                     AND (? is NULL OR `c`.`is_guest_comic` = ?)
                     AND (? is NULL OR `c`.`is_non_canon` = ?)
+                    AND NOT `c`.`hidden`
                 GROUP BY `i`.`id`
                 ORDER BY `comic` DESC
             "#,
@@ -377,6 +382,7 @@ impl Item {
                 WHERE `c`.`id` > ?
                     AND (? is NULL OR `c`.`is_guest_comic` = ?)
                     AND (? is NULL OR `c`.`is_non_canon` = ?)
+                    AND NOT `c`.`hidden`
                 GROUP BY i.id
             "#,
             comic_id,
@@ -419,6 +425,7 @@ impl Item {
                 JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`
                     AND (? is NULL OR `c`.`is_guest_comic` = ?)
                     AND (? is NULL OR `c`.`is_non_canon` = ?)
+                    AND NOT `c`.`hidden`
                 WHERE `i`.`id` IN (
                     SELECT `item_id` FROM `Occurrence` WHERE `comic_id` = ?
                 )
@@ -463,6 +470,7 @@ impl Item {
                     )
                     AND (? is NULL OR `c`.`is_guest_comic` = ?)
                     AND (? is NULL OR `c`.`is_non_canon` = ?)
+                    AND NOT `c`.`hidden`
                 GROUP BY `i`.`id`
             "#,
             comic_id,
@@ -506,6 +514,7 @@ impl Item {
                     )
                     AND (? is NULL OR `c`.`is_guest_comic` = ?)
                     AND (? is NULL OR `c`.`is_non_canon` = ?)
+                    AND NOT `c`.`hidden`
                 GROUP BY `i`.`id`
             "#,
             comic_id,

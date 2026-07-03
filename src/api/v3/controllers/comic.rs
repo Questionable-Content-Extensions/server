@@ -2,6 +2,7 @@ use actix_web::web;
 
 pub(super) mod navigation_data;
 
+mod add_advance_comic;
 mod add_item;
 mod all;
 mod by_id;
@@ -16,6 +17,9 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(add_item::add_item)
         .service(add_item::add_items)
         .service(remove_item::remove_item)
-        .service(by_id::by_id)
-        .service(patch_comic::patch_comic);
+        .service(patch_comic::patch_comic)
+        .service(add_advance_comic::add_advance_comic)
+        .service(add_advance_comic::list_advance_comics)
+        .service(add_advance_comic::run_comic_updater)
+        .service(by_id::by_id);
 }

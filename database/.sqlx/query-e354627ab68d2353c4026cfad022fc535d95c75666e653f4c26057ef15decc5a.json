@@ -1,0 +1,12 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                INSERT INTO `Comic`\n                    (`id`, `title`, `tagline`, `publish_date`, `is_accurate_publish_date`, `is_guest_comic`, `is_non_canon`, `hidden`)\n                VALUES\n                    (?, ?, ?, ?, ?, ?, ?, 1)\n                ON DUPLICATE KEY UPDATE\n                    `title` = ?,\n                    `tagline` = ?,\n                    `publish_date` = ?,\n                    `is_accurate_publish_date` = ?,\n                    `is_guest_comic` = ?,\n                    `is_non_canon` = ?,\n                    `hidden` = 1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 13
+    },
+    "nullable": []
+  },
+  "hash": "e354627ab68d2353c4026cfad022fc535d95c75666e653f4c26057ef15decc5a"
+}

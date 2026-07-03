@@ -6,6 +6,7 @@ use shared::token_permissions;
 pub struct Token {
     pub id: String,
     pub identifier: String,
+    pub can_add_advance_comic: u8,
     pub can_add_image_to_item: u8,
     pub can_add_item_to_comic: u8,
     pub can_change_comic_data: u8,
@@ -44,8 +45,11 @@ impl Token {
             return Ok(HashSet::new());
         };
 
-        let mut permissions = HashSet::with_capacity(7);
+        let mut permissions = HashSet::with_capacity(8);
         permissions.insert(token_permissions::HAS_VALID_TOKEN.to_string());
+        if token.can_add_advance_comic != 0 {
+            permissions.insert(token_permissions::CAN_ADD_ADVANCE_COMIC.to_string());
+        }
         if token.can_add_item_to_comic != 0 {
             permissions.insert(token_permissions::CAN_ADD_ITEM_TO_COMIC.to_string());
         }

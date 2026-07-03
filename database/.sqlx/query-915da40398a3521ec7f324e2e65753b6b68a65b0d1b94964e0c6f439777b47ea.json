@@ -119,6 +119,15 @@
           "flags": "NOT_NULL",
           "max_size": 11
         }
+      },
+      {
+        "ordinal": 13,
+        "name": "hidden",
+        "type_info": {
+          "type": "Bit",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 1
+        }
       }
     ],
     "parameters": {
@@ -131,6 +140,7 @@
       false,
       true,
       true,
+      false,
       false,
       false,
       false,

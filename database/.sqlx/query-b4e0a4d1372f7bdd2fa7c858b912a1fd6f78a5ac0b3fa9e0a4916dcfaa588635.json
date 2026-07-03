@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `i`.`id`,\n                    MIN(`c`.`id`) as `first`,\n                    MAX(`c`.`id`) as `last`,\n                    COUNT(`c`.`id`) as `count`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                    AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                    AND (? is NULL OR `c`.`is_non_canon` = ?)\n                WHERE `i`.`id` IN (\n                    SELECT `item_id` FROM `Occurrence` WHERE `comic_id` = ?\n                )\n                GROUP by `i`.`id`\n                ORDER BY `count` DESC\n            ",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    MIN(`c`.`id`) as `first`,\n                    MAX(`c`.`id`) as `last`,\n                    COUNT(`c`.`id`) as `count`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                    AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                    AND (? is NULL OR `c`.`is_non_canon` = ?)\n                    AND NOT `c`.`hidden`\n                WHERE `i`.`id` IN (\n                    SELECT `item_id` FROM `Occurrence` WHERE `comic_id` = ?\n                )\n                GROUP by `i`.`id`\n                ORDER BY `count` DESC\n            ",
   "describe": {
     "columns": [
       {
@@ -50,5 +50,5 @@
       false
     ]
   },
-  "hash": "5c0300a9872eb7eae79fe183530d42fac8296a033465b310c55224b4c834f5b7"
+  "hash": "b4e0a4d1372f7bdd2fa7c858b912a1fd6f78a5ac0b3fa9e0a4916dcfaa588635"
 }

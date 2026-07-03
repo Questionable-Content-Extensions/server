@@ -1,7 +1,7 @@
 //! Questionable Content Extensions server.
 
 use crate::models::Token;
-use crate::util::{ComicUpdater, Either, NewsUpdater, TokenPermissionsCache};
+use crate::util::{ComicUpdater, ComicUpdaterTrigger, Either, NewsUpdater, TokenPermissionsCache};
 use actix_files::{Files, NamedFile};
 use actix_http::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
@@ -70,6 +70,10 @@ async fn main() -> Result<()> {
     let http_token_cache: web::Data<TokenPermissionsCache> =
         web::Data::new(TokenPermissionsCache::new());
 
+    let http_comic_updater_trigger: web::Data<ComicUpdaterTrigger> =
+        web::Data::new(ComicUpdaterTrigger::new());
+    let comic_updater_trigger = Arc::clone(&http_comic_updater_trigger);
+
     // Start HTTP server
     let start_http_server = move || -> Result<actix_web::dev::Server> {
         Ok(HttpServer::new(move || {
@@ -78,6 +82,7 @@ async fn main() -> Result<()> {
                 .app_data(web::Data::new(http_db_pool.clone()))
                 .app_data(http_news_updater.clone())
                 .app_data(http_token_cache.clone())
+                .app_data(http_comic_updater_trigger.clone())
                 .app_data(PayloadConfig::new(1_048_576))
                 .wrap(auth)
                 .wrap(actix_web::middleware::Compress::default()).wrap(actix_web::middleware::Logger::new(
@@ -113,6 +118,7 @@ async fn main() -> Result<()> {
 
         let background_news_updater = Arc::clone(&news_updater);
         let background_comic_news_updater = news_updater;
+        let background_comic_updater_trigger = comic_updater_trigger;
 
         let mut background_comic_updater_shutdown_receiver = shutdown_sender.subscribe();
 
@@ -140,6 +146,7 @@ async fn main() -> Result<()> {
                 .background_comic_updater(
                     &background_comic_updater_db_pool,
                     &background_comic_news_updater,
+                    &background_comic_updater_trigger,
                     &mut background_comic_updater_shutdown_receiver,
                 )
                 .await

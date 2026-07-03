@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT * FROM `Comic`\n                WHERE `id` = ?\n            ",
+  "query": "\n                SELECT * FROM `Comic`\n                WHERE (? is NULL OR `is_guest_comic` = ?)\n                    AND (? is NULL OR `is_non_canon` = ?)\n                    AND NOT `hidden`\n                ORDER BY `id` ASC\n            ",
   "describe": {
     "columns": [
       {
@@ -131,7 +131,7 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 4
     },
     "nullable": [
       false,
@@ -150,5 +150,5 @@
       false
     ]
   },
-  "hash": "f37cf3ed7d982cc063c85bb642388bb0f9181b783a65721aea504767656dc9d5"
+  "hash": "659776cbedc6a7e698ff1406869e99eb32b9349db3fcd9390fcd0308606be746"
 }

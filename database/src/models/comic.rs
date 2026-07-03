@@ -22,6 +22,7 @@ pub struct Comic {
     pub tagline: Option<String>,
     pub publish_date: Option<NaiveDateTime>,
     pub is_accurate_publish_date: u8,
+    pub hidden: u8,
 }
 
 impl Comic {
@@ -56,18 +57,48 @@ impl Comic {
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
         F: FnMut(Self) -> T,
     {
+        // Hidden (advance) comics are never listed here, even for editors —
+        // normal browsing must never surface them; only a direct by-id fetch
+        // or the dedicated pending-advance-comics listing may reveal them.
         sqlx::query_as!(
             Self,
             r#"
                 SELECT * FROM `Comic`
                 WHERE (? is NULL OR `is_guest_comic` = ?)
                     AND (? is NULL OR `is_non_canon` = ?)
+                    AND NOT `hidden`
                 ORDER BY `id` ASC
             "#,
             include_guest_comics,
             include_guest_comics,
             include_non_canon_comics,
-            include_non_canon_comics
+            include_non_canon_comics,
+        )
+        .fetch(executor)
+        .map_ok(map)
+        .try_collect()
+        .await
+    }
+
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor, map))]
+    pub async fn all_hidden_with_mapping<'e, 'c: 'e, E, T, F>(
+        executor: E,
+        map: F,
+    ) -> sqlx::Result<Vec<T>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+        F: FnMut(Self) -> T,
+    {
+        sqlx::query_as!(
+            Self,
+            r#"
+                SELECT * FROM `Comic`
+                WHERE `hidden`
+                ORDER BY `id` ASC
+            "#,
         )
         .fetch(executor)
         .map_ok(map)
@@ -155,10 +186,16 @@ impl Comic {
         id: u16,
         include_guest_comics: Option<bool>,
         include_non_canon_comics: Option<bool>,
+        include_hidden: bool,
     ) -> sqlx::Result<Option<ComicWithNavigationAndNews>>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
+        // `include_hidden` only ever gates the direct by-id lookup below (so an
+        // editor with a known id — e.g. from the pending-advance-comics list —
+        // can fetch a hidden comic). The prev_id/next_id navigation subqueries
+        // always exclude hidden comics, even for editors: normal prev/next
+        // browsing must never surface a comic that isn't published yet.
         sqlx::query_as!(
             ComicWithNavigationAndNews,
             r#"
@@ -180,16 +217,18 @@ impl Comic {
                      WHERE `id` < `c`.`id`
                        AND (? IS NULL OR `is_guest_comic` = ?)
                        AND (? IS NULL OR `is_non_canon` = ?)
+                       AND NOT `hidden`
                      ORDER BY `id` DESC LIMIT 1) AS `prev_id`,
                     (SELECT `id` FROM `Comic`
                      WHERE `id` > `c`.`id`
                        AND (? IS NULL OR `is_guest_comic` = ?)
                        AND (? IS NULL OR `is_non_canon` = ?)
+                       AND NOT `hidden`
                      ORDER BY `id` ASC LIMIT 1) AS `next_id`,
                     `n`.`news` AS `news`
                 FROM `Comic` `c`
                 LEFT JOIN `News` `n` ON `n`.`comic_id` = `c`.`id`
-                WHERE `c`.`id` = ?
+                WHERE `c`.`id` = ? AND (? OR NOT `c`.`hidden`)
             "#,
             include_guest_comics,
             include_guest_comics,
@@ -200,6 +239,7 @@ impl Comic {
             include_non_canon_comics,
             include_non_canon_comics,
             id,
+            include_hidden,
         )
         .fetch_optional(executor)
         .await
@@ -1194,13 +1234,14 @@ impl Comic {
         sqlx::query!(
             r#"
                 INSERT INTO `Comic`
-                    (`id`, `title`, `image_type`, `publish_date`, `is_accurate_publish_date`)
+                    (`id`, `title`, `image_type`, `publish_date`, `is_accurate_publish_date`, `hidden`)
                 VALUES
-                    (?, ?, ?, ?, 0)
+                    (?, ?, ?, ?, 0, 0)
                 ON DUPLICATE KEY UPDATE
                     `title` = ?,
                     `image_type` = ?,
-                    `publish_date` = ?
+                    `publish_date` = ?,
+                    `hidden` = 0
             "#,
             id,
             title,
@@ -1209,6 +1250,62 @@ impl Comic {
             title,
             image_type,
             publish_date,
+        )
+        .execute(executor)
+        .await
+    }
+
+    /// Inserts a hidden advance comic, or updates it in place if it's still hidden.
+    ///
+    /// Callers must check the comic isn't already a published (non-hidden) comic before
+    /// calling this, e.g. via [`Comic::by_id`].
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[expect(clippy::too_many_arguments)]
+    #[tracing::instrument(skip(executor))]
+    pub async fn insert_advance_comic<'e, 'c: 'e, E>(
+        executor: E,
+        id: u16,
+        title: &str,
+        tagline: Option<&str>,
+        publish_date: Option<NaiveDateTime>,
+        is_accurate_publish_date: bool,
+        is_guest_comic: bool,
+        is_non_canon: bool,
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query!(
+            r#"
+                INSERT INTO `Comic`
+                    (`id`, `title`, `tagline`, `publish_date`, `is_accurate_publish_date`, `is_guest_comic`, `is_non_canon`, `hidden`)
+                VALUES
+                    (?, ?, ?, ?, ?, ?, ?, 1)
+                ON DUPLICATE KEY UPDATE
+                    `title` = ?,
+                    `tagline` = ?,
+                    `publish_date` = ?,
+                    `is_accurate_publish_date` = ?,
+                    `is_guest_comic` = ?,
+                    `is_non_canon` = ?,
+                    `hidden` = 1
+            "#,
+            id,
+            title,
+            tagline,
+            publish_date,
+            is_accurate_publish_date,
+            is_guest_comic,
+            is_non_canon,
+            title,
+            tagline,
+            publish_date,
+            is_accurate_publish_date,
+            is_guest_comic,
+            is_non_canon,
         )
         .execute(executor)
         .await

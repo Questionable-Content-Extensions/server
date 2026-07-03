@@ -1,0 +1,2 @@
+ALTER TABLE `Comic` ADD COLUMN `hidden` BIT NOT NULL DEFAULT 0;
+ALTER TABLE `Token` ADD COLUMN `can_add_advance_comic` BIT NOT NULL DEFAULT 0;

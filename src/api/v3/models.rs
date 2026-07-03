@@ -250,6 +250,30 @@ impl From<DatabaseComic> for ComicList {
 #[derive(Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
+pub struct AdvanceComicListItem {
+    pub comic: ComicId,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub tagline: Option<String>,
+    #[ts(optional, type = "string")]
+    pub publish_date: Option<DateTime<Utc>>,
+}
+
+impl From<DatabaseComic> for AdvanceComicListItem {
+    fn from(c: DatabaseComic) -> Self {
+        Self {
+            comic: ComicId::from_trusted(c.id),
+            title: c.title,
+            tagline: c.tagline,
+            publish_date: c.publish_date.map(|nd| Utc.from_utc_datetime(&nd)),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
 pub struct RelatedItem {
     pub id: ItemId,
     pub count: i32,

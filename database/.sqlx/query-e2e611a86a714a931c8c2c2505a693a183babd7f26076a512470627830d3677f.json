@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `i`.`id`,\n                    MIN(`c`.`id`) as `first`,\n                    MAX(`c`.`id`) as `last`,\n                    COUNT(`c`.`id`) as `count`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                    AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                    AND (? is NULL OR `c`.`is_non_canon` = ?)\n                GROUP by `i`.`id`\n                ORDER BY `count` DESC\n            ",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    MIN(`c`.`id`) as `first`,\n                    MAX(`c`.`id`) as `last`,\n                    COUNT(`c`.`id`) as `count`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                    AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                    AND (? is NULL OR `c`.`is_non_canon` = ?)\n                    AND NOT `c`.`hidden`\n                GROUP by `i`.`id`\n                ORDER BY `count` DESC\n            ",
   "describe": {
     "columns": [
       {
@@ -50,5 +50,5 @@
       false
     ]
   },
-  "hash": "0661da3ca9350633c12e2b696c10655950390624d3d611daaa979ac89fdc54fb"
+  "hash": "e2e611a86a714a931c8c2c2505a693a183babd7f26076a512470627830d3677f"
 }

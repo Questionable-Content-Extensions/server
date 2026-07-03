@@ -10,10 +10,12 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pub use comic_updater::*;
+pub use comic_updater_trigger::ComicUpdaterTrigger;
 pub use news_updater::*;
 pub use token_cache::TokenPermissionsCache;
 
 mod comic_updater;
+mod comic_updater_trigger;
 mod news_updater;
 mod token_cache;
 

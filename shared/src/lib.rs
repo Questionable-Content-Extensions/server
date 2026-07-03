@@ -8,4 +8,5 @@ pub mod token_permissions {
     pub const CAN_ADD_IMAGE_TO_ITEM: &str = "CAN_ADD_IMAGE_TO_ITEM";
     pub const CAN_REMOVE_IMAGE_FROM_ITEM: &str = "CAN_REMOVE_IMAGE_FROM_ITEM";
     pub const CAN_CHANGE_ITEM_DATA: &str = "CAN_CHANGE_ITEM_DATA";
+    pub const CAN_ADD_ADVANCE_COMIC: &str = "CAN_ADD_ADVANCE_COMIC";
 }
