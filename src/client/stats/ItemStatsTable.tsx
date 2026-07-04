@@ -1,6 +1,6 @@
+import type { ItemStats } from 'models/ItemStats';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { ItemStats } from '../../../bindings/ItemStats';
 import ItemDetailsModal from './ItemDetailsModal';
 import {
     SortableHeader,

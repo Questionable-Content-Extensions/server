@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import type { ItemStats } from 'models/ItemStats';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { ItemStats } from '../../../bindings/ItemStats';
 import { _resetItemsCache } from './ItemDetailsModal';
 import ItemStatsTable from './ItemStatsTable';
 

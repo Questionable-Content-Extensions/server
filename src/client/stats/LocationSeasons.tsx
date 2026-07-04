@@ -7,9 +7,9 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { LocationSeasonEntry } from 'models/LocationSeasonEntry';
 import { useEffect, useRef, useState } from 'react';
 
-import type { LocationSeasonEntry } from 'bindings/LocationSeasonEntry';
 import { getStatsLocationSeasons } from 'bindings/api/GetStatsLocationSeasons';
 
 Chart.register(

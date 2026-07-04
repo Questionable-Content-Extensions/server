@@ -1,7 +1,7 @@
+import type { LocationSpotlightResponse } from 'models/LocationSpotlightResponse';
+import type { YearlySpotlightResponse } from 'models/YearlySpotlightResponse';
 import { useEffect, useState } from 'react';
 
-import type { LocationSpotlightResponse } from 'bindings/LocationSpotlightResponse';
-import type { YearlySpotlightResponse } from 'bindings/YearlySpotlightResponse';
 import { getStatsLocationYearlySpotlight } from 'bindings/api/GetStatsLocationYearlySpotlight';
 
 import YearlyBarChart from './YearlyBarChart';

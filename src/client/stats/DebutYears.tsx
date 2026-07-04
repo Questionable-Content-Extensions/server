@@ -1,6 +1,6 @@
+import type { DebutYear } from 'models/DebutYear';
 import { useEffect, useState } from 'react';
 
-import type { DebutYear } from 'bindings/DebutYear';
 import { getStatsDebutClusters } from 'bindings/api/GetStatsDebutClusters';
 
 import ItemDetailsModal from './ItemDetailsModal';

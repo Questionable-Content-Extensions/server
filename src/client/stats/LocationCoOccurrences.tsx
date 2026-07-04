@@ -1,6 +1,6 @@
+import type { LocationCoOccurrenceResponse } from 'models/LocationCoOccurrenceResponse';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { LocationCoOccurrenceResponse } from 'bindings/LocationCoOccurrenceResponse';
 import { getStatsLocationCoOccurrences } from 'bindings/api/GetStatsLocationCoOccurrences';
 
 import ItemDetailsModal from './ItemDetailsModal';

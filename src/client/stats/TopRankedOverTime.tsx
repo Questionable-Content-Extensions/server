@@ -1,6 +1,6 @@
+import type { TopRankedOverTimeResponse } from 'models/TopRankedOverTimeResponse';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { TopRankedOverTimeResponse } from 'bindings/TopRankedOverTimeResponse';
 import { getStatsTopRankedOverTime } from 'bindings/api/GetStatsTopRankedOverTime';
 
 interface StintRow {

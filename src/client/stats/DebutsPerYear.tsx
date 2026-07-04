@@ -7,9 +7,9 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { DebutsPerYear } from 'models/DebutsPerYear';
 import { useEffect, useRef, useState } from 'react';
 
-import type { DebutsPerYear } from 'bindings/DebutsPerYear';
 import { getStatsDebutsPerYear } from 'bindings/api/GetStatsDebutsPerYear';
 
 Chart.register(

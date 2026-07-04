@@ -7,9 +7,9 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { CastTurnoverYear } from 'models/CastTurnoverYear';
 import { useEffect, useRef, useState } from 'react';
 
-import type { CastTurnoverYear } from 'bindings/CastTurnoverYear';
 import { getStatsCastTurnover } from 'bindings/api/GetStatsCastTurnover';
 
 Chart.register(

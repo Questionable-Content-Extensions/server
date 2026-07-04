@@ -1,6 +1,6 @@
+import type { CharacterRegularity } from 'models/CharacterRegularity';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { CharacterRegularity } from 'bindings/CharacterRegularity';
 import { getStatsCharacterRegularity } from 'bindings/api/GetStatsCharacterRegularity';
 
 import ItemDetailsModal from './ItemDetailsModal';

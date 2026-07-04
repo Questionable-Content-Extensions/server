@@ -1,6 +1,6 @@
+import type { ComebackLocation } from 'models/ComebackLocation';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { ComebackLocation } from 'bindings/ComebackLocation';
 import { getStatsComebackLocations } from 'bindings/api/GetStatsComebackLocations';
 
 import ItemDetailsModal from './ItemDetailsModal';

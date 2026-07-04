@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import type { YearlySpotlightResponse } from 'models/YearlySpotlightResponse';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import type { YearlySpotlightResponse } from '../../../bindings/YearlySpotlightResponse';
 import YearlyStreamgraph from './YearlyStreamgraph';
 
 afterEach(cleanup);

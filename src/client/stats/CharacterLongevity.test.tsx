@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
+import type { ItemStats } from 'models/ItemStats';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import type { ItemStats } from '../../../bindings/ItemStats';
 import CharacterLongevity from './CharacterLongevity';
 
 afterEach(cleanup);

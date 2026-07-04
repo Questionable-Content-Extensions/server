@@ -5,10 +5,10 @@ import {
     screen,
     waitFor,
 } from '@testing-library/react';
+import type { Item } from 'models/Item';
+import type { ItemList } from 'models/ItemList';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Item } from '../../../bindings/Item';
-import type { ItemList } from '../../../bindings/ItemList';
 import ItemDetailsModal, { _resetItemsCache } from './ItemDetailsModal';
 
 afterEach(() => {
@@ -30,6 +30,8 @@ const ITEM: Item = {
     presence: 61.4,
     hasImage: true,
     primaryImage: 42,
+    startComicId: null,
+    endComicId: null,
 };
 
 const LOCATION_ITEM: Item = {
@@ -45,6 +47,8 @@ const LOCATION_ITEM: Item = {
     presence: 30.7,
     hasImage: false,
     primaryImage: null,
+    startComicId: null,
+    endComicId: null,
 };
 
 const ALL_ITEMS: ItemList[] = [
@@ -55,6 +59,8 @@ const ALL_ITEMS: ItemList[] = [
         type: 'cast',
         color: '#112233',
         count: 2800,
+        startComicId: null,
+        endComicId: null,
     },
     {
         id: 10,
@@ -63,6 +69,8 @@ const ALL_ITEMS: ItemList[] = [
         type: 'location',
         color: '#334455',
         count: 1500,
+        startComicId: null,
+        endComicId: null,
     },
 ];
 

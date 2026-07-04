@@ -7,10 +7,10 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { PublishTimeYear } from 'models/PublishTimeYear';
+import type { ScheduleEvolutionYear } from 'models/ScheduleEvolutionYear';
 import { useEffect, useRef, useState } from 'react';
 
-import type { PublishTimeYear } from 'bindings/PublishTimeYear';
-import type { ScheduleEvolutionYear } from 'bindings/ScheduleEvolutionYear';
 import { getStatsPublishTimeEvolution } from 'bindings/api/GetStatsPublishTimeEvolution';
 import { getStatsScheduleEvolution } from 'bindings/api/GetStatsScheduleEvolution';
 

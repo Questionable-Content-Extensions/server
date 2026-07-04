@@ -1,8 +1,8 @@
+import type { Item } from 'models/Item';
+import type { ItemList } from 'models/ItemList';
+import type { RelatedItem } from 'models/RelatedItem';
 import { useEffect, useState } from 'react';
 
-import type { Item } from 'bindings/Item';
-import type { ItemList } from 'bindings/ItemList';
-import type { RelatedItem } from 'bindings/RelatedItem';
 import { getItemdata } from 'bindings/api/GetItemdata';
 import { getItemdataItemId } from 'bindings/api/GetItemdataItemId';
 import { getItemdataItemIdFriends } from 'bindings/api/GetItemdataItemIdFriends';

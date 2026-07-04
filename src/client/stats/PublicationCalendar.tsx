@@ -6,9 +6,9 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { PublicationCalendar } from 'models/PublicationCalendar';
 import { useEffect, useRef, useState } from 'react';
 
-import type { PublicationCalendar } from 'bindings/PublicationCalendar';
 import { getStatsPublicationCalendar } from 'bindings/api/GetStatsPublicationCalendar';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);

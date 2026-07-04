@@ -1,6 +1,6 @@
+import type { LocationAffinity } from 'models/LocationAffinity';
 import { useEffect, useState } from 'react';
 
-import type { LocationAffinity } from 'bindings/LocationAffinity';
 import { getStatsLocationAffinity } from 'bindings/api/GetStatsLocationAffinity';
 
 import ItemDetailsModal from './ItemDetailsModal';

@@ -1,7 +1,7 @@
+import type { ItemStats } from 'models/ItemStats';
 import { useEffect, useState } from 'react';
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
-import type { ItemStats } from 'bindings/ItemStats';
 import { getStatsCast } from 'bindings/api/GetStatsCast';
 import { getStatsLocations } from 'bindings/api/GetStatsLocations';
 

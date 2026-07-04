@@ -1,6 +1,6 @@
+import type { ComebackCharacter } from 'models/ComebackCharacter';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { ComebackCharacter } from 'bindings/ComebackCharacter';
 import { getStatsComebackCharacters } from 'bindings/api/GetStatsComebackCharacters';
 
 import ItemDetailsModal from './ItemDetailsModal';

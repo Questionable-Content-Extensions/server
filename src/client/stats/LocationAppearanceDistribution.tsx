@@ -7,9 +7,9 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { ItemStats } from 'models/ItemStats';
 import { useEffect, useMemo, useRef } from 'react';
 
-import type { ItemStats } from '../../../bindings/ItemStats';
 import {
     StaticHeader,
     StatsTable,

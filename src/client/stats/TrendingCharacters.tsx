@@ -1,6 +1,6 @@
+import type { TrendingItem } from 'models/TrendingItem';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { TrendingItem } from 'bindings/TrendingItem';
 import { getStatsTrendingCharacters } from 'bindings/api/GetStatsTrendingCharacters';
 
 import ItemDetailsModal from './ItemDetailsModal';

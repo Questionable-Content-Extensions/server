@@ -1,6 +1,6 @@
+import type { SocialHubEntry } from 'models/SocialHubEntry';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { SocialHubEntry } from 'bindings/SocialHubEntry';
 import { getStatsSocialHub } from 'bindings/api/GetStatsSocialHub';
 
 import ItemDetailsModal from './ItemDetailsModal';

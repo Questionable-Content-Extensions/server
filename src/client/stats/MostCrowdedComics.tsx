@@ -8,9 +8,9 @@ import {
     PointElement,
     Tooltip,
 } from 'chart.js';
+import type { CrowdedComicsResponse } from 'models/CrowdedComicsResponse';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { CrowdedComicsResponse } from 'bindings/CrowdedComicsResponse';
 import { getStatsCrowdedComics } from 'bindings/api/GetStatsCrowdedComics';
 
 import {

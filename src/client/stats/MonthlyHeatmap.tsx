@@ -1,6 +1,6 @@
+import type { MonthlyHeatmapEntry } from 'models/MonthlyHeatmapEntry';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { MonthlyHeatmapEntry } from 'bindings/MonthlyHeatmapEntry';
 import { getStatsMonthlyHeatmap } from 'bindings/api/GetStatsMonthlyHeatmap';
 
 const MONTH_LABELS = [

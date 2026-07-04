@@ -1,6 +1,6 @@
+import type { NeverMetPair } from 'models/NeverMetPair';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { NeverMetPair } from 'bindings/NeverMetPair';
 import { getStatsNeverMet } from 'bindings/api/GetStatsNeverMet';
 
 import ItemDetailsModal from './ItemDetailsModal';

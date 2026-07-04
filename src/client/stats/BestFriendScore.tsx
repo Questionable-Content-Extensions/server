@@ -1,6 +1,6 @@
+import type { BestFriendResponse } from 'models/BestFriendResponse';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { BestFriendResponse } from 'bindings/BestFriendResponse';
 import { getStatsBestFriendScore } from 'bindings/api/GetStatsBestFriendScore';
 
 import ItemDetailsModal from './ItemDetailsModal';

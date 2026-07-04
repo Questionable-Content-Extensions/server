@@ -1,6 +1,6 @@
+import type { LocationBreakoutYear } from 'models/LocationBreakoutYear';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { LocationBreakoutYear } from 'bindings/LocationBreakoutYear';
 import { getStatsLocationBreakoutYears } from 'bindings/api/GetStatsLocationBreakoutYears';
 
 import ItemDetailsModal from './ItemDetailsModal';

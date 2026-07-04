@@ -6,10 +6,10 @@ import {
     stackOffsetWiggle,
     stackOrderInsideOut,
 } from 'd3-shape';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import type { CharacterMeta } from 'models/CharacterMeta';
+import type { YearlySpotlightResponse } from 'models/YearlySpotlightResponse';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import type { CharacterMeta } from '../../../bindings/CharacterMeta';
-import type { YearlySpotlightResponse } from '../../../bindings/YearlySpotlightResponse';
 import { contrastColor } from './colorUtils';
 
 interface StreamRow {
@@ -126,27 +126,34 @@ export default function YearlyStreamgraph({ response }: Props) {
             .curve(curveBasis);
     }, [xStep, yMin, yMax, innerHeight]);
 
-    function handleMouseMove(
-        e: React.MouseEvent<SVGPathElement>,
-        charId: string,
-    ) {
-        const svgEl = (e.currentTarget as Element).closest('svg')!;
-        const rect = svgEl.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left - MARGIN.left;
-        const yearIdx = Math.max(
-            0,
-            Math.min(years.length - 1, Math.round(mouseX / xStep)),
-        );
-        const count = appearanceMap.get(yearIdx)?.get(Number(charId)) ?? 0;
-        const name = response.characters[Number(charId)]?.name ?? '';
-        setTooltip({
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
-            name,
-            year: years[yearIdx],
-            count,
-        });
-    }
+    const handleMouseMove = useCallback(
+        (e: React.MouseEvent<SVGPathElement>) => {
+            const charId = e.currentTarget.dataset.charId!;
+            const svgEl = e.currentTarget.closest('svg')!;
+            const rect = svgEl.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left - MARGIN.left;
+            const yearIdx = Math.max(
+                0,
+                Math.min(years.length - 1, Math.round(mouseX / xStep)),
+            );
+            const count = appearanceMap.get(yearIdx)?.get(Number(charId)) ?? 0;
+            const name = response.characters[Number(charId)]?.name ?? '';
+            setHoveredId(charId);
+            setTooltip({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top,
+                name,
+                year: years[yearIdx],
+                count,
+            });
+        },
+        [years, xStep, appearanceMap, response.characters],
+    );
+
+    const handleMouseLeave = useCallback(() => {
+        setHoveredId(null);
+        setTooltip(null);
+    }, []);
 
     const labelEvery = Math.max(1, Math.ceil(years.length / 12));
 
@@ -164,6 +171,7 @@ export default function YearlyStreamgraph({ response }: Props) {
                         return (
                             <path
                                 key={charId}
+                                data-char-id={charId}
                                 d={areaGen(layer) ?? undefined}
                                 fill={color}
                                 fillOpacity={opacity}
@@ -173,14 +181,8 @@ export default function YearlyStreamgraph({ response }: Props) {
                                     cursor: 'crosshair',
                                     transition: 'fill-opacity 0.15s ease',
                                 }}
-                                onMouseMove={(e) => {
-                                    setHoveredId(charId);
-                                    handleMouseMove(e, charId);
-                                }}
-                                onMouseLeave={() => {
-                                    setHoveredId(null);
-                                    setTooltip(null);
-                                }}
+                                onMouseMove={handleMouseMove}
+                                onMouseLeave={handleMouseLeave}
                             />
                         );
                     })}

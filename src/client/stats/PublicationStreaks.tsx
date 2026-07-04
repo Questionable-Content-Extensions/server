@@ -1,6 +1,6 @@
+import type { PublicationStreak } from 'models/PublicationStreak';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { PublicationStreak } from 'bindings/PublicationStreak';
 import { getStatsPublicationStreaks } from 'bindings/api/GetStatsPublicationStreaks';
 
 import {

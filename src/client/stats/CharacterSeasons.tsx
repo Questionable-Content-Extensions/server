@@ -7,9 +7,9 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { CharacterSeasonEntry } from 'models/CharacterSeasonEntry';
 import { useEffect, useRef, useState } from 'react';
 
-import type { CharacterSeasonEntry } from 'bindings/CharacterSeasonEntry';
 import { getStatsCharacterSeasons } from 'bindings/api/GetStatsCharacterSeasons';
 
 Chart.register(

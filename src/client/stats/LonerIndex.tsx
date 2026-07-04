@@ -1,6 +1,6 @@
+import type { LonerEntry } from 'models/LonerEntry';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { LonerEntry } from 'bindings/LonerEntry';
 import { getStatsLonerIndex } from 'bindings/api/GetStatsLonerIndex';
 
 import ItemDetailsModal from './ItemDetailsModal';

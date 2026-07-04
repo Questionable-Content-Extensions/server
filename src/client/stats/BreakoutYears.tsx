@@ -1,6 +1,6 @@
+import type { BreakoutYear } from 'models/BreakoutYear';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { BreakoutYear } from 'bindings/BreakoutYear';
 import { getStatsBreakoutYears } from 'bindings/api/GetStatsBreakoutYears';
 
 import ItemDetailsModal from './ItemDetailsModal';

@@ -7,10 +7,10 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { ItemStats } from 'models/ItemStats';
+import type { PairEvolutionYear } from 'models/PairEvolutionYear';
 import { useEffect, useRef, useState } from 'react';
 
-import type { ItemStats } from 'bindings/ItemStats';
-import type { PairEvolutionYear } from 'bindings/PairEvolutionYear';
 import { getStatsPairEvolution } from 'bindings/api/GetStatsPairEvolution';
 
 Chart.register(

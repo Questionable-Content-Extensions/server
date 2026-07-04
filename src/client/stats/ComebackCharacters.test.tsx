@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
+import type { ComebackCharacter } from 'models/ComebackCharacter';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { ComebackCharacter } from '../../../bindings/ComebackCharacter';
 import ComebackCharacters from './ComebackCharacters';
 
 afterEach(cleanup);

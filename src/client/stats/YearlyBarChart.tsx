@@ -6,10 +6,10 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { CharacterMeta } from 'models/CharacterMeta';
+import type { YearlySpotlightResponse } from 'models/YearlySpotlightResponse';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import type { CharacterMeta } from '../../../bindings/CharacterMeta';
-import type { YearlySpotlightResponse } from '../../../bindings/YearlySpotlightResponse';
 import { contrastColor } from './colorUtils';
 
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);

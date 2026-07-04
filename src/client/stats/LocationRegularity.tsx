@@ -1,6 +1,6 @@
+import type { LocationRegularity } from 'models/LocationRegularity';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { LocationRegularity } from 'bindings/LocationRegularity';
 import { getStatsLocationRegularity } from 'bindings/api/GetStatsLocationRegularity';
 
 import ItemDetailsModal from './ItemDetailsModal';

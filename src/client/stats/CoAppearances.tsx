@@ -1,6 +1,6 @@
+import type { CoAppearancesResponse } from 'models/CoAppearancesResponse';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { CoAppearancesResponse } from 'bindings/CoAppearancesResponse';
 import { getStatsCoAppearances } from 'bindings/api/GetStatsCoAppearances';
 
 import ItemDetailsModal from './ItemDetailsModal';

@@ -1,6 +1,6 @@
+import type { CharacterHomeTurfEntry } from 'models/CharacterHomeTurfEntry';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { CharacterHomeTurfEntry } from 'bindings/CharacterHomeTurfEntry';
 import { getStatsCharacterHomeTurf } from 'bindings/api/GetStatsCharacterHomeTurf';
 
 import ItemDetailsModal from './ItemDetailsModal';

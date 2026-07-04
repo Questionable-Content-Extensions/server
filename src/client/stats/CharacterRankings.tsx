@@ -1,4 +1,5 @@
-import type { ItemStats } from '../../../bindings/ItemStats';
+import type { ItemStats } from 'models/ItemStats';
+
 import ItemStatsTable from './ItemStatsTable';
 
 interface CharacterRankingsProps {

@@ -1,6 +1,6 @@
+import type { MilestoneComic } from 'models/MilestoneComic';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { MilestoneComic } from 'bindings/MilestoneComic';
 import { getStatsMilestones } from 'bindings/api/GetStatsMilestones';
 
 import {

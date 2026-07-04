@@ -1,6 +1,6 @@
+import type { LocationSocialHubEntry } from 'models/LocationSocialHubEntry';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { LocationSocialHubEntry } from 'bindings/LocationSocialHubEntry';
 import { getStatsLocationSocialHub } from 'bindings/api/GetStatsLocationSocialHub';
 
 import ItemDetailsModal from './ItemDetailsModal';

@@ -7,9 +7,9 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { EnsembleRatio } from 'models/EnsembleRatio';
 import { useEffect, useRef, useState } from 'react';
 
-import type { EnsembleRatio } from 'bindings/EnsembleRatio';
 import { getStatsEnsembleRatio } from 'bindings/api/GetStatsEnsembleRatio';
 
 Chart.register(

@@ -1,6 +1,6 @@
+import type { PublicationGap } from 'models/PublicationGap';
 import { useEffect, useMemo, useState } from 'react';
 
-import type { PublicationGap } from 'bindings/PublicationGap';
 import { getStatsPublicationGaps } from 'bindings/api/GetStatsPublicationGaps';
 
 import {

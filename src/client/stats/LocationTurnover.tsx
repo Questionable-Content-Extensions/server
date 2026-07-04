@@ -7,9 +7,9 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
+import type { LocationTurnoverYear } from 'models/LocationTurnoverYear';
 import { useEffect, useRef, useState } from 'react';
 
-import type { LocationTurnoverYear } from 'bindings/LocationTurnoverYear';
 import { getStatsLocationTurnover } from 'bindings/api/GetStatsLocationTurnover';
 
 Chart.register(

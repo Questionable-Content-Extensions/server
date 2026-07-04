@@ -1,6 +1,6 @@
+import type { YearlySpotlightResponse } from 'models/YearlySpotlightResponse';
 import { useEffect, useState } from 'react';
 
-import type { YearlySpotlightResponse } from 'bindings/YearlySpotlightResponse';
 import { getStatsYearlySpotlight } from 'bindings/api/GetStatsYearlySpotlight';
 
 import YearlyBarChart from './YearlyBarChart';
