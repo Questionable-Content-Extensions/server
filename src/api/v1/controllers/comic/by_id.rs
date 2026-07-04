@@ -179,6 +179,8 @@ fn hydrate_navigation_item_with_item_data(
                 color_green,
                 color_blue,
                 primary_image: _,
+                start_comic_id: _,
+                end_comic_id: _,
             } = items
                 .remove(&unhydrated.id.into_inner())
                 .expect("item data for navigation item");

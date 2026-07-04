@@ -74,6 +74,24 @@
           "flags": "MULTIPLE_KEY | UNSIGNED",
           "max_size": 11
         }
+      },
+      {
+        "ordinal": 8,
+        "name": "start_comic_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "end_comic_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "max_size": 5
+        }
       }
     ],
     "parameters": {
@@ -87,6 +105,8 @@
       false,
       false,
       false,
+      true,
+      true,
       true
     ]
   },

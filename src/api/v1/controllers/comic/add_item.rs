@@ -75,6 +75,8 @@ pub(crate) async fn add_item(
             color_green: 127,
             color_red: 127,
             primary_image: None,
+            start_comic_id: None,
+            end_comic_id: None,
         }
     } else {
         let item_id = request.item_id.cast_unsigned();

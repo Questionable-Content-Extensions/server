@@ -43,6 +43,26 @@ impl Comic {
         .await
     }
 
+    /// Latest known (non-hidden) comic id, used as the fallback right bound
+    /// when computing visual segments for an open-ended storyline.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn latest_id<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<Option<u16>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_scalar!(
+            r#"
+                SELECT MAX(`id`) FROM `Comic` WHERE NOT `hidden`
+            "#,
+        )
+        .fetch_one(executor)
+        .await
+    }
+
     /// # Errors
     ///
     /// Returns a database error if the query fails.

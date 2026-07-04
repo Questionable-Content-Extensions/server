@@ -36,6 +36,8 @@ pub(crate) async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
             color_green,
             color_blue,
             primary_image: _,
+            start_comic_id: _,
+            end_comic_id: _,
         } = item;
         let id = id.into();
 

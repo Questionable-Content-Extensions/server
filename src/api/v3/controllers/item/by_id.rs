@@ -75,6 +75,16 @@ pub async fn by_id(pool: web::Data<DbPool>, item_id: web::Path<ItemId>) -> Resul
         },
         has_image: stats.image_count > 0,
         primary_image,
+        start_comic_id: item
+            .start_comic_id
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds"),
+        end_comic_id: item
+            .end_comic_id
+            .map(TryInto::try_into)
+            .transpose()
+            .expect("database has valid comicIds"),
     };
 
     Ok(Json(item))

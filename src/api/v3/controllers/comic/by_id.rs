@@ -1,3 +1,4 @@
+use crate::api::v3::controllers::comic::active_storylines::fetch_active_storylines;
 use crate::api::v3::controllers::comic::editor_data::fetch_editor_data_for_comic;
 use crate::api::v3::controllers::comic::navigation_data::{
     ItemNavigationDataSorting, fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
@@ -116,6 +117,8 @@ pub async fn by_id(
         };
 
     let comic = if let Some(comic) = comic {
+        let active_storylines = fetch_active_storylines(&mut conn, comic_id).await?;
+
         Comic {
             comic: comic_id,
             editor_data,
@@ -146,6 +149,7 @@ pub async fn by_id(
                     .transpose()
                     .expect("database has valid comicIds"),
                 items: comic_navigation_items,
+                active_storylines,
             }),
         }
     } else {

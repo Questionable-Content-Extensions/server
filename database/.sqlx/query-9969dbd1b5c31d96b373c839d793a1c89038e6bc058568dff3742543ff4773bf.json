@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT MAX(`id`) FROM `Comic` WHERE NOT `hidden`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "MAX(`id`)",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | BINARY",
+          "max_size": 6
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "9969dbd1b5c31d96b373c839d793a1c89038e6bc058568dff3742543ff4773bf"
+}

@@ -77,6 +77,28 @@ pub async fn add_item(
             .await
             .map_err(error::ErrorInternalServerError)?;
 
+            if let Some(start_comic_id) =
+                default_start_comic_id_for_new_item(new.new_item_type, comic_id)
+            {
+                DatabaseItem::update_start_comic_id_by_id(
+                    &mut *transaction,
+                    new_item_id,
+                    start_comic_id,
+                )
+                .await
+                .map_err(error::ErrorInternalServerError)?;
+
+                LogEntry::log_action(
+                    &mut *transaction,
+                    request.token.to_string(),
+                    format!("Changed startComicId of item #{new_item_id} to {start_comic_id}"),
+                    None,
+                    Some(new_item_id),
+                )
+                .await
+                .map_err(error::ErrorInternalServerError)?;
+            }
+
             (new_item_id, new.new_item_name, new.new_item_type)
         }
         ItemBody::Existing(existing) => {
@@ -271,6 +293,44 @@ pub async fn add_items(
     } else {
         format!("Items {} added to comic {}", items_added, request.comic_id)
     }))
+}
+
+/// Storylines have no "attached = belongs" equivalence like cast/location do
+/// (their membership is governed by `startComicId`/`endComicId`, not
+/// attachment), so creating one here must also default its lifecycle start
+/// to the comic it's being added from, or it would never show up as active
+/// anywhere until a second editor trip through the item editor.
+fn default_start_comic_id_for_new_item(item_type: ItemType, comic_id: u16) -> Option<u16> {
+    (item_type == ItemType::Storyline).then_some(comic_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_storyline_defaults_start_comic_id_to_the_comic_it_was_added_from() {
+        assert_eq!(
+            default_start_comic_id_for_new_item(ItemType::Storyline, 42),
+            Some(42)
+        );
+    }
+
+    #[test]
+    fn new_cast_has_no_default_start_comic_id() {
+        assert_eq!(
+            default_start_comic_id_for_new_item(ItemType::Cast, 42),
+            None
+        );
+    }
+
+    #[test]
+    fn new_location_has_no_default_start_comic_id() {
+        assert_eq!(
+            default_start_comic_id_for_new_item(ItemType::Location, 42),
+            None
+        );
+    }
 }
 
 #[derive(Debug, Deserialize, TS)]

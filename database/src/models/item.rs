@@ -14,6 +14,11 @@ pub struct Item {
     pub color_green: u8,
     pub color_red: u8,
     pub primary_image: Option<u32>,
+    /// Only meaningful for `type == "storyline"`; `None` for cast/location.
+    pub start_comic_id: Option<u16>,
+    /// Only meaningful for `type == "storyline"`; `None` means ongoing (or
+    /// not a storyline).
+    pub end_comic_id: Option<u16>,
 }
 
 impl Item {
@@ -109,6 +114,8 @@ impl Item {
                     `i`.`color_green`,
                     `i`.`color_red`,
                     `i`.`primary_image`,
+                    `i`.`start_comic_id`,
+                    `i`.`end_comic_id`,
                     COUNT(`o`.`comic_id`) AS `count`
                 FROM `Item` `i`
                 LEFT JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
@@ -835,6 +842,98 @@ impl Item {
         .await
     }
 
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn update_start_comic_id_by_id<'e, 'c: 'e, E>(
+        executor: E,
+        id: u16,
+        start_comic_id: u16,
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_scalar!(
+            r#"
+                UPDATE `Item`
+                SET `start_comic_id` = ?
+                WHERE `id` = ?
+            "#,
+            start_comic_id,
+            id
+        )
+        .execute(executor)
+        .await
+    }
+
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn update_end_comic_id_by_id<'e, 'c: 'e, E>(
+        executor: E,
+        id: u16,
+        end_comic_id: Option<u16>,
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_scalar!(
+            r#"
+                UPDATE `Item`
+                SET `end_comic_id` = ?
+                WHERE `id` = ?
+            "#,
+            end_comic_id,
+            id
+        )
+        .execute(executor)
+        .await
+    }
+
+    /// Fetches every storyline active at `comic_id` (`start_comic_id <=
+    /// comic_id` and `end_comic_id` is `NULL` or greater than `comic_id`),
+    /// together with the raw occurrence comic ids needed to build the
+    /// attachment RLE — regardless of whether the storyline is attached to
+    /// `comic_id` itself.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn active_storylines_by_comic_id<'e, 'c: 'e, E>(
+        executor: E,
+        comic_id: u16,
+    ) -> sqlx::Result<Vec<ActiveStorylineOccurrence>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            ActiveStorylineOccurrence,
+            r#"
+                SELECT
+                    `i`.`id` AS `item_id`,
+                    `i`.`start_comic_id` AS `start_comic_id!: u16`,
+                    `i`.`end_comic_id` AS `end_comic_id`,
+                    `o`.`comic_id` AS `occurrence_comic_id`
+                FROM `Item` `i`
+                LEFT JOIN `Occurrence` `o`
+                    ON `o`.`item_id` = `i`.`id`
+                    AND `o`.`comic_id` >= `i`.`start_comic_id`
+                    AND (`i`.`end_comic_id` IS NULL OR `o`.`comic_id` < `i`.`end_comic_id`)
+                WHERE `i`.`type` = 'storyline'
+                    AND `i`.`start_comic_id` <= ?
+                    AND (`i`.`end_comic_id` IS NULL OR ? < `i`.`end_comic_id`)
+                ORDER BY `i`.`id`, `o`.`comic_id`
+            "#,
+            comic_id,
+            comic_id,
+        )
+        .fetch_all(executor)
+        .await
+    }
+
     // Until v1 of API is gone
     /// # Errors
     ///
@@ -900,7 +999,26 @@ pub struct ItemWithCount {
     pub color_green: u8,
     pub color_red: u8,
     pub primary_image: Option<u32>,
+    pub start_comic_id: Option<u16>,
+    pub end_comic_id: Option<u16>,
     pub count: i64,
+}
+
+/// One row of the flat active-storylines-at-comic query.
+///
+/// Either a real occurrence within the storyline's active window, or (when
+/// `occurrence_comic_id` is `None`) a placeholder row for a storyline with no
+/// attachment at all in that window (still active, just fully a gap).
+#[expect(
+    clippy::struct_field_names,
+    reason = "field names match the database column names"
+)]
+#[derive(Debug, Copy, Clone)]
+pub struct ActiveStorylineOccurrence {
+    pub item_id: u16,
+    pub start_comic_id: u16,
+    pub end_comic_id: Option<u16>,
+    pub occurrence_comic_id: Option<u16>,
 }
 
 #[derive(Debug, Copy, Clone, sqlx::FromRow)]

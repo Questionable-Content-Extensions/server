@@ -75,6 +75,11 @@ pub struct ItemList {
     #[ts(type = "string")]
     pub color: ItemColor,
     pub count: i32,
+    /// Only meaningful for `type === 'storyline'`; `null` for cast/location.
+    pub start_comic_id: Option<ComicId>,
+    /// Only meaningful for `type === 'storyline'`; `null` means either
+    /// ongoing or not a storyline.
+    pub end_comic_id: Option<ComicId>,
 }
 
 #[derive(Copy, Clone, Debug, Deserialize, TS)]
@@ -151,6 +156,32 @@ pub struct PresentComic {
     pub previous: Option<ComicId>,
     pub next: Option<ComicId>,
     pub items: Vec<ItemNavigationData>,
+    /// Every storyline active at this comic (`startComicId <= comic` and
+    /// `endComicId` is `null` or greater than `comic`), regardless of
+    /// whether it's attached to this comic — unlike `items`, which is
+    /// attachment-only.
+    pub active_storylines: Vec<ActiveStorylineSummary>,
+}
+
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ActiveStorylineSummary {
+    pub id: ItemId,
+    pub start_comic_id: ComicId,
+    pub end_comic_id: Option<ComicId>,
+    /// RLE of attachment from `startComicId` to `endComicId ?? latest known
+    /// comic`. Bounded by toggle count, not comic count.
+    pub segments: Vec<StorylineFactSegment>,
+}
+
+#[derive(Debug, Serialize, TS, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct StorylineFactSegment {
+    pub from_comic_id: ComicId,
+    pub to_comic_id: ComicId,
+    pub featured: bool,
 }
 
 #[derive(Debug, Serialize, TS)]
@@ -170,6 +201,11 @@ pub struct Item {
     pub presence: f64,
     pub has_image: bool,
     pub primary_image: Option<u32>,
+    /// Only meaningful for `type === 'storyline'`; `null` for cast/location.
+    pub start_comic_id: Option<ComicId>,
+    /// Only meaningful for `type === 'storyline'`; `null` means either
+    /// ongoing or not a storyline.
+    pub end_comic_id: Option<ComicId>,
 }
 
 #[derive(Debug, Serialize, TS)]

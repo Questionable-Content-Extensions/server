@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`short_name`,\n                    `i`.`name`,\n                    `i`.`type`,\n                    `i`.`color_blue`,\n                    `i`.`color_green`,\n                    `i`.`color_red`,\n                    `i`.`primary_image`,\n                    COUNT(`o`.`comic_id`) AS `count`\n                FROM `Item` `i`\n                LEFT JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                GROUP BY `i`.`id`\n                ORDER BY `count` DESC\n            ",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`short_name`,\n                    `i`.`name`,\n                    `i`.`type`,\n                    `i`.`color_blue`,\n                    `i`.`color_green`,\n                    `i`.`color_red`,\n                    `i`.`primary_image`,\n                    `i`.`start_comic_id`,\n                    `i`.`end_comic_id`,\n                    COUNT(`o`.`comic_id`) AS `count`\n                FROM `Item` `i`\n                LEFT JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                GROUP BY `i`.`id`\n                ORDER BY `count` DESC\n            ",
   "describe": {
     "columns": [
       {
@@ -77,6 +77,24 @@
       },
       {
         "ordinal": 8,
+        "name": "start_comic_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "end_comic_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 10,
         "name": "count",
         "type_info": {
           "type": "LongLong",
@@ -97,8 +115,10 @@
       false,
       false,
       true,
+      true,
+      true,
       false
     ]
   },
-  "hash": "a7f614aed9d695098d96ae2378e98527382a8918b7e9b4ee9a76d82d4c02d7d6"
+  "hash": "fbbd9ef59bf98d431c957974def0d0922b23aa33cd0a98855bea2db767d50966"
 }
