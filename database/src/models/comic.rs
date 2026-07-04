@@ -306,8 +306,33 @@ impl Comic {
         include_non_canon_comics: Option<bool>,
     ) -> sqlx::Result<Option<u16>>
     where
-        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+        E: 'e + Copy + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
+        let count = sqlx::query_scalar!(
+            r#"
+                SELECT COUNT(*) FROM `Comic` c
+                JOIN `Occurrence` o ON o.`comic_id` = c.`id`
+                WHERE o.`item_id` = ?
+                    AND c.`id` != ?
+                    AND (? IS NULL OR c.`is_guest_comic` = ?)
+                    AND (? IS NULL OR c.`is_non_canon` = ?)
+            "#,
+            item_id,
+            current_comic,
+            include_guest_comics,
+            include_guest_comics,
+            include_non_canon_comics,
+            include_non_canon_comics,
+        )
+        .fetch_one(executor)
+        .await?;
+
+        if count == 0 {
+            return Ok(None);
+        }
+
+        let offset = rand::random::<u64>() % u64::try_from(count).unwrap_or(u64::MAX);
+
         sqlx::query_scalar!(
             r#"
                 SELECT c.`id` FROM `Comic` c
@@ -316,8 +341,8 @@ impl Comic {
                     AND c.`id` != ?
                     AND (? IS NULL OR c.`is_guest_comic` = ?)
                     AND (? IS NULL OR c.`is_non_canon` = ?)
-                ORDER BY RAND()
-                LIMIT 1
+                ORDER BY c.`id`
+                LIMIT ?, 1
             "#,
             item_id,
             current_comic,
@@ -325,6 +350,7 @@ impl Comic {
             include_guest_comics,
             include_non_canon_comics,
             include_non_canon_comics,
+            offset,
         )
         .fetch_optional(executor)
         .await

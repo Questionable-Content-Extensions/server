@@ -1,0 +1,24 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT c.`id` FROM `Comic` c\n                JOIN `Occurrence` o ON o.`comic_id` = c.`id`\n                WHERE o.`item_id` = ?\n                    AND c.`id` != ?\n                    AND (? IS NULL OR c.`is_guest_comic` = ?)\n                    AND (? IS NULL OR c.`is_non_canon` = ?)\n                ORDER BY c.`id`\n                LIMIT ?, 1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 6
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5b791519675d6ffc89898d44d96f0898f05ed4f642f201bd16f0a1e0eee1d29a"
+}

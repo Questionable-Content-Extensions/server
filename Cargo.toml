@@ -40,7 +40,7 @@ opentelemetry-otlp = { version = "0.10", features = [
     "reqwest-client",
 ] }
 parse-display = "0.11"
-rand = "0.10"
+rand = { workspace = true }
 regex = "1"
 reqwest = { version = "0.13", features = ["json"] }
 reqwest-011 = { package = "reqwest", version = "0.11" }
@@ -67,6 +67,7 @@ members = ["database", "shared"]
 [workspace.dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
+rand = "0.10"
 sqlx = { version = "0.8.6", features = [
     "runtime-tokio-native-tls",
     "mysql",

@@ -14,5 +14,6 @@ shared = { path = "../shared" }
 
 chrono = { workspace = true }
 futures = { workspace = true }
+rand = { workspace = true }
 tracing = { workspace = true }
 sqlx = { workspace = true }
