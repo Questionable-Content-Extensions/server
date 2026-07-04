@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`name`,\n                    COUNT(*) AS `total_appearances`,\n                    COUNT(CASE WHEN `c`.`publish_date` >= DATE_SUB(\n                        (SELECT MAX(`publish_date`) FROM `Comic`), INTERVAL 365 DAY\n                    ) THEN 1 END) AS `recent_appearances`,\n                    CAST(\n                        DATEDIFF(MAX(`c`.`publish_date`), MIN(`c`.`publish_date`)) / 365.25\n                    AS DOUBLE) AS `career_years`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`\n                WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL\n                GROUP BY `i`.`id`\n                HAVING COUNT(*) >= 5\n                ORDER BY `recent_appearances` DESC\n            ",
+  "query": "\n                WITH `cutoff` AS (\n                    SELECT DATE_SUB(MAX(`publish_date`), INTERVAL 365 DAY) AS `d` FROM `Comic`\n                )\n                SELECT\n                    `i`.`id`,\n                    `i`.`name`,\n                    COUNT(*) AS `total_appearances`,\n                    COUNT(CASE WHEN `c`.`publish_date` >= `cutoff`.`d` THEN 1 END) AS `recent_appearances`,\n                    CAST(\n                        DATEDIFF(MAX(`c`.`publish_date`), MIN(`c`.`publish_date`)) / 365.25\n                    AS DOUBLE) AS `career_years`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`\n                CROSS JOIN `cutoff`\n                WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL\n                GROUP BY `i`.`id`\n                HAVING COUNT(*) >= 5\n                ORDER BY `recent_appearances` DESC\n            ",
   "describe": {
     "columns": [
       {
@@ -60,5 +60,5 @@
       true
     ]
   },
-  "hash": "0253705312940406649aee3aae2b404926d60422442456418ddaa5a95376ecfc"
+  "hash": "f0475e92590b90d6584d4338826f698a0d07313b719744dbd977cafd6d8b0b92"
 }

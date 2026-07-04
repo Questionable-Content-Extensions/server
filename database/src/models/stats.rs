@@ -1092,19 +1092,21 @@ impl TrendingItemRow {
         sqlx::query_as!(
             Self,
             r#"
+                WITH `cutoff` AS (
+                    SELECT DATE_SUB(MAX(`publish_date`), INTERVAL 365 DAY) AS `d` FROM `Comic`
+                )
                 SELECT
                     `i`.`id`,
                     `i`.`name`,
                     COUNT(*) AS `total_appearances`,
-                    COUNT(CASE WHEN `c`.`publish_date` >= DATE_SUB(
-                        (SELECT MAX(`publish_date`) FROM `Comic`), INTERVAL 365 DAY
-                    ) THEN 1 END) AS `recent_appearances`,
+                    COUNT(CASE WHEN `c`.`publish_date` >= `cutoff`.`d` THEN 1 END) AS `recent_appearances`,
                     CAST(
                         DATEDIFF(MAX(`c`.`publish_date`), MIN(`c`.`publish_date`)) / 365.25
                     AS DOUBLE) AS `career_years`
                 FROM `Item` `i`
                 JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
                 JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                CROSS JOIN `cutoff`
                 WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
                 GROUP BY `i`.`id`
                 HAVING COUNT(*) >= 5
@@ -1126,19 +1128,21 @@ impl TrendingItemRow {
         sqlx::query_as!(
             Self,
             r#"
+                WITH `cutoff` AS (
+                    SELECT DATE_SUB(MAX(`publish_date`), INTERVAL 365 DAY) AS `d` FROM `Comic`
+                )
                 SELECT
                     `i`.`id`,
                     `i`.`name`,
                     COUNT(*) AS `total_appearances`,
-                    COUNT(CASE WHEN `c`.`publish_date` >= DATE_SUB(
-                        (SELECT MAX(`publish_date`) FROM `Comic`), INTERVAL 365 DAY
-                    ) THEN 1 END) AS `recent_appearances`,
+                    COUNT(CASE WHEN `c`.`publish_date` >= `cutoff`.`d` THEN 1 END) AS `recent_appearances`,
                     CAST(
                         DATEDIFF(MAX(`c`.`publish_date`), MIN(`c`.`publish_date`)) / 365.25
                     AS DOUBLE) AS `career_years`
                 FROM `Item` `i`
                 JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
                 JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                CROSS JOIN `cutoff`
                 WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
                 GROUP BY `i`.`id`
                 HAVING COUNT(*) >= 5
