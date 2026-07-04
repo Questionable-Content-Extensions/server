@@ -8,8 +8,8 @@ mod patch_item;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(all::all)
-        .service(web::resource("image/{imageId}").route(web::get().to(image::image)))
         .service(image::delete)
+        .service(web::resource("image/{imageId}").route(web::get().to(image::image)))
         .service(by_id::by_id)
         .service(patch_item::patch_item)
         .service(by_id::comics)

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Route, Routes } from 'react-router-dom';
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 
 import type { ItemStats } from 'bindings/ItemStats';
 import { getStatsCast } from 'bindings/api/GetStatsCast';
@@ -184,7 +184,38 @@ function StatsNav() {
     );
 }
 
+const CAST_DATA_PATHS = new Set([
+    '/stats',
+    '/stats/debuts',
+    '/stats/longevity',
+    '/stats/one-hit-wonders',
+    '/stats/retired-characters',
+    '/stats/appearance-distribution',
+    '/stats/pair-evolution',
+]);
+
+const LOCATION_DATA_PATHS = new Set([
+    '/stats/locations',
+    '/stats/location-debuts',
+    '/stats/location-one-hit-wonders',
+    '/stats/retired-locations',
+    '/stats/location-appearance-distribution',
+    '/stats/location-lifespan',
+]);
+
+export function getSharedStatsDataRequirements(pathname: string) {
+    return {
+        needsCast: CAST_DATA_PATHS.has(pathname),
+        needsLocations: LOCATION_DATA_PATHS.has(pathname),
+    };
+}
+
 export default function StatsLayout() {
+    const location = useLocation();
+    const { needsCast, needsLocations } = getSharedStatsDataRequirements(
+        location.pathname,
+    );
+
     const [castData, setCastData] = useState<ItemStats[] | null>(null);
     const [castError, setCastError] = useState<string | null>(null);
     const [locationsData, setLocationsData] = useState<ItemStats[] | null>(
@@ -193,20 +224,27 @@ export default function StatsLayout() {
     const [locationsError, setLocationsError] = useState<string | null>(null);
 
     useEffect(() => {
+        if (!needsCast || castData !== null || castError !== null) return;
         getStatsCast()
             .then(setCastData)
             .catch((e: unknown) =>
                 setCastError(e instanceof Error ? e.message : String(e)),
             );
-    }, []);
+    }, [needsCast, castData, castError]);
 
     useEffect(() => {
+        if (
+            !needsLocations ||
+            locationsData !== null ||
+            locationsError !== null
+        )
+            return;
         getStatsLocations()
             .then(setLocationsData)
             .catch((e: unknown) =>
                 setLocationsError(e instanceof Error ? e.message : String(e)),
             );
-    }, []);
+    }, [needsLocations, locationsData, locationsError]);
 
     return (
         <div className="py-6">

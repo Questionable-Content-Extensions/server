@@ -1,6 +1,6 @@
 #!/bin/bash
 
-npx vitest run --project=unit --reporter=./src/client/util/customJsonReporter.ts $@ | \
+npx vitest run --reporter=./src/client/util/customJsonReporter.ts $@ | \
     awk '/^\{/{f=1} f' | \
     jq '{
         tests: .numTotalTests,
