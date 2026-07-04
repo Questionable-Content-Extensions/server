@@ -55,7 +55,12 @@ async fn main() -> Result<()> {
         .with(telemetry);
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
-    let http_db_pool = DbPool::create(environment::database_url()).await;
+    let http_db_pool = DbPool::create(
+        environment::database_url(),
+        environment::try_database_max_connections_u32().unwrap_or(50),
+        environment::try_database_min_connections_u32().unwrap_or(5),
+    )
+    .await;
     let db_pool = http_db_pool.clone();
 
     info!("Running any outstanding database migrations...");

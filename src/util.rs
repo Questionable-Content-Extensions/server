@@ -25,6 +25,8 @@ pub mod environment {
     define_environment! {
         pub port(): u16;
         pub database_url();
+        pub database_max_connections(): u32;
+        pub database_min_connections(): u32;
         pub qc_timezone();
         pub background_services(): bool;
         pub honeycomb_key();
