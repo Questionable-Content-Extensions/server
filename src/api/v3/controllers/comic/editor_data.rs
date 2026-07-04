@@ -3,32 +3,43 @@ use crate::api::v3::models::{
 };
 use crate::models::{ComicId, True};
 use actix_web::{Result, error};
-use database::DbPoolConnection;
+use database::DbPool;
 use database::models::{Comic as DatabaseComic, NavigationResult};
 use std::convert::TryInto;
 
-#[tracing::instrument(skip(conn))]
-pub async fn fetch_editor_data_for_comic(
-    conn: &mut DbPoolConnection,
-    comic_id: ComicId,
-) -> Result<EditorData> {
+#[tracing::instrument(skip(pool))]
+pub async fn fetch_editor_data_for_comic(pool: &DbPool, comic_id: ComicId) -> Result<EditorData> {
     let id = comic_id.into_inner();
 
-    let cast_nav = DatabaseComic::missing_cast_navigation(&mut **conn, id)
+    let mut cast_conn = pool
+        .acquire()
         .await
         .map_err(error::ErrorInternalServerError)?;
-    let location_nav = DatabaseComic::missing_location_navigation(&mut **conn, id)
+    let mut location_conn = pool
+        .acquire()
         .await
         .map_err(error::ErrorInternalServerError)?;
-    let storyline_nav = DatabaseComic::missing_storyline_navigation(&mut **conn, id)
+    let mut storyline_conn = pool
+        .acquire()
         .await
         .map_err(error::ErrorInternalServerError)?;
-    let title_nav = DatabaseComic::missing_title_navigation(&mut **conn, id)
+    let mut title_conn = pool
+        .acquire()
         .await
         .map_err(error::ErrorInternalServerError)?;
-    let tagline_nav = DatabaseComic::missing_tagline_navigation(&mut **conn, id)
+    let mut tagline_conn = pool
+        .acquire()
         .await
         .map_err(error::ErrorInternalServerError)?;
+
+    let (cast_nav, location_nav, storyline_nav, title_nav, tagline_nav) = tokio::try_join!(
+        DatabaseComic::missing_cast_navigation(&mut *cast_conn, id),
+        DatabaseComic::missing_location_navigation(&mut *location_conn, id),
+        DatabaseComic::missing_storyline_navigation(&mut *storyline_conn, id),
+        DatabaseComic::missing_title_navigation(&mut *title_conn, id),
+        DatabaseComic::missing_tagline_navigation(&mut *tagline_conn, id),
+    )
+    .map_err(error::ErrorInternalServerError)?;
 
     Ok(EditorData::Present(PresentEditorData {
         present: True::default(),

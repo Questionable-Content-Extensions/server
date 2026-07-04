@@ -62,7 +62,7 @@ pub async fn by_id(
     }
 
     let editor_data = if include_hidden {
-        fetch_editor_data_for_comic(&mut conn, comic_id).await?
+        fetch_editor_data_for_comic(&pool, comic_id).await?
     } else {
         EditorData::Missing(MissingEditorData::default())
     };

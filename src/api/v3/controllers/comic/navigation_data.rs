@@ -2,10 +2,11 @@ use crate::api::v3::models::{NavigationData, UnhydratedItemNavigationData};
 use crate::models::ComicId;
 use actix_web::{Result, error};
 use database::models::{
-    Item as DatabaseItem, ItemFirstLastCount, ItemId as DatabaseItemId, PreviousAppearances,
+    ComicId as DatabaseComicId, Item as DatabaseItem, ItemFirstLastCount, ItemId as DatabaseItemId,
+    PreviousAppearances,
 };
 use database::{DbPool, DbPoolConnection};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::convert::TryInto;
 
 #[derive(Clone, Copy, Debug)]
@@ -63,68 +64,50 @@ pub async fn fetch_all_item_navigation_data(
 
     match sorting {
         ItemNavigationDataSorting::ByCount => Ok(first_last_counts
-            .into_iter()
-            .map(|flc| UnhydratedItemNavigationData {
-                id: flc.id.into(),
-                navigation_data: NavigationData {
-                    first: flc
-                        .first
-                        .map(TryInto::try_into)
-                        .transpose()
-                        .expect("database has valid comicIds"),
-                    previous: previous
-                        .get(&flc.id)
-                        .copied()
-                        .map(TryInto::try_into)
-                        .transpose()
-                        .expect("database has valid comicIds"),
-                    next: next
-                        .get(&flc.id)
-                        .copied()
-                        .map(TryInto::try_into)
-                        .transpose()
-                        .expect("database has valid comicIds"),
-                    last: flc
-                        .last
-                        .map(TryInto::try_into)
-                        .transpose()
-                        .expect("database has valid comicIds"),
-                },
-            })
+            .iter()
+            .map(|flc| hydrate_navigation_data(flc, &previous, &next))
             .collect()),
         ItemNavigationDataSorting::ByLastAppearance => Ok(order_by_last_appearance(
             &first_last_counts,
             &last_appearance_order,
         )
         .into_iter()
-        .map(|flc| UnhydratedItemNavigationData {
-            id: flc.id.into(),
-            navigation_data: NavigationData {
-                first: flc
-                    .first
-                    .map(TryInto::try_into)
-                    .transpose()
-                    .expect("database has valid comicIds"),
-                previous: previous
-                    .get(&flc.id)
-                    .copied()
-                    .map(TryInto::try_into)
-                    .transpose()
-                    .expect("database has valid comicIds"),
-                next: next
-                    .get(&flc.id)
-                    .copied()
-                    .map(TryInto::try_into)
-                    .transpose()
-                    .expect("database has valid comicIds"),
-                last: flc
-                    .last
-                    .map(TryInto::try_into)
-                    .transpose()
-                    .expect("database has valid comicIds"),
-            },
-        })
+        .map(|flc| hydrate_navigation_data(flc, &previous, &next))
         .collect()),
+    }
+}
+
+fn hydrate_navigation_data(
+    flc: &ItemFirstLastCount,
+    previous: &BTreeMap<DatabaseItemId, DatabaseComicId>,
+    next: &BTreeMap<u16, u16>,
+) -> UnhydratedItemNavigationData {
+    UnhydratedItemNavigationData {
+        id: flc.id.into(),
+        navigation_data: NavigationData {
+            first: flc
+                .first
+                .map(TryInto::try_into)
+                .transpose()
+                .expect("database has valid comicIds"),
+            previous: previous
+                .get(&flc.id)
+                .copied()
+                .map(TryInto::try_into)
+                .transpose()
+                .expect("database has valid comicIds"),
+            next: next
+                .get(&flc.id)
+                .copied()
+                .map(TryInto::try_into)
+                .transpose()
+                .expect("database has valid comicIds"),
+            last: flc
+                .last
+                .map(TryInto::try_into)
+                .transpose()
+                .expect("database has valid comicIds"),
+        },
     }
 }
 
