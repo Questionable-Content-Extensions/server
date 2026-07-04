@@ -39,14 +39,15 @@ impl TokenPermissionsCache {
     /// Returns the cached permissions for `token`, or `None` if absent or expired.
     #[must_use]
     pub fn get(&self, token: &str) -> Option<HashSet<String>> {
-        self.inner.get(token).and_then(|entry| {
-            let (perms, inserted_at) = entry.value();
-            if inserted_at.elapsed() < self.ttl {
-                Some(perms.clone())
-            } else {
-                None
-            }
-        })
+        let entry = self.inner.get(token)?;
+        let (perms, inserted_at) = entry.value();
+        if inserted_at.elapsed() < self.ttl {
+            Some(perms.clone())
+        } else {
+            drop(entry);
+            self.inner.remove(token);
+            None
+        }
     }
 
     /// Stores `permissions` for `token`, replacing any existing entry.
@@ -79,6 +80,15 @@ mod tests {
         cache.set("tok2".to_string(), HashSet::from(["perm".to_string()]));
         std::thread::sleep(Duration::from_millis(5));
         assert!(cache.get("tok2").is_none());
+    }
+
+    #[test]
+    fn get_evicts_expired_entry_from_underlying_map() {
+        let cache = TokenPermissionsCache::with_ttl(Duration::from_millis(1));
+        cache.set("tok4".to_string(), HashSet::from(["perm".to_string()]));
+        std::thread::sleep(Duration::from_millis(5));
+        assert!(cache.get("tok4").is_none());
+        assert_eq!(cache.inner.len(), 0);
     }
 
     #[test]
