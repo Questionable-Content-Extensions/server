@@ -282,21 +282,34 @@ impl Item {
         // Hidden (advance) comics are always excluded here, even for editors —
         // navigation targets must never surface a comic during normal
         // browsing; only a direct by-id lookup may reveal one.
+        //
+        // The occurrence/comic filtering happens in a subquery, then every
+        // `Item` is left-joined onto it, so items with zero matching
+        // occurrences (whether they have no occurrences at all, or all of
+        // their occurrences were excluded by the filters above) still show
+        // up, with `first`/`last` as `NULL` and `count` as `0`.
         sqlx::query_as!(
             ItemFirstLastCount,
             r#"
                 SELECT
                     `i`.`id`,
-                    MIN(`c`.`id`) as `first`,
-                    MAX(`c`.`id`) as `last`,
-                    COUNT(`c`.`id`) as `count`
+                    `counts`.`first`,
+                    `counts`.`last`,
+                    COALESCE(`counts`.`count`, 0) as `count!: i64`
                 FROM `Item` `i`
-                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
-                JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`
-                    AND (? is NULL OR `c`.`is_guest_comic` = ?)
-                    AND (? is NULL OR `c`.`is_non_canon` = ?)
-                    AND NOT `c`.`hidden`
-                GROUP by `i`.`id`
+                LEFT JOIN (
+                    SELECT
+                        `o`.`item_id` AS `id`,
+                        MIN(`c`.`id`) as `first`,
+                        MAX(`c`.`id`) as `last`,
+                        COUNT(`c`.`id`) as `count`
+                    FROM `Occurrence` `o`
+                    JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`
+                        AND (? is NULL OR `c`.`is_guest_comic` = ?)
+                        AND (? is NULL OR `c`.`is_non_canon` = ?)
+                        AND NOT `c`.`hidden`
+                    GROUP BY `o`.`item_id`
+                ) `counts` ON `counts`.`id` = `i`.`id`
                 ORDER BY `count` DESC
             "#,
             include_guest_comics,

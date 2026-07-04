@@ -1,0 +1,54 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    `counts`.`first`,\n                    `counts`.`last`,\n                    COALESCE(`counts`.`count`, 0) as `count!: i64`\n                FROM `Item` `i`\n                LEFT JOIN (\n                    SELECT\n                        `o`.`item_id` AS `id`,\n                        MIN(`c`.`id`) as `first`,\n                        MAX(`c`.`id`) as `last`,\n                        COUNT(`c`.`id`) as `count`\n                    FROM `Occurrence` `o`\n                    JOIN `Comic` `c` ON `c`.`id` = `o`.`comic_id`\n                        AND (? is NULL OR `c`.`is_guest_comic` = ?)\n                        AND (? is NULL OR `c`.`is_non_canon` = ?)\n                        AND NOT `c`.`hidden`\n                    GROUP BY `o`.`item_id`\n                ) `counts` ON `counts`.`id` = `i`.`id`\n                ORDER BY `count` DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "first",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "last",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "count!: i64",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "BINARY",
+          "max_size": 21
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "16504385d9f4f08f3f13d17af94389b1d52dd94ff86f61fdd39d0f2ed6f5314b"
+}
