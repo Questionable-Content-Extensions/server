@@ -1,0 +1,174 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`short_name`,\n                    `i`.`name`,\n                    `i`.`type`,\n                    `i`.`color_blue`,\n                    `i`.`color_green`,\n                    `i`.`color_red`,\n                    `i`.`primary_image`,\n                    `i`.`start_comic_id`,\n                    `i`.`end_comic_id`,\n                    occ.first AS `first: u16`,\n                    occ.last AS `last: u16`,\n                    occ.count,\n                    comics.total_comics,\n                    imgs.image_count,\n                    imgs.first_image_id AS `first_image_id: u32`\n                FROM `Item` `i`\n                CROSS JOIN (\n                    SELECT\n                        MIN(`comic_id`) AS first,\n                        MAX(`comic_id`) AS last,\n                        COUNT(`comic_id`) AS `count`\n                    FROM `Occurrence`\n                    WHERE `item_id` = ?\n                ) AS occ\n                CROSS JOIN (SELECT COUNT(*) AS total_comics FROM `Comic`) AS comics\n                CROSS JOIN (\n                    SELECT COUNT(*) AS image_count, MIN(`id`) AS first_image_id\n                    FROM `ItemImage`\n                    WHERE `item_id` = ?\n                ) AS imgs\n                WHERE `i`.`id` = ?\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "short_name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 200
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "type",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | MULTIPLE_KEY | NO_DEFAULT_VALUE",
+          "max_size": 1020
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "color_blue",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 3
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "color_green",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 3
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "color_red",
+        "type_info": {
+          "type": "Tiny",
+          "flags": "NOT_NULL | UNSIGNED",
+          "max_size": 3
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "primary_image",
+        "type_info": {
+          "type": "Long",
+          "flags": "MULTIPLE_KEY | UNSIGNED",
+          "max_size": 11
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "start_comic_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "end_comic_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "max_size": 5
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "first: u16",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "last: u16",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED | NO_DEFAULT_VALUE",
+          "max_size": 6
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "count",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "total_comics",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "image_count",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "max_size": 21
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "first_image_id: u32",
+        "type_info": {
+          "type": "Long",
+          "flags": "UNSIGNED",
+          "max_size": 11
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "5c8ac9c44e50a3cf6e1e50c0e256fd800bb99356fc6dc403ad2a283774b55b9d"
+}

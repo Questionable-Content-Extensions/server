@@ -267,6 +267,67 @@ impl Item {
         .await
     }
 
+    /// Combines [`Self::by_id`], [`Self::image_metadatas_by_id`] (reduced to
+    /// just the lowest image id, which is all callers needing a
+    /// `primary_image` fallback ever used), and [`Self::occurrence_stats_by_id`]
+    /// into a single round-trip.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn by_id_with_stats<'e, 'c: 'e, E>(
+        executor: E,
+        id: u16,
+    ) -> sqlx::Result<Option<ItemWithStats>>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query_as!(
+            ItemWithStats,
+            r#"
+                SELECT
+                    `i`.`id`,
+                    `i`.`short_name`,
+                    `i`.`name`,
+                    `i`.`type`,
+                    `i`.`color_blue`,
+                    `i`.`color_green`,
+                    `i`.`color_red`,
+                    `i`.`primary_image`,
+                    `i`.`start_comic_id`,
+                    `i`.`end_comic_id`,
+                    occ.first AS `first: u16`,
+                    occ.last AS `last: u16`,
+                    occ.count,
+                    comics.total_comics,
+                    imgs.image_count,
+                    imgs.first_image_id AS `first_image_id: u32`
+                FROM `Item` `i`
+                CROSS JOIN (
+                    SELECT
+                        MIN(`comic_id`) AS first,
+                        MAX(`comic_id`) AS last,
+                        COUNT(`comic_id`) AS `count`
+                    FROM `Occurrence`
+                    WHERE `item_id` = ?
+                ) AS occ
+                CROSS JOIN (SELECT COUNT(*) AS total_comics FROM `Comic`) AS comics
+                CROSS JOIN (
+                    SELECT COUNT(*) AS image_count, MIN(`id`) AS first_image_id
+                    FROM `ItemImage`
+                    WHERE `item_id` = ?
+                ) AS imgs
+                WHERE `i`.`id` = ?
+            "#,
+            id,
+            id,
+            id,
+        )
+        .fetch_optional(executor)
+        .await
+    }
+
     /// # Errors
     ///
     /// Returns a database error if the query fails.
@@ -1049,6 +1110,28 @@ pub struct ItemOccurrenceStats {
     pub count: i64,
     pub total_comics: i64,
     pub image_count: i64,
+}
+
+/// Result of [`Item::by_id_with_stats`]: the `Item` row's fields plus its
+/// occurrence stats and lowest `ItemImage` id, in one query.
+#[derive(Debug, Clone)]
+pub struct ItemWithStats {
+    pub id: u16,
+    pub short_name: String,
+    pub name: String,
+    pub r#type: String,
+    pub color_blue: u8,
+    pub color_green: u8,
+    pub color_red: u8,
+    pub primary_image: Option<u32>,
+    pub start_comic_id: Option<u16>,
+    pub end_comic_id: Option<u16>,
+    pub first: Option<u16>,
+    pub last: Option<u16>,
+    pub count: i64,
+    pub total_comics: i64,
+    pub image_count: i64,
+    pub first_image_id: Option<u32>,
 }
 
 #[derive(Debug, sqlx::FromRow)]
