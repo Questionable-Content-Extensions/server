@@ -1,10 +1,10 @@
 use crate::api::v3::models::{NavigationData, UnhydratedItemNavigationData};
 use crate::models::ComicId;
 use actix_web::{Result, error};
-use database::DbPoolConnection;
 use database::models::{
     Item as DatabaseItem, ItemFirstLastCount, ItemId as DatabaseItemId, PreviousAppearances,
 };
+use database::{DbPool, DbPoolConnection};
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 
@@ -14,42 +14,52 @@ pub enum ItemNavigationDataSorting {
     ByLastAppearance,
 }
 
-#[tracing::instrument(skip(conn))]
+#[tracing::instrument(skip(pool))]
 pub async fn fetch_all_item_navigation_data(
-    conn: &mut DbPoolConnection,
+    pool: &DbPool,
     comic_id: ComicId,
     include_guest_comics: Option<bool>,
     include_non_canon_comics: Option<bool>,
     sorting: ItemNavigationDataSorting,
 ) -> Result<Vec<UnhydratedItemNavigationData>> {
-    let first_last_counts = DatabaseItem::first_and_last_apperances_and_count(
-        &mut **conn,
-        include_guest_comics,
-        include_non_canon_comics,
+    let mut first_last_conn = pool
+        .acquire()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    let mut previous_conn = pool
+        .acquire()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+    let mut next_conn = pool
+        .acquire()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let (first_last_counts, previous_appearances, next) = tokio::try_join!(
+        DatabaseItem::first_and_last_apperances_and_count(
+            &mut *first_last_conn,
+            include_guest_comics,
+            include_non_canon_comics,
+        ),
+        DatabaseItem::previous_apperances_by_comic_id_mapped_by_id(
+            &mut *previous_conn,
+            comic_id.into_inner(),
+            include_guest_comics,
+            include_non_canon_comics,
+        ),
+        DatabaseItem::next_apperances_by_comic_id_mapped_by_id(
+            &mut *next_conn,
+            comic_id.into_inner(),
+            include_guest_comics,
+            include_non_canon_comics,
+        ),
     )
-    .await
     .map_err(error::ErrorInternalServerError)?;
 
     let PreviousAppearances {
         appearances: previous,
         order: last_appearance_order,
-    } = DatabaseItem::previous_apperances_by_comic_id_mapped_by_id(
-        &mut **conn,
-        comic_id.into_inner(),
-        include_guest_comics,
-        include_non_canon_comics,
-    )
-    .await
-    .map_err(error::ErrorInternalServerError)?;
-
-    let next = DatabaseItem::next_apperances_by_comic_id_mapped_by_id(
-        &mut **conn,
-        comic_id.into_inner(),
-        include_guest_comics,
-        include_non_canon_comics,
-    )
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+    } = previous_appearances;
 
     match sorting {
         ItemNavigationDataSorting::ByCount => Ok(first_last_counts

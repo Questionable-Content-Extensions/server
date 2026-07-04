@@ -69,8 +69,8 @@ pub async fn by_id(
 
     let (comic_navigation_items, all_navigation_items) =
         if matches!(query.include, Some(Inclusion::All)) {
-            let mut all_navigation_items: Vec<ItemNavigationData> = fetch_all_item_navigation_data(
-                &mut conn,
+            let all_navigation_data_fut = fetch_all_item_navigation_data(
+                &pool,
                 comic_id,
                 include_guest_comics,
                 include_non_canon_comics,
@@ -78,16 +78,25 @@ pub async fn by_id(
                     Some(Sorting::ByLastAppearance) => ItemNavigationDataSorting::ByLastAppearance,
                     Some(Sorting::ByCount) | None => ItemNavigationDataSorting::ByCount,
                 },
-            )
-            .await?
-            .into_iter()
-            .map(Into::into)
-            .collect();
-
-            let item_ids_in_comic =
-                DatabaseItem::occurrences_in_comic_by_id(&mut *conn, comic_id.into_inner())
+            );
+            let item_ids_in_comic_fut = async {
+                let mut occurrences_conn = pool
+                    .acquire()
                     .await
                     .map_err(error::ErrorInternalServerError)?;
+                DatabaseItem::occurrences_in_comic_by_id(
+                    &mut *occurrences_conn,
+                    comic_id.into_inner(),
+                )
+                .await
+                .map_err(error::ErrorInternalServerError)
+            };
+
+            let (all_navigation_items, item_ids_in_comic) =
+                tokio::try_join!(all_navigation_data_fut, item_ids_in_comic_fut)?;
+
+            let mut all_navigation_items: Vec<ItemNavigationData> =
+                all_navigation_items.into_iter().map(Into::into).collect();
 
             let mut comic_navigation_items = Vec::with_capacity(item_ids_in_comic.len());
             let mut i = 0;
