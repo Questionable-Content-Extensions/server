@@ -21,11 +21,13 @@ use ts_rs::TS;
 pub async fn remove_item(
     pool: web::Data<DbPool>,
     request: web::Json<RemoveItemFromComicBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_REMOVE_ITEM_FROM_COMIC)
         .map_err(error::ErrorForbidden)?;
 
+    let token = *token;
     ensure_is_valid(&*request).map_err(error::ErrorBadRequest)?;
 
     let mut transaction = pool
@@ -66,7 +68,7 @@ pub async fn remove_item(
     );
     LogEntry::log_action(
         &mut *transaction,
-        request.token.to_string(),
+        token.to_string(),
         &action,
         Some(comic_id),
         Some(item_id),
@@ -87,7 +89,6 @@ pub async fn remove_item(
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct RemoveItemFromComicBody {
-    token: Token,
     comic_id: ComicId,
     item_id: ItemId,
 }

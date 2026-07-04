@@ -6,26 +6,29 @@ use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use crc32c::crc32c;
 use database::DbPool;
-use database::models::{Item as DatabaseItem, LogEntry, Token as DatabaseToken};
+use database::models::{Item as DatabaseItem, LogEntry};
 use futures::StreamExt;
 use shared::token_permissions;
-use std::str::FromStr;
 use tracing::{Instrument, info_span};
 
-#[tracing::instrument(skip(pool, image_upload_form),fields(token,image.size,image.crc32c,permissions))]
+#[tracing::instrument(skip(pool, image_upload_form, auth), fields(image.size, image.crc32c, permissions = ?auth.authorities))]
 pub async fn image_upload(
     pool: web::Data<DbPool>,
     item_id: web::Path<u16>,
     image_upload_form: Multipart,
+    token: web::ReqData<Token>,
+    auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    let FormData { token, image } = get_form_data(image_upload_form).await?;
+    ensure_is_authorized(&auth, token_permissions::CAN_ADD_IMAGE_TO_ITEM)
+        .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
+    let FormData { image } = get_form_data(image_upload_form).await?;
 
     tracing::Span::current()
-        .record("token", token.to_string())
         .record("image.size", image.0.len())
         .record("image.crc32c", image.1);
 
-    let token = Token::from(token);
     let item_id = item_id.into_inner();
     let (image, crc32c_hash) = image;
 
@@ -34,17 +37,6 @@ pub async fn image_upload(
         .instrument(info_span!("Pool::begin"))
         .await
         .map_err(error::ErrorInternalServerError)?;
-
-    let permissions =
-        DatabaseToken::get_permissions_for_token(&mut *transaction, token.to_string())
-            .await
-            .map_err(error::ErrorInternalServerError)?;
-    let auth = AuthDetails::new(permissions);
-
-    tracing::Span::current().record("permissions", format!("{:?}", auth.authorities));
-
-    ensure_is_authorized(&auth, token_permissions::CAN_ADD_IMAGE_TO_ITEM)
-        .map_err(error::ErrorForbidden)?;
 
     let result = DatabaseItem::create_image(&mut *transaction, item_id, image, crc32c_hash)
         .await
@@ -74,11 +66,9 @@ pub async fn image_upload(
 }
 
 struct FormData {
-    token: uuid::Uuid,
     image: (Vec<u8>, u32),
 }
 async fn get_form_data(mut image_upload_form: Multipart) -> Result<FormData, actix_web::Error> {
-    let mut token: Option<uuid::Uuid> = None;
     let mut image: Option<(Vec<u8>, u32)> = None;
     while let Some(item) = image_upload_form.next().await {
         let mut field = item.map_err(error::ErrorBadRequest)?;
@@ -89,21 +79,6 @@ async fn get_form_data(mut image_upload_form: Multipart) -> Result<FormData, act
             .ok_or_else(|| error::ErrorBadRequest(anyhow!("A form field was missing a name")))?;
 
         match name {
-            "token" => {
-                let data = field
-                    .next()
-                    .await
-                    .ok_or_else(|| {
-                        error::ErrorBadRequest(anyhow!("Token form field was missing a value"))
-                    })?
-                    .map_err(error::ErrorBadRequest)?;
-                let value = uuid::Uuid::from_str(
-                    std::str::from_utf8(&data).map_err(error::ErrorBadRequest)?,
-                )
-                .map_err(error::ErrorBadRequest)?;
-
-                token = Some(value);
-            }
             "image" => {
                 let mut data = Vec::new();
                 while let Some(chunk) = field.next().await {
@@ -121,7 +96,6 @@ async fn get_form_data(mut image_upload_form: Multipart) -> Result<FormData, act
         }
     }
 
-    let token = token.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"token\"")))?;
     let image = image.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"image\"")))?;
-    Ok(FormData { token, image })
+    Ok(FormData { image })
 }

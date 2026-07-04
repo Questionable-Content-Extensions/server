@@ -24,11 +24,13 @@ use ts_rs::TS;
 pub async fn add_item(
     pool: web::Data<DbPool>,
     request: web::Json<AddItemToComicBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_ADD_ITEM_TO_COMIC)
         .map_err(error::ErrorForbidden)?;
 
+    let token = *token;
     let request = request.into_inner();
     ensure_is_valid(&request).map_err(error::ErrorBadRequest)?;
 
@@ -64,7 +66,7 @@ pub async fn add_item(
 
             LogEntry::log_action(
                 &mut *transaction,
-                request.token.to_string(),
+                token.to_string(),
                 format!(
                     "Created {} #{} ({})",
                     new.new_item_type.as_str(),
@@ -90,7 +92,7 @@ pub async fn add_item(
 
                 LogEntry::log_action(
                     &mut *transaction,
-                    request.token.to_string(),
+                    token.to_string(),
                     format!("Changed startComicId of item #{new_item_id} to {start_comic_id}"),
                     None,
                     Some(new_item_id),
@@ -137,14 +139,7 @@ pub async fn add_item(
         ItemType::Storyline => (FlagType::HasNoStoryline, comic.has_no_storyline != 0),
     };
     if flag_needs_update {
-        update_flag(
-            flagtype,
-            false,
-            request.comic_id,
-            request.token,
-            &mut transaction,
-        )
-        .await?;
+        update_flag(flagtype, false, request.comic_id, token, &mut transaction).await?;
     }
 
     Occurrence::create(&mut *transaction, id, comic_id)
@@ -160,7 +155,7 @@ pub async fn add_item(
     );
     LogEntry::log_action(
         &mut *transaction,
-        request.token.to_string(),
+        token.to_string(),
         &action,
         Some(comic_id),
         Some(id),
@@ -181,11 +176,13 @@ pub async fn add_item(
 pub async fn add_items(
     pool: web::Data<DbPool>,
     request: web::Json<AddItemsToComicBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_ADD_ITEM_TO_COMIC)
         .map_err(error::ErrorForbidden)?;
 
+    let token = *token;
     let request = request.into_inner();
     ensure_is_valid(&request).map_err(error::ErrorBadRequest)?;
 
@@ -242,14 +239,7 @@ pub async fn add_items(
                 ),
             };
         if flag_needs_update {
-            update_flag(
-                flagtype,
-                false,
-                request.comic_id,
-                request.token,
-                &mut transaction,
-            )
-            .await?;
+            update_flag(flagtype, false, request.comic_id, token, &mut transaction).await?;
             *flag = 0;
         }
 
@@ -259,7 +249,7 @@ pub async fn add_items(
 
         LogEntry::log_action(
             &mut *transaction,
-            request.token.to_string(),
+            token.to_string(),
             format!(
                 "Added {} #{} ({}) to comic #{}",
                 item.r#type.as_str(),
@@ -337,7 +327,6 @@ mod tests {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct AddItemToComicBody {
-    pub token: Token,
     pub comic_id: ComicId,
     #[serde(flatten)]
     pub item: ItemBody,
@@ -386,7 +375,6 @@ pub enum AddItemToComicBodyInvalidity {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct AddItemsToComicBody {
-    pub token: Token,
     pub comic_id: ComicId,
     pub items: Vec<ExistingItem>,
 }

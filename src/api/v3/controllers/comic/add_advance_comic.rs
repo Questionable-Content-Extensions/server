@@ -18,13 +18,14 @@ use ts_rs::TS;
 pub async fn add_advance_comic(
     pool: web::Data<DbPool>,
     request: web::Json<AddAdvanceComicBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_ADD_ADVANCE_COMIC)
         .map_err(error::ErrorForbidden)?;
 
+    let token = *token;
     let AddAdvanceComicBody {
-        token,
         comic_id,
         title,
         tagline,
@@ -88,7 +89,6 @@ pub async fn add_advance_comic(
 #[tracing::instrument(skip(pool, auth), fields(permissions = ?auth.authorities))]
 pub async fn list_advance_comics(
     pool: web::Data<DbPool>,
-    query: web::Query<ListAdvanceComicsQuery>,
     auth: AuthDetails,
 ) -> Result<Json<Vec<AdvanceComicListItem>>> {
     ensure_is_authorized(&auth, token_permissions::HAS_VALID_TOKEN)
@@ -106,7 +106,6 @@ pub async fn list_advance_comics(
 #[tracing::instrument(skip(trigger, auth), fields(permissions = ?auth.authorities))]
 pub async fn run_comic_updater(
     trigger: web::Data<ComicUpdaterTrigger>,
-    request: web::Json<RunComicUpdaterBody>,
     auth: AuthDetails,
 ) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_ADD_ADVANCE_COMIC)
@@ -127,7 +126,6 @@ pub async fn run_comic_updater(
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct AddAdvanceComicBody {
-    pub token: Token,
     pub comic_id: ComicId,
     pub title: String,
 
@@ -141,24 +139,4 @@ pub struct AddAdvanceComicBody {
     pub is_guest_comic: Option<bool>,
     #[ts(optional)]
     pub is_non_canon: Option<bool>,
-}
-
-#[derive(Debug, Deserialize, TS)]
-#[ts(export)]
-pub struct ListAdvanceComicsQuery {
-    // This is never read directly because it's used by the auth middleware only.
-    // We still include it here so it ends up in the TS binding.
-    #[expect(dead_code)]
-    #[ts(optional)]
-    pub token: Option<Token>,
-}
-
-#[derive(Debug, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-#[ts(export)]
-pub struct RunComicUpdaterBody {
-    // This is never read directly because it's used by the auth middleware only.
-    // We still include it here so it ends up in the TS binding.
-    #[expect(dead_code)]
-    pub token: Token,
 }

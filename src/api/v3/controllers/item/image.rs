@@ -57,12 +57,13 @@ pub async fn image(pool: web::Data<DbPool>, image_id: web::Path<u32>) -> Result<
 pub async fn delete(
     pool: web::Data<DbPool>,
     image_id: web::Path<u32>,
-    request: web::Json<DeleteImageBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_REMOVE_IMAGE_FROM_ITEM)
         .map_err(error::ErrorForbidden)?;
 
+    let token = *token;
     let mut transaction = pool
         .begin()
         .instrument(info_span!("Pool::begin"))
@@ -88,7 +89,7 @@ pub async fn delete(
 
     LogEntry::log_action(
         &mut *transaction,
-        request.token.to_string(),
+        token.to_string(),
         format!("Deleted image #{image_id}"),
         None,
         Some(item_id),
@@ -110,11 +111,13 @@ pub async fn set_primary(
     pool: web::Data<DbPool>,
     item_id: web::Path<u16>,
     request: web::Json<SetPrimaryImageBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_ITEM_DATA)
         .map_err(error::ErrorForbidden)?;
 
+    let token = *token;
     let mut transaction = pool
         .begin()
         .await
@@ -146,7 +149,7 @@ pub async fn set_primary(
 
     LogEntry::log_action(
         &mut *transaction,
-        request.token.to_string(),
+        token.to_string(),
         format!("Set image #{image_id} as primary for item #{item_id}"),
         None,
         Some(item_id),
@@ -165,14 +168,6 @@ pub async fn set_primary(
 #[derive(Debug, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
-pub struct DeleteImageBody {
-    token: Token,
-}
-
-#[derive(Debug, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-#[ts(export)]
 pub struct SetPrimaryImageBody {
-    token: Token,
     image_id: ImageId,
 }

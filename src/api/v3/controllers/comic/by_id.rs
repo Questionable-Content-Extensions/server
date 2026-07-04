@@ -7,7 +7,7 @@ use crate::api::v3::models::{
     Comic, ComicData, EditorData, Exclusion, ImageType, Inclusion, ItemNavigationData,
     MissingComic, MissingEditorData, PresentComic, Sorting,
 };
-use crate::models::{ComicId, False, Token, True};
+use crate::models::{ComicId, False, True};
 use crate::util::NewsUpdater;
 use actix_web::web::Json;
 use actix_web::{Result, error, web};
@@ -178,12 +178,6 @@ pub async fn by_id(
 #[derive(Debug, Deserialize, TS)]
 #[ts(export)]
 pub struct ByIdQuery {
-    // This is never read because it's used by the auth middleware only.
-    // We still include it here so it ends up in the TS binding.
-    #[expect(dead_code)]
-    #[ts(optional)]
-    pub token: Option<Token>,
-
     #[ts(optional)]
     exclude: Option<Exclusion>,
     #[ts(optional)]

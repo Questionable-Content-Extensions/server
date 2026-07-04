@@ -19,11 +19,13 @@ pub async fn patch_comic(
     pool: web::Data<DbPool>,
     request: web::Json<PatchComicBody>,
     comic_id: web::Path<ComicId>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<Json<String>> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
         .map_err(error::ErrorForbidden)?;
 
+    let token = *token;
     let mut transaction = pool
         .begin()
         .instrument(info_span!("Pool::begin"))
@@ -36,7 +38,6 @@ pub async fn patch_comic(
         .map_err(error::ErrorInternalServerError)?;
 
     let PatchComicBody {
-        token,
         publish_date,
         title,
         tagline,
@@ -431,8 +432,6 @@ pub(super) async fn update_flag(
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct PatchComicBody {
-    pub token: Token,
-
     #[ts(optional)]
     pub publish_date: Option<PublishDatePatch>,
     #[ts(optional)]

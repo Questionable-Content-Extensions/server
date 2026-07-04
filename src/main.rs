@@ -6,7 +6,7 @@ use actix_files::{Files, NamedFile};
 use actix_http::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::web::PayloadConfig;
-use actix_web::{App, Error, FromRequest, HttpServer, error, web};
+use actix_web::{App, Error, FromRequest, HttpMessage, HttpServer, error, web};
 use actix_web_grants::GrantsMiddleware;
 use anyhow::{Context as _, Result, anyhow};
 use database::DbPool;
@@ -338,6 +338,11 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<HashSet<Str
             return Ok(HashSet::new());
         }
     };
+
+    // Stash the resolved token in the request extensions so handlers that need it
+    // (e.g. for audit-log attribution) can pull it via `web::ReqData<Token>`
+    // instead of requiring a redundant `token` field in their request body.
+    request.extensions_mut().insert(token);
 
     let token_str = token.to_string();
 

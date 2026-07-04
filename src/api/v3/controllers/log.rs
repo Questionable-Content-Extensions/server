@@ -1,5 +1,4 @@
 use crate::api::v3::models::LogEntry;
-use crate::models::Token;
 use crate::util::ensure_is_authorized;
 use actix_web::web::Json;
 use actix_web::{Result, error, web};
@@ -133,16 +132,12 @@ async fn get_by_item(
 #[derive(Debug, Deserialize, TS)]
 #[ts(export)]
 struct LogQuery {
-    #[expect(unused)]
-    token: Token,
     page: u16,
 }
 
 #[derive(Debug, Deserialize, TS)]
 #[ts(export)]
 struct LogByIdQuery {
-    #[expect(unused)]
-    token: Token,
     id: u16,
     page: u16,
 }
