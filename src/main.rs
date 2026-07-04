@@ -29,6 +29,7 @@ use tracing::{Level, Span, error, info};
 use tracing_actix_web::{DefaultRootSpanBuilder, RootSpanBuilder, TracingLogger};
 use tracing_subscriber::layer::SubscriberExt;
 use util::environment;
+use uuid::Uuid;
 
 #[macro_use]
 mod util;
@@ -280,41 +281,61 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+// Older extension clients only know how to send the token as a `token` field in the
+// JSON request body, so that path can't be removed outright. Query-string and
+// `Authorization: Bearer` delivery are checked first since they don't require
+// buffering the body, but the body-JSON fallback stays until those clients age out.
+fn bearer_token_from_headers(http_request: &actix_web::HttpRequest) -> Option<Token> {
+    let value = http_request
+        .headers()
+        .get(actix_web::http::header::AUTHORIZATION)?
+        .to_str()
+        .ok()?;
+    let uuid_str = value.strip_prefix("Bearer ")?;
+    Uuid::parse_str(uuid_str).ok().map(Token::from)
+}
+
 async fn extract_permissions(request: &mut ServiceRequest) -> Result<HashSet<String>, Error> {
     #[derive(Debug, Deserialize)]
     struct TokenQuery {
         token: Option<Token>,
     }
 
-    let token = {
+    let token_from_query_or_header = {
         let (http_request, payload) = request.parts_mut();
 
         let token_query =
             web::Query::<TokenQuery>::from_request(&*http_request, &mut *payload).await?;
-        if let Some(token) = token_query.token {
-            token
-        } else {
-            // Grab the payload and try parsing it as JSON
-            let bytes = web::Bytes::from_request(&*http_request, &mut *payload).await?;
-            let token_query: Result<TokenQuery, _> = serde_json::from_slice(&bytes[..]);
+        token_query
+            .token
+            .or_else(|| bearer_token_from_headers(http_request))
+    };
 
-            // Now that we've grabbed the payload, we need to restore the payload
-            // for the rest of the Actix machinery to do its thing.
-            let (_, mut payload) = actix_http::h1::Payload::create(true);
-            payload.unread_data(bytes);
-            request.set_payload(payload.into());
+    let token = if let Some(token) = token_from_query_or_header {
+        token
+    } else {
+        let (http_request, payload) = request.parts_mut();
 
-            if let Ok(token_query) = token_query {
-                if let Some(token) = token_query.token {
-                    token
-                } else {
-                    // If there is no token provided, there are no permissions
-                    return Ok(HashSet::new());
-                }
+        // Grab the payload and try parsing it as JSON
+        let bytes = web::Bytes::from_request(&*http_request, &mut *payload).await?;
+        let token_query: Result<TokenQuery, _> = serde_json::from_slice(&bytes[..]);
+
+        // Now that we've grabbed the payload, we need to restore the payload
+        // for the rest of the Actix machinery to do its thing.
+        let (_, mut payload) = actix_http::h1::Payload::create(true);
+        payload.unread_data(bytes);
+        request.set_payload(payload.into());
+
+        if let Ok(token_query) = token_query {
+            if let Some(token) = token_query.token {
+                token
             } else {
                 // If there is no token provided, there are no permissions
                 return Ok(HashSet::new());
             }
+        } else {
+            // If there is no token provided, there are no permissions
+            return Ok(HashSet::new());
         }
     };
 
@@ -391,5 +412,47 @@ impl RootSpanBuilder for DomainRootSpanBuilder {
 
     fn on_request_end<B: MessageBody>(span: Span, outcome: &Result<ServiceResponse<B>, Error>) {
         DefaultRootSpanBuilder::on_request_end(span, outcome);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use actix_web::test::TestRequest;
+
+    #[test]
+    fn bearer_token_from_headers_parses_valid_bearer_token() {
+        let uuid = Uuid::new_v4();
+        let request = TestRequest::default()
+            .insert_header(("Authorization", format!("Bearer {uuid}")))
+            .to_http_request();
+
+        assert_eq!(bearer_token_from_headers(&request), Some(Token::from(uuid)));
+    }
+
+    #[test]
+    fn bearer_token_from_headers_returns_none_without_header() {
+        let request = TestRequest::default().to_http_request();
+
+        assert_eq!(bearer_token_from_headers(&request), None);
+    }
+
+    #[test]
+    fn bearer_token_from_headers_returns_none_for_non_bearer_scheme() {
+        let uuid = Uuid::new_v4();
+        let request = TestRequest::default()
+            .insert_header(("Authorization", format!("Basic {uuid}")))
+            .to_http_request();
+
+        assert_eq!(bearer_token_from_headers(&request), None);
+    }
+
+    #[test]
+    fn bearer_token_from_headers_returns_none_for_malformed_uuid() {
+        let request = TestRequest::default()
+            .insert_header(("Authorization", "Bearer not-a-uuid"))
+            .to_http_request();
+
+        assert_eq!(bearer_token_from_headers(&request), None);
     }
 }
