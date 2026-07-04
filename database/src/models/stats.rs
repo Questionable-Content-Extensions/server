@@ -338,74 +338,50 @@ impl ComebackCharacterRow {
         sqlx::query_as!(
             Self,
             r#"
+                WITH `gaps` AS (
+                    SELECT
+                        `sub`.`item_id`,
+                        `sub`.`prev_comic` AS `last_comic`,
+                        `sub`.`comic_id` AS `return_comic`,
+                        DATEDIFF(`sub`.`return_date`, `sub`.`prev_date`) AS `gap_days`
+                    FROM (
+                        SELECT
+                            `o`.`item_id`,
+                            `o`.`comic_id`,
+                            `c`.`publish_date` AS `return_date`,
+                            LAG(`o`.`comic_id`) OVER (
+                                PARTITION BY `o`.`item_id`
+                                ORDER BY `o`.`comic_id`
+                            ) AS `prev_comic`,
+                            LAG(`c`.`publish_date`) OVER (
+                                PARTITION BY `o`.`item_id`
+                                ORDER BY `o`.`comic_id`
+                            ) AS `prev_date`
+                        FROM `Occurrence` `o`
+                        JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                        JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                        WHERE `i`.`type` = 'cast'
+                          AND `c`.`publish_date` IS NOT NULL
+                    ) `sub`
+                    WHERE `sub`.`prev_comic` IS NOT NULL
+                ),
+                `max_gap` AS (
+                    SELECT `item_id`, MAX(`gap_days`) AS `max_gap_days`
+                    FROM `gaps`
+                    GROUP BY `item_id`
+                )
                 SELECT
                     `i`.`id`,
                     `i`.`name`,
                     `g`.`last_comic`,
                     `g`.`return_comic`,
                     `mg`.`max_gap_days` AS `gap_days`
-                FROM (
-                    SELECT `item_id`, MAX(`gap_days`) AS `max_gap_days`
-                    FROM (
-                        SELECT
-                            `sub`.`item_id`,
-                            `sub`.`prev_comic` AS `last_comic`,
-                            `sub`.`comic_id` AS `return_comic`,
-                            DATEDIFF(`sub`.`return_date`, `sub`.`prev_date`) AS `gap_days`
-                        FROM (
-                            SELECT
-                                `o`.`item_id`,
-                                `o`.`comic_id`,
-                                `c`.`publish_date` AS `return_date`,
-                                LAG(`o`.`comic_id`) OVER (
-                                    PARTITION BY `o`.`item_id`
-                                    ORDER BY `o`.`comic_id`
-                                ) AS `prev_comic`,
-                                LAG(`c`.`publish_date`) OVER (
-                                    PARTITION BY `o`.`item_id`
-                                    ORDER BY `o`.`comic_id`
-                                ) AS `prev_date`
-                            FROM `Occurrence` `o`
-                            JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
-                            JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
-                            WHERE `i`.`type` = 'cast'
-                              AND `c`.`publish_date` IS NOT NULL
-                        ) `sub`
-                        WHERE `sub`.`prev_comic` IS NOT NULL
-                    ) `gaps`
-                    GROUP BY `item_id`
-                ) `mg`
+                FROM `max_gap` `mg`
                 JOIN (
                     SELECT `item_id`, `gap_days`,
                            MIN(`last_comic`) AS `last_comic`,
                            MIN(`return_comic`) AS `return_comic`
-                    FROM (
-                        SELECT
-                            `sub`.`item_id`,
-                            `sub`.`prev_comic` AS `last_comic`,
-                            `sub`.`comic_id` AS `return_comic`,
-                            DATEDIFF(`sub`.`return_date`, `sub`.`prev_date`) AS `gap_days`
-                        FROM (
-                            SELECT
-                                `o`.`item_id`,
-                                `o`.`comic_id`,
-                                `c`.`publish_date` AS `return_date`,
-                                LAG(`o`.`comic_id`) OVER (
-                                    PARTITION BY `o`.`item_id`
-                                    ORDER BY `o`.`comic_id`
-                                ) AS `prev_comic`,
-                                LAG(`c`.`publish_date`) OVER (
-                                    PARTITION BY `o`.`item_id`
-                                    ORDER BY `o`.`comic_id`
-                                ) AS `prev_date`
-                            FROM `Occurrence` `o`
-                            JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
-                            JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
-                            WHERE `i`.`type` = 'cast'
-                              AND `c`.`publish_date` IS NOT NULL
-                        ) `sub`
-                        WHERE `sub`.`prev_comic` IS NOT NULL
-                    ) `g_raw`
+                    FROM `gaps`
                     GROUP BY `item_id`, `gap_days`
                 ) `g` ON `mg`.`item_id` = `g`.`item_id`
                     AND `mg`.`max_gap_days` = `g`.`gap_days`
@@ -441,74 +417,50 @@ impl ComebackLocationRow {
         sqlx::query_as!(
             Self,
             r#"
+                WITH `gaps` AS (
+                    SELECT
+                        `sub`.`item_id`,
+                        `sub`.`prev_comic` AS `last_comic`,
+                        `sub`.`comic_id` AS `return_comic`,
+                        DATEDIFF(`sub`.`return_date`, `sub`.`prev_date`) AS `gap_days`
+                    FROM (
+                        SELECT
+                            `o`.`item_id`,
+                            `o`.`comic_id`,
+                            `c`.`publish_date` AS `return_date`,
+                            LAG(`o`.`comic_id`) OVER (
+                                PARTITION BY `o`.`item_id`
+                                ORDER BY `o`.`comic_id`
+                            ) AS `prev_comic`,
+                            LAG(`c`.`publish_date`) OVER (
+                                PARTITION BY `o`.`item_id`
+                                ORDER BY `o`.`comic_id`
+                            ) AS `prev_date`
+                        FROM `Occurrence` `o`
+                        JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                        JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
+                        WHERE `i`.`type` = 'location'
+                          AND `c`.`publish_date` IS NOT NULL
+                    ) `sub`
+                    WHERE `sub`.`prev_comic` IS NOT NULL
+                ),
+                `max_gap` AS (
+                    SELECT `item_id`, MAX(`gap_days`) AS `max_gap_days`
+                    FROM `gaps`
+                    GROUP BY `item_id`
+                )
                 SELECT
                     `i`.`id`,
                     `i`.`name`,
                     `g`.`last_comic`,
                     `g`.`return_comic`,
                     `mg`.`max_gap_days` AS `gap_days`
-                FROM (
-                    SELECT `item_id`, MAX(`gap_days`) AS `max_gap_days`
-                    FROM (
-                        SELECT
-                            `sub`.`item_id`,
-                            `sub`.`prev_comic` AS `last_comic`,
-                            `sub`.`comic_id` AS `return_comic`,
-                            DATEDIFF(`sub`.`return_date`, `sub`.`prev_date`) AS `gap_days`
-                        FROM (
-                            SELECT
-                                `o`.`item_id`,
-                                `o`.`comic_id`,
-                                `c`.`publish_date` AS `return_date`,
-                                LAG(`o`.`comic_id`) OVER (
-                                    PARTITION BY `o`.`item_id`
-                                    ORDER BY `o`.`comic_id`
-                                ) AS `prev_comic`,
-                                LAG(`c`.`publish_date`) OVER (
-                                    PARTITION BY `o`.`item_id`
-                                    ORDER BY `o`.`comic_id`
-                                ) AS `prev_date`
-                            FROM `Occurrence` `o`
-                            JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
-                            JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
-                            WHERE `i`.`type` = 'location'
-                              AND `c`.`publish_date` IS NOT NULL
-                        ) `sub`
-                        WHERE `sub`.`prev_comic` IS NOT NULL
-                    ) `gaps`
-                    GROUP BY `item_id`
-                ) `mg`
+                FROM `max_gap` `mg`
                 JOIN (
                     SELECT `item_id`, `gap_days`,
                            MIN(`last_comic`) AS `last_comic`,
                            MIN(`return_comic`) AS `return_comic`
-                    FROM (
-                        SELECT
-                            `sub`.`item_id`,
-                            `sub`.`prev_comic` AS `last_comic`,
-                            `sub`.`comic_id` AS `return_comic`,
-                            DATEDIFF(`sub`.`return_date`, `sub`.`prev_date`) AS `gap_days`
-                        FROM (
-                            SELECT
-                                `o`.`item_id`,
-                                `o`.`comic_id`,
-                                `c`.`publish_date` AS `return_date`,
-                                LAG(`o`.`comic_id`) OVER (
-                                    PARTITION BY `o`.`item_id`
-                                    ORDER BY `o`.`comic_id`
-                                ) AS `prev_comic`,
-                                LAG(`c`.`publish_date`) OVER (
-                                    PARTITION BY `o`.`item_id`
-                                    ORDER BY `o`.`comic_id`
-                                ) AS `prev_date`
-                            FROM `Occurrence` `o`
-                            JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
-                            JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
-                            WHERE `i`.`type` = 'location'
-                              AND `c`.`publish_date` IS NOT NULL
-                        ) `sub`
-                        WHERE `sub`.`prev_comic` IS NOT NULL
-                    ) `g_raw`
+                    FROM `gaps`
                     GROUP BY `item_id`, `gap_days`
                 ) `g` ON `mg`.`item_id` = `g`.`item_id`
                     AND `mg`.`max_gap_days` = `g`.`gap_days`
