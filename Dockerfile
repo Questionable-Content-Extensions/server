@@ -63,6 +63,7 @@ COPY src/index.tsx src/vite-env.d.ts /qcext-server/src/
 RUN npx update-browserslist-db@latest
 
 COPY public /qcext-server/public
+COPY services /qcext-server/services
 RUN mkdir bindings
 COPY --from=rust /qcext-server/bindings ./bindings
 RUN npm run build
