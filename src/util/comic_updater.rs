@@ -17,7 +17,7 @@ static COMIC_IMAGE_SELECTOR: std::sync::LazyLock<Selector> =
     std::sync::LazyLock::new(|| Selector::parse("img[src*=\"/comics/\"]").expect("valid selector"));
 
 const FRONT_PAGE_URL: &str = "https://questionablecontent.net/";
-const ARCHIVE_URL: &str = concatcp!(FRONT_PAGE_URL, "archive.php");
+const ARCHIVE_URL: &str = concatcp!(FRONT_PAGE_URL, "archive-list.php");
 const STARTUP_DELAY_DURATION: StdDuration = StdDuration::from_secs(15);
 
 #[derive(Debug)]
