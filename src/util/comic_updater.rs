@@ -169,12 +169,12 @@ impl ComicUpdater {
             .instrument(info_span!("Pool::begin"))
             .await?;
 
-        let (needs_title, needs_image_type, current_comic_date) =
+        let (needs_title, needs_image_type, current_comic_date, is_hidden) =
             DatabaseComic::needs_updating_by_id(&mut *transaction, comic_id.into_inner()).await?;
 
         info!(
-            "Comic #{} needs title: {}, needs image type: {}, current comic date: {:?}",
-            comic_id, needs_title, needs_image_type, current_comic_date
+            "Comic #{} needs title: {}, needs image type: {}, current comic date: {:?}, removal of hidden: {}",
+            comic_id, needs_title, needs_image_type, current_comic_date, is_hidden
         );
 
         let new_title = if needs_title {
@@ -234,49 +234,73 @@ impl ComicUpdater {
 
         let comic_date = current_comic_date.map_or_else(Utc::now, |d| Utc.from_utc_datetime(&d));
 
-        if let Some(title) = new_title {
+        let action = determine_comic_update_action(
+            new_title.is_some(),
+            needs_image_type,
+            image_type,
+            current_comic_date.is_some(),
+        );
+
+        match action {
+            ComicUpdateAction::SetTitleImageTypeAndPublishDate => {
+                let title = new_title
+                    .expect("new_title is Some when action is SetTitleImageTypeAndPublishDate");
+                info!(
+                    "Setting comic #{}'s title to '{}' and image type to '{:?}'",
+                    comic_id,
+                    title,
+                    ImageType::from(image_type)
+                );
+
+                DatabaseComic::insert_or_update_title_imagetype_and_publish_date_by_id(
+                    &mut *transaction,
+                    comic_id.into_inner(),
+                    &title,
+                    image_type,
+                    comic_date.naive_utc(),
+                )
+                .await?;
+            }
+            ComicUpdateAction::SetImageTypeAndPublishDate => {
+                info!(
+                    "Setting comic #{}'s image type to '{:?}'",
+                    comic_id,
+                    ImageType::from(image_type)
+                );
+
+                DatabaseComic::update_image_type_and_publish_date_by_id(
+                    &mut *transaction,
+                    comic_id.into_inner(),
+                    image_type,
+                    comic_date.naive_utc(),
+                )
+                .await?;
+            }
+            ComicUpdateAction::SetPublishDate => {
+                info!(
+                    "Setting comic #{}'s publish date to '{:?}'",
+                    comic_id, comic_date
+                );
+
+                DatabaseComic::update_publish_date_by_id(
+                    &mut *transaction,
+                    comic_id.into_inner(),
+                    comic_date,
+                    false,
+                )
+                .await?;
+            }
+            ComicUpdateAction::None => {}
+        }
+
+        if is_hidden {
             info!(
-                "Setting comic #{}'s title to '{}' and image type to '{:?}'",
-                comic_id,
-                title,
-                ImageType::from(image_type)
+                "Comic #{} was hidden (advance comic); the front page confirms it's now \
+                 published, so clearing its hidden flag",
+                comic_id
             );
 
-            DatabaseComic::insert_or_update_title_imagetype_and_publish_date_by_id(
-                &mut *transaction,
-                comic_id.into_inner(),
-                &title,
-                image_type,
-                comic_date.naive_utc(),
-            )
-            .await?;
-        } else if needs_image_type && image_type != 0 {
-            info!(
-                "Setting comic #{}'s image type to '{:?}'",
-                comic_id,
-                ImageType::from(image_type)
-            );
-
-            DatabaseComic::update_image_type_and_publish_date_by_id(
-                &mut *transaction,
-                comic_id.into_inner(),
-                image_type,
-                comic_date.naive_utc(),
-            )
-            .await?;
-        } else if current_comic_date.is_none() {
-            info!(
-                "Setting comic #{}'s publish date to '{:?}'",
-                comic_id, comic_date
-            );
-
-            DatabaseComic::update_publish_date_by_id(
-                &mut *transaction,
-                comic_id.into_inner(),
-                comic_date,
-                false,
-            )
-            .await?;
+            DatabaseComic::unhide_by_id(&mut *transaction, comic_id.into_inner()).await?;
         }
 
         info!("Saving any changes to the database.");
@@ -286,6 +310,36 @@ impl ComicUpdater {
             .await?;
 
         Ok(comic_id)
+    }
+}
+
+/// Which update, if any, should be applied to a comic based on what the front page told us
+/// versus what's currently in the database. Deciding whether to clear the `hidden` flag on an
+/// advance comic is orthogonal to this and handled separately by the caller: an advance comic
+/// already has a title (and often an image type and publish date) set ahead of time, so none of
+/// these actions may fire even though the comic has just gone from hidden to published.
+#[derive(Debug, PartialEq, Eq)]
+enum ComicUpdateAction {
+    SetTitleImageTypeAndPublishDate,
+    SetImageTypeAndPublishDate,
+    SetPublishDate,
+    None,
+}
+
+const fn determine_comic_update_action(
+    has_new_title: bool,
+    needs_image_type: bool,
+    image_type: i32,
+    has_current_comic_date: bool,
+) -> ComicUpdateAction {
+    if has_new_title {
+        ComicUpdateAction::SetTitleImageTypeAndPublishDate
+    } else if needs_image_type && image_type != 0 {
+        ComicUpdateAction::SetImageTypeAndPublishDate
+    } else if !has_current_comic_date {
+        ComicUpdateAction::SetPublishDate
+    } else {
+        ComicUpdateAction::None
     }
 }
 
@@ -332,5 +386,49 @@ mod tests {
             Html::parse_document(r#"<html><body><img src="/other/image.png" /></body></html>"#);
         let mut matches = document.select(&COMIC_IMAGE_SELECTOR);
         assert!(matches.next().is_none());
+    }
+
+    #[test]
+    fn determine_comic_update_action_prefers_new_title_over_everything_else() {
+        assert_eq!(
+            determine_comic_update_action(true, true, 1, false),
+            ComicUpdateAction::SetTitleImageTypeAndPublishDate
+        );
+    }
+
+    #[test]
+    fn determine_comic_update_action_sets_image_type_when_needed_and_known() {
+        assert_eq!(
+            determine_comic_update_action(false, true, 1, true),
+            ComicUpdateAction::SetImageTypeAndPublishDate
+        );
+    }
+
+    #[test]
+    fn determine_comic_update_action_skips_image_type_when_unknown() {
+        assert_eq!(
+            determine_comic_update_action(false, true, 0, false),
+            ComicUpdateAction::SetPublishDate
+        );
+    }
+
+    #[test]
+    fn determine_comic_update_action_sets_publish_date_when_missing() {
+        assert_eq!(
+            determine_comic_update_action(false, false, 1, false),
+            ComicUpdateAction::SetPublishDate
+        );
+    }
+
+    // Regression guard: an advance comic can be seeded with title, image type, and publish
+    // date all ahead of time, so this legitimately returns `None` even once the front page
+    // confirms it's published. Unhiding must not depend on this action firing — it's handled
+    // separately by the caller based on the `is_hidden` flag alone.
+    #[test]
+    fn determine_comic_update_action_does_nothing_when_up_to_date() {
+        assert_eq!(
+            determine_comic_update_action(false, false, 1, true),
+            ComicUpdateAction::None
+        );
     }
 }

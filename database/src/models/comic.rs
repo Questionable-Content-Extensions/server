@@ -1234,7 +1234,7 @@ impl Comic {
     pub async fn needs_updating_by_id<'e, 'c: 'e, E>(
         executor: E,
         id: u16,
-    ) -> sqlx::Result<(bool, bool, Option<NaiveDateTime>)>
+    ) -> sqlx::Result<(bool, bool, Option<NaiveDateTime>, bool)>
     where
         E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
     {
@@ -1244,7 +1244,8 @@ impl Comic {
                 SELECT
                     `title`,
                     `image_type`,
-                    `publish_date`
+                    `publish_date`,
+                    `hidden`
                 FROM `Comic`
                 WHERE `id` = ?
             "#,
@@ -1257,10 +1258,37 @@ impl Comic {
                 needs.title.is_empty(),
                 needs.image_type == 0,
                 needs.publish_date,
+                needs.hidden != 0,
             ))
         } else {
-            Ok((true, true, None))
+            Ok((true, true, None, false))
         }
+    }
+
+    /// Clears the `hidden` flag on a comic, e.g. once the background comic updater confirms
+    /// via the front page that a previously-hidden advance comic has now been published.
+    ///
+    /// # Errors
+    ///
+    /// Returns a database error if the query fails.
+    #[tracing::instrument(skip(executor))]
+    pub async fn unhide_by_id<'e, 'c: 'e, E>(
+        executor: E,
+        id: u16,
+    ) -> sqlx::Result<crate::DatabaseQueryResult>
+    where
+        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
+    {
+        sqlx::query!(
+            r#"
+                UPDATE `Comic`
+                SET `hidden` = 0
+                WHERE `id` = ?
+            "#,
+            id,
+        )
+        .execute(executor)
+        .await
     }
 
     /// # Errors
@@ -1427,4 +1455,5 @@ struct NeedsQuery {
     title: String,
     image_type: i32,
     publish_date: Option<NaiveDateTime>,
+    hidden: u8,
 }
