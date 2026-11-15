@@ -5,6 +5,8 @@ on: [push, pull_request, workflow_dispatch]
 jobs:
     build:
         runs-on: ubuntu-24.04-arm
+        outputs:
+            artifact_id: ${{ steps.upload.outputs.artifact-id }}
         steps:
             - uses: actions/checkout@v4
 
@@ -13,11 +15,13 @@ jobs:
                   image: questionablextensions
 
             - name: Upload artifact
+              id: upload
               if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
               uses: actions/upload-artifact@v4
               with:
                   name: questionablextensions-tar
                   path: questionablextensions.tar
+                  retention-days: 1
 
     deploy:
         runs-on: ubuntu-latest
@@ -62,7 +66,9 @@ jobs:
                   deployment_id: ${{ steps.deployment.outputs.deployment_id }}
                   state: failure
 
-            - uses: geekyeggo/delete-artifact@v6
-              with:
-                  name: questionablextensions-tar
-                  failOnError: false
+            - name: Delete artifact
+              if: always() && needs.build.outputs.artifact_id != ''
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  ARTIFACT_ID: ${{ needs.build.outputs.artifact_id }}
+              run: gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID"
