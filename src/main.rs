@@ -14,11 +14,10 @@ use database::models::Token as DatabaseToken;
 use database::models::stats::TopRankedStintRow as DbTopRankedStintRow;
 use futures::stream::{FuturesUnordered, StreamExt};
 use futures::{FutureExt, pin_mut};
-use opentelemetry::KeyValue;
-use opentelemetry::sdk::Resource;
-use opentelemetry::sdk::trace::Tracer;
-use opentelemetry::trace::TraceError;
-use opentelemetry_otlp::WithExportConfig;
+use opentelemetry::trace::TracerProvider as _;
+use opentelemetry_otlp::{ExporterBuildError, WithExportConfig, WithHttpConfig};
+use opentelemetry_sdk::Resource;
+use opentelemetry_sdk::trace::{SdkTracerProvider, TracerProviderBuilder};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -48,8 +47,9 @@ async fn main() -> Result<()> {
         .with_target("actix_server", Level::DEBUG)
         .with_default(Level::TRACE);
 
-    let tracer = init_tracer().unwrap();
-    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    let tracer_provider = init_tracer_provider(environment::honeycomb_key()).unwrap();
+    let telemetry =
+        tracing_opentelemetry::layer().with_tracer(tracer_provider.tracer(SERVICE_NAME));
     let subscriber = tracing_subscriber::Registry::default()
         .with(filter)
         .with(tracing_subscriber::fmt::Layer::default())
@@ -377,30 +377,31 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<HashSet<Str
     Ok(permissions)
 }
 
-fn init_tracer() -> Result<Tracer, TraceError> {
-    opentelemetry_otlp::new_pipeline()
-        .tracing()
-        .with_trace_config(
-            opentelemetry::sdk::trace::config().with_resource(Resource::new(vec![KeyValue::new(
-                "service.name",
-                "qcext-server",
-            )])),
-        )
-        .with_exporter(
-            opentelemetry_otlp::new_exporter()
-                .http()
-                .with_endpoint("https://api.honeycomb.io/v1/traces")
-                .with_http_client(reqwest_011::Client::default())
-                .with_headers(HashMap::from([
-                    ("x-honeycomb-dataset".into(), "qcext-server-dataset".into()),
-                    (
-                        "x-honeycomb-team".into(),
-                        environment::honeycomb_key().into(),
-                    ),
-                ]))
-                .with_timeout(Duration::from_secs(2)),
-        ) // Replace with runtime::Tokio if using async main
-        .install_batch(opentelemetry::runtime::Tokio)
+const SERVICE_NAME: &str = "qcext-server";
+
+/// Builds the tracer provider that batches spans and exports them to Honeycomb over OTLP/HTTP.
+///
+/// The exporter uses the blocking reqwest client because the batch span processor exports from
+/// its own thread, which has no tokio runtime.
+fn init_tracer_provider(honeycomb_key: &str) -> Result<SdkTracerProvider, ExporterBuildError> {
+    let exporter = opentelemetry_otlp::SpanExporter::builder()
+        .with_http()
+        .with_endpoint("https://api.honeycomb.io/v1/traces")
+        .with_headers(HashMap::from([
+            ("x-honeycomb-dataset".into(), "qcext-server-dataset".into()),
+            ("x-honeycomb-team".into(), honeycomb_key.into()),
+        ]))
+        .with_timeout(Duration::from_secs(2))
+        .build()?;
+
+    Ok(tracer_provider_builder()
+        .with_batch_exporter(exporter)
+        .build())
+}
+
+fn tracer_provider_builder() -> TracerProviderBuilder {
+    SdkTracerProvider::builder()
+        .with_resource(Resource::builder().with_service_name(SERVICE_NAME).build())
 }
 
 struct DomainRootSpanBuilder;
@@ -481,6 +482,70 @@ mod tests {
             .to_http_request();
 
         assert_eq!(bearer_token_from_headers(&request), None);
+    }
+
+    #[actix_web::test]
+    async fn init_tracer_provider_builds_inside_async_runtime() {
+        let provider = init_tracer_provider("test-key")
+            .expect("the Honeycomb exporter builds inside the actix runtime");
+
+        provider
+            .shutdown()
+            .expect("the provider shuts down cleanly");
+    }
+
+    #[test]
+    fn tracing_spans_are_exported_with_service_name() {
+        let exporter = RecordingExporter::default();
+        let provider = tracer_provider_builder()
+            .with_simple_exporter(exporter.clone())
+            .build();
+        let subscriber = tracing_subscriber::Registry::default()
+            .with(tracing_opentelemetry::layer().with_tracer(provider.tracer(SERVICE_NAME)));
+
+        tracing::subscriber::with_default(subscriber, || {
+            tracing::info_span!("telemetry_test_span").in_scope(|| {});
+        });
+        provider.force_flush().expect("the provider flushes");
+
+        let span_names: Vec<_> = exporter
+            .spans
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|span| span.name.clone())
+            .collect();
+        assert_eq!(span_names, ["telemetry_test_span"]);
+        let service_name = exporter
+            .resource
+            .lock()
+            .unwrap()
+            .as_ref()
+            .expect("the provider hands its resource to the exporter")
+            .get(&opentelemetry::Key::from_static_str("service.name"));
+        assert_eq!(service_name, Some(opentelemetry::Value::from(SERVICE_NAME)));
+    }
+
+    /// Span exporter that keeps every exported span and the resource the provider assigns it.
+    #[derive(Debug, Clone, Default)]
+    struct RecordingExporter {
+        spans: Arc<std::sync::Mutex<Vec<opentelemetry_sdk::trace::SpanData>>>,
+        resource: Arc<std::sync::Mutex<Option<Resource>>>,
+    }
+
+    impl opentelemetry_sdk::trace::SpanExporter for RecordingExporter {
+        fn export(
+            &self,
+            mut batch: Vec<opentelemetry_sdk::trace::SpanData>,
+        ) -> impl std::future::Future<Output = opentelemetry_sdk::error::OTelSdkResult> + Send
+        {
+            self.spans.lock().unwrap().append(&mut batch);
+            std::future::ready(Ok(()))
+        }
+
+        fn set_resource(&mut self, resource: &Resource) {
+            *self.resource.lock().unwrap() = Some(resource.clone());
+        }
     }
 
     #[test]
