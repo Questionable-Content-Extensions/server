@@ -8,5 +8,5 @@ export default {
     'tsconfig.json': prettier,
     'vite.config.ts': prettier,
 
-    'src/**/*.rs': ['rustfmt --edition 2024 --config "skip_children=true"'],
+    '{src,database,shared}/**/*.rs': ['rustfmt --edition 2024 --config "skip_children=true"'],
 };
