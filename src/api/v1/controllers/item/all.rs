@@ -41,10 +41,7 @@ pub(crate) async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
         } = item;
         let id = id.into();
 
-        let count = all_navigation_items
-            .get(&id)
-            .map(|i| i.count)
-            .unwrap_or_default();
+        let count = all_navigation_items.get(&id).map_or_default(|i| i.count);
 
         items.push(ItemList {
             id,

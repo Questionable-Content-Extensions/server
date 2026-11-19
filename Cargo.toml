@@ -27,7 +27,6 @@ anyhow = "1.0"
 api-macros = { git = "https://github.com/ilyvion/api-macros" }
 arc-swap = "1"
 bitflags = "2"
-chrono-tz = "0.10"
 const_format = "0.2"
 crc32c = "0.6"
 dashmap = "6.2.1"

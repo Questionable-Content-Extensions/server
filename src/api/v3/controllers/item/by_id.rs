@@ -224,10 +224,6 @@ mod tests {
     }
 
     #[test]
-    #[expect(
-        clippy::float_cmp,
-        reason = "exact value expected from an exact, non-computed input"
-    )]
     fn build_item_response_maps_stats_fields() {
         let item = build_item_response(ItemId::from(42), sample_row()).unwrap();
 
@@ -278,10 +274,6 @@ mod tests {
     }
 
     #[test]
-    #[expect(
-        clippy::float_cmp,
-        reason = "exact value expected from an exact, non-computed input"
-    )]
     fn build_item_response_zero_presence_when_no_comics_exist() {
         let row = ItemWithStats {
             total_comics: 0,
