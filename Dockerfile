@@ -77,13 +77,14 @@ FROM gcr.io/distroless/cc-debian13:nonroot
 # The server serves static files from `./build/`, and the nonroot base image defaults to `/home/nonroot`.
 WORKDIR /
 
-COPY --from=rust /qcext-server/target/release/qcext-server /usr/local/bin/
+COPY --from=rust /qcext-server/target/release/qcext-server /qcext-server/target/release/healthcheck /usr/local/bin/
 COPY --from=nodejs /qcext-server/build /build
 
 ENV PORT=80
 EXPOSE 80
+# Exec form, because the base image has no shell.
 HEALTHCHECK --interval=30s --timeout=5s \
-    CMD wget --quiet --spider http://localhost/ || exit 1
+    CMD ["/usr/local/bin/healthcheck"]
 
 ENV RUST_LOG=info
 CMD ["/usr/local/bin/qcext-server"]
