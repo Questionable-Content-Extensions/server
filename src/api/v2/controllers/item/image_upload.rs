@@ -1,5 +1,5 @@
 use crate::models::Token;
-use crate::util::ensure_is_authorized;
+use crate::util::{MAX_IMAGE_BYTES, ensure_is_authorized, read_capped};
 use actix_multipart::Multipart;
 use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
@@ -105,10 +105,7 @@ async fn get_form_data(mut image_upload_form: Multipart) -> Result<FormData, act
                 token = Some(value);
             }
             "image" => {
-                let mut data = Vec::new();
-                while let Some(chunk) = field.next().await {
-                    data.extend_from_slice(&chunk?[..]);
-                }
+                let data = read_capped(&mut field, MAX_IMAGE_BYTES).await?;
                 let crc32c = crc32c(&data);
 
                 image = Some((data, crc32c));
@@ -124,4 +121,38 @@ async fn get_form_data(mut image_upload_form: Multipart) -> Result<FormData, act
     let token = token.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"token\"")))?;
     let image = image.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"Image\"")))?;
     Ok(FormData { token, image })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::util::test_support::multipart_from_fields;
+    use actix_web::http::StatusCode;
+
+    const TOKEN: &[u8] = b"00000000-0000-0000-0000-000000000000";
+
+    #[tokio::test]
+    async fn accepts_image_at_the_size_limit() {
+        let image = vec![0xAB; MAX_IMAGE_BYTES];
+        let form = multipart_from_fields(&[("token", TOKEN), ("image", &image)]);
+
+        let data = get_form_data(form).await.unwrap();
+
+        assert_eq!(data.image.0.len(), MAX_IMAGE_BYTES);
+    }
+
+    #[tokio::test]
+    async fn rejects_image_over_the_size_limit_with_payload_too_large() {
+        let image = vec![0xAB; MAX_IMAGE_BYTES + 1];
+        let form = multipart_from_fields(&[("token", TOKEN), ("image", &image)]);
+
+        let Err(err) = get_form_data(form).await else {
+            panic!("oversized image was accepted");
+        };
+
+        assert_eq!(
+            err.as_response_error().status_code(),
+            StatusCode::PAYLOAD_TOO_LARGE
+        );
+    }
 }

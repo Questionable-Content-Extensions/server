@@ -1,5 +1,5 @@
 use crate::models::Token;
-use crate::util::ensure_is_authorized;
+use crate::util::{MAX_IMAGE_BYTES, ensure_is_authorized, read_capped};
 use actix_multipart::Multipart;
 use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
@@ -13,8 +13,61 @@ use std::str::FromStr;
 
 pub(crate) async fn image_upload(
     pool: web::Data<DbPool>,
-    mut image_upload_form: Multipart,
+    image_upload_form: Multipart,
 ) -> Result<HttpResponse> {
+    let FormData {
+        token,
+        item_id,
+        image: (image, crc32c_hash),
+    } = get_form_data(image_upload_form).await?;
+    let token = Token::from(token);
+
+    let mut transaction = pool
+        .begin()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let permissions =
+        DatabaseToken::get_permissions_for_token(&mut *transaction, token.to_string())
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+    let auth = AuthDetails::new(permissions);
+
+    ensure_is_authorized(&auth, token_permissions::CAN_ADD_IMAGE_TO_ITEM)
+        .map_err(error::ErrorForbidden)?;
+
+    let result = DatabaseItem::create_image(&mut *transaction, item_id, image, crc32c_hash)
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    let new_item_image_id =
+        i32::try_from(result.last_insert_id()).expect("new image ID fits in i32");
+
+    LogEntry::log_action(
+        &mut *transaction,
+        token.to_string(),
+        format!("Uploaded image #{new_item_image_id} for item #{item_id}"),
+        None,
+        Some(item_id),
+    )
+    .await
+    .map_err(error::ErrorInternalServerError)?;
+
+    transaction
+        .commit()
+        .await
+        .map_err(error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().finish())
+}
+
+struct FormData {
+    token: uuid::Uuid,
+    item_id: u16,
+    image: (Vec<u8>, u32),
+}
+
+async fn get_form_data(mut image_upload_form: Multipart) -> Result<FormData> {
     let mut token: Option<uuid::Uuid> = None;
     let mut item_id: Option<u16> = None;
     let mut image: Option<(Vec<u8>, u32)> = None;
@@ -59,10 +112,7 @@ pub(crate) async fn image_upload(
                 item_id = Some(value);
             }
             "Image" => {
-                let mut data = Vec::new();
-                while let Some(chunk) = field.next().await {
-                    data.extend_from_slice(&chunk?[..]);
-                }
+                let data = read_capped(&mut field, MAX_IMAGE_BYTES).await?;
                 let crc32c = crc32c(&data);
 
                 image = Some((data, crc32c));
@@ -75,49 +125,49 @@ pub(crate) async fn image_upload(
         }
     }
 
-    let token = Token::from(
-        token.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"Token\"")))?,
-    );
+    let token = token.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"Token\"")))?;
     let item_id =
         item_id.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"ItemId\"")))?;
-    let (image, crc32c_hash) =
-        image.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"Image\"")))?;
+    let image = image.ok_or_else(|| error::ErrorBadRequest(anyhow!("Missing field \"Image\"")))?;
 
-    let mut transaction = pool
-        .begin()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+    Ok(FormData {
+        token,
+        item_id,
+        image,
+    })
+}
 
-    let permissions =
-        DatabaseToken::get_permissions_for_token(&mut *transaction, token.to_string())
-            .await
-            .map_err(error::ErrorInternalServerError)?;
-    let auth = AuthDetails::new(permissions);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::util::test_support::multipart_from_fields;
+    use actix_web::http::StatusCode;
 
-    ensure_is_authorized(&auth, token_permissions::CAN_ADD_IMAGE_TO_ITEM)
-        .map_err(error::ErrorForbidden)?;
+    const TOKEN: &[u8] = b"00000000-0000-0000-0000-000000000000";
 
-    let result = DatabaseItem::create_image(&mut *transaction, item_id, image, crc32c_hash)
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+    #[tokio::test]
+    async fn accepts_image_at_the_size_limit() {
+        let image = vec![0xAB; MAX_IMAGE_BYTES];
+        let form = multipart_from_fields(&[("Token", TOKEN), ("ItemId", b"7"), ("Image", &image)]);
 
-    let new_item_image_id =
-        i32::try_from(result.last_insert_id()).expect("new image ID fits in i32");
+        let data = get_form_data(form).await.unwrap();
 
-    LogEntry::log_action(
-        &mut *transaction,
-        token.to_string(),
-        format!("Uploaded image #{new_item_image_id} for item #{item_id}"),
-        None,
-        Some(item_id),
-    )
-    .await
-    .map_err(error::ErrorInternalServerError)?;
+        assert_eq!(data.item_id, 7);
+        assert_eq!(data.image.0.len(), MAX_IMAGE_BYTES);
+    }
 
-    transaction
-        .commit()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+    #[tokio::test]
+    async fn rejects_image_over_the_size_limit_with_payload_too_large() {
+        let image = vec![0xAB; MAX_IMAGE_BYTES + 1];
+        let form = multipart_from_fields(&[("Token", TOKEN), ("ItemId", b"7"), ("Image", &image)]);
 
-    Ok(HttpResponse::Ok().finish())
+        let Err(err) = get_form_data(form).await else {
+            panic!("oversized image was accepted");
+        };
+
+        assert_eq!(
+            err.as_response_error().status_code(),
+            StatusCode::PAYLOAD_TOO_LARGE
+        );
+    }
 }
