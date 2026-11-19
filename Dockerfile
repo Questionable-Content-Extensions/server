@@ -72,7 +72,10 @@ RUN npm run build
 #  Output image  #
 ##################
 
-FROM gcr.io/distroless/cc-debian13
+FROM gcr.io/distroless/cc-debian13:nonroot
+
+# The server serves static files from `./build/`, and the nonroot base image defaults to `/home/nonroot`.
+WORKDIR /
 
 COPY --from=rust /qcext-server/target/release/qcext-server /usr/local/bin/
 COPY --from=nodejs /qcext-server/build /build
