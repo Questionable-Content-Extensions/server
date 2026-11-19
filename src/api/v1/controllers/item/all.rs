@@ -1,9 +1,9 @@
 use crate::api::v1::controllers::comic::navigation_data::fetch_all_item_navigation_data;
 use crate::api::v1::models::{ItemColor, ItemList, ItemType, UnhydratedItemNavigationData};
 use crate::models::{ComicId, ItemId};
-use actix_web::{HttpResponse, Result, error, web};
-use database::DbPool;
+use actix_web::{error, web, HttpResponse, Result};
 use database::models::Item as DatabaseItem;
+use database::DbPool;
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;

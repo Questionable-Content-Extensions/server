@@ -1,8 +1,8 @@
 use crate::api::v1::models::{NavigationData, UnhydratedItemNavigationData};
 use crate::models::ComicId;
-use actix_web::{Result, error};
-use database::DbPoolConnection;
+use actix_web::{error, Result};
 use database::models::{Item as DatabaseItem, PreviousAppearances};
+use database::DbPoolConnection;
 use std::convert::TryInto;
 
 #[tracing::instrument(skip(conn))]

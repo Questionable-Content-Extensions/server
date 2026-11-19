@@ -1,7 +1,7 @@
 use crate::api::v1::models::{ComicList, Exclusion};
-use actix_web::{HttpResponse, Result, error, web};
-use database::DbPool;
+use actix_web::{error, web, HttpResponse, Result};
 use database::models::Comic as DatabaseComic;
+use database::DbPool;
 use serde::Deserialize;
 use tracing::info;
 

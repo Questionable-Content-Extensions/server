@@ -1,6 +1,6 @@
 use crate::api::v2::controllers::comic::editor_data::fetch_editor_data_for_comic;
 use crate::api::v2::controllers::comic::navigation_data::{
-    ItemNavigationDataSorting, fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
+    fetch_all_item_navigation_data, fetch_comic_item_navigation_data, ItemNavigationDataSorting,
 };
 use crate::api::v2::models::{
     Comic, ComicData, EditorData, Exclusion, Inclusion, ItemNavigationData, MissingComic,
@@ -8,15 +8,15 @@ use crate::api::v2::models::{
 };
 use crate::models::{ComicId, False, True};
 use crate::util::NewsUpdater;
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
 use chrono::{TimeZone, Utc};
-use database::DbPool;
 use database::models::{Comic as DatabaseComic, Item as DatabaseItem};
+use database::DbPool;
 use serde::Deserialize;
 use shared::token_permissions;
 use std::convert::TryInto;
-use tracing::{Instrument, info_span};
+use tracing::{info_span, Instrument};
 
 #[tracing::instrument(skip(pool, news_updater, auth), fields(permissions = ?auth.authorities))]
 #[expect(clippy::too_many_lines)]

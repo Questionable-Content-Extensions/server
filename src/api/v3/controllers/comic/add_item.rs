@@ -1,21 +1,21 @@
-use crate::api::v3::controllers::comic::patch_comic::{FlagType, update_flag};
+use crate::api::v3::controllers::comic::patch_comic::{update_flag, FlagType};
 use crate::api::v3::models::ItemType;
 use crate::models::{ComicId, ComicIdInvalidity, False, Token, True};
 use crate::util::{andify_comma_string, ensure_is_authorized, ensure_is_valid};
 use actix_web::web::Json;
-use actix_web::{Result, error, web};
+use actix_web::{error, web, Result};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use api_macros::api_endpoint;
-use database::DbPool;
 use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
+use database::DbPool;
 use parse_display::Display;
-use semval::Validate;
 use semval::context::Context as ValidationContext;
+use semval::Validate;
 use serde::Deserialize;
 use shared::token_permissions;
 use std::fmt::Write;
-use tracing::{Instrument, info_span};
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
 #[api_endpoint(method = "POST", path = "comicdata/additem")]

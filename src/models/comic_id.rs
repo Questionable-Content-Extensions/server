@@ -1,6 +1,6 @@
 use database::models::ComicId as DatabaseComicId;
 use parse_display::Display;
-use semval::{Validate, context::Context as ValidationContext};
+use semval::{context::Context as ValidationContext, Validate};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 

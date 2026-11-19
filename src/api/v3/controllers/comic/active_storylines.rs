@@ -1,8 +1,8 @@
 use crate::api::v3::models::{ActiveStorylineSummary, StorylineFactSegment};
 use crate::models::ComicId;
-use actix_web::{Result, error};
-use database::DbPoolConnection;
+use actix_web::{error, Result};
 use database::models::{ActiveStorylineOccurrence, Comic as DatabaseComic, Item as DatabaseItem};
+use database::DbPoolConnection;
 use std::convert::TryInto;
 
 /// Fetches every storyline active at `comic_id` and pre-aggregates its

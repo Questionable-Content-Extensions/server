@@ -1,11 +1,11 @@
 use crate::api::v1::models::ItemColor;
 use crate::models::{ItemId, Token};
 use crate::util::ensure_is_authorized;
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
-use database::DbPool;
 use database::models::{Item as DatabaseItem, LogEntry};
+use database::DbPool;
 use serde::Deserialize;
 use shared::token_permissions;
 

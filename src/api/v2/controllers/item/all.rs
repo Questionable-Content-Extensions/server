@@ -1,13 +1,13 @@
-use actix_web::{HttpResponse, Result, error, web};
-use database::DbPool;
+use actix_web::{error, web, HttpResponse, Result};
 use database::models::Item as DatabaseItem;
+use database::DbPool;
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
-use tracing::{Instrument, info_span};
+use tracing::{info_span, Instrument};
 
 use crate::api::v2::controllers::comic::navigation_data::{
-    ItemNavigationDataSorting, fetch_all_item_navigation_data,
+    fetch_all_item_navigation_data, ItemNavigationDataSorting,
 };
 use crate::api::v2::models::{ItemColor, ItemList, ItemType, UnhydratedItemNavigationData};
 use crate::models::{ComicId, ItemId};

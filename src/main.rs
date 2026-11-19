@@ -6,26 +6,26 @@ use actix_files::{Files, NamedFile};
 use actix_http::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::web::PayloadConfig;
-use actix_web::{App, Error, FromRequest, HttpMessage, HttpServer, error, web};
+use actix_web::{error, web, App, Error, FromRequest, HttpMessage, HttpServer};
 use actix_web_grants::GrantsMiddleware;
-use anyhow::{Context as _, Result, anyhow};
-use database::DbPool;
-use database::models::Token as DatabaseToken;
+use anyhow::{anyhow, Context as _, Result};
 use database::models::stats::TopRankedStintRow as DbTopRankedStintRow;
+use database::models::Token as DatabaseToken;
+use database::DbPool;
 use futures::stream::{FuturesUnordered, StreamExt};
-use futures::{FutureExt, pin_mut};
-use opentelemetry::KeyValue;
-use opentelemetry::sdk::Resource;
+use futures::{pin_mut, FutureExt};
 use opentelemetry::sdk::trace::Tracer;
+use opentelemetry::sdk::Resource;
 use opentelemetry::trace::TraceError;
+use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use tokio::time::{Duration, sleep};
-use tracing::{Level, Span, error, info};
+use tokio::time::{sleep, Duration};
+use tracing::{error, info, Level, Span};
 use tracing_actix_web::{DefaultRootSpanBuilder, RootSpanBuilder, TracingLogger};
 use tracing_subscriber::layer::SubscriberExt;
 use util::environment;
@@ -225,7 +225,7 @@ async fn main() -> Result<()> {
 
     #[cfg(unix)]
     let mut sig_term_signal_stream = {
-        use tokio::signal::unix::{SignalKind, signal};
+        use tokio::signal::unix::{signal, SignalKind};
 
         signal(SignalKind::terminate())?
     };

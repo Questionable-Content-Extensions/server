@@ -1,7 +1,7 @@
 use crate::api::v3::controllers::comic::active_storylines::fetch_active_storylines;
 use crate::api::v3::controllers::comic::editor_data::fetch_editor_data_for_comic;
 use crate::api::v3::controllers::comic::navigation_data::{
-    ItemNavigationDataSorting, fetch_all_item_navigation_data, fetch_comic_item_navigation_data,
+    fetch_all_item_navigation_data, fetch_comic_item_navigation_data, ItemNavigationDataSorting,
 };
 use crate::api::v3::models::{
     Comic, ComicData, EditorData, Exclusion, ImageType, Inclusion, ItemNavigationData,
@@ -10,16 +10,16 @@ use crate::api::v3::models::{
 use crate::models::{ComicId, False, True};
 use crate::util::NewsUpdater;
 use actix_web::web::Json;
-use actix_web::{Result, error, web};
+use actix_web::{error, web, Result};
 use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
 use api_macros::api_endpoint;
 use chrono::{TimeZone, Utc};
-use database::DbPool;
 use database::models::{Comic as DatabaseComic, Item as DatabaseItem};
+use database::DbPool;
 use serde::Deserialize;
 use shared::token_permissions;
 use std::convert::TryInto;
-use tracing::{Instrument, info_span};
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
 #[api_endpoint(method = "GET", path = "comicdata/{comicId}")]

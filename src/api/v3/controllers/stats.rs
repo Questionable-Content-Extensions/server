@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use crate::api::v3::models::ItemColor;
 use crate::api::v3::models::stats::{
     AvgCastPerYear, BestFriendPair, BestFriendResponse, BreakoutYear, CastTurnoverYear,
     CharacterHomeTurfEntry, CharacterMeta, CharacterRegularity, CharacterSeasonEntry,
@@ -15,11 +14,11 @@ use crate::api::v3::models::stats::{
     ScheduleEvolutionYear, SocialHubEntry, TopRankedOverTimeResponse, TrendingItem, YearlyOverview,
     YearlyRankEntry, YearlySpotlightResponse, YearlySpotlightYear,
 };
+use crate::api::v3::models::ItemColor;
 use crate::models::{ComicId, ItemId};
 use actix_web::web::Json;
-use actix_web::{Result, error, web};
+use actix_web::{error, web, Result};
 use api_macros::api_endpoint;
-use database::DbPool;
 use database::models::stats::{
     AvgCastPerYearRow as DbAvgCastPerYearRow, BreakoutYearRow as DbBreakoutYearRow,
     CastTurnoverRow as DbCastTurnoverRow, CharacterHomeTurfRow as DbCharacterHomeTurfRow,
@@ -43,8 +42,9 @@ use database::models::stats::{
     TrendingItemRow as DbTrendingItemRow, YearlyAppearanceRow as DbYearlyAppearanceRow,
     YearlyOverviewRow as DbYearlyOverviewRow,
 };
+use database::DbPool;
 use serde::Deserialize;
-use tracing::{Instrument, info_span};
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {

@@ -1,7 +1,7 @@
 use crate::models::{ComicId, Token};
 use crate::util::{andify_comma_string, ensure_is_authorized};
 use actix_web::web::Json;
-use actix_web::{Result, error, web};
+use actix_web::{error, web, Result};
 use actix_web_grants::authorities::AuthDetails;
 use api_macros::api_endpoint;
 use chrono::{DateTime, TimeZone, Utc};
@@ -9,7 +9,7 @@ use database::models::{Comic as DatabaseComic, LogEntry};
 use database::{DbPool, DbTransaction};
 use serde::{Deserialize, Serialize};
 use shared::token_permissions;
-use tracing::{Instrument, info_span};
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
 #[api_endpoint(method = "PATCH", path = "comicdata/{comicId}")]

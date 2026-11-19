@@ -1,16 +1,16 @@
 use crate::api::v3::models::AdvanceComicListItem;
 use crate::models::{ComicId, Token};
-use crate::util::{ComicUpdaterTrigger, ensure_is_authorized};
+use crate::util::{ensure_is_authorized, ComicUpdaterTrigger};
 use actix_web::web::Json;
-use actix_web::{Result, error, web};
+use actix_web::{error, web, Result};
 use actix_web_grants::authorities::AuthDetails;
 use api_macros::api_endpoint;
 use chrono::{DateTime, Utc};
-use database::DbPool;
 use database::models::{Comic as DatabaseComic, LogEntry};
+use database::DbPool;
 use serde::Deserialize;
 use shared::token_permissions;
-use tracing::{Instrument, info_span};
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
 #[api_endpoint(method = "POST", path = "comicdata/advance")]

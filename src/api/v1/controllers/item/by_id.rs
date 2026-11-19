@@ -1,9 +1,9 @@
 use crate::api::v1::models::{Item, ItemColor, ItemImageList, ItemType, RelatedItem};
 use crate::models::ItemId;
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::{error, web, HttpResponse, Result};
 use anyhow::anyhow;
-use database::DbPool;
 use database::models::{Item as DatabaseItem, RelatedItem as RelatedDatabaseItem};
+use database::DbPool;
 use std::convert::{TryFrom, TryInto};
 
 #[expect(

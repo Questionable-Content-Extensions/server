@@ -2,15 +2,15 @@ use crate::api::v3::models::{ItemColor, ItemType};
 use crate::models::{ComicId, ItemId, Token};
 use crate::util::{andify_comma_string, ensure_is_authorized};
 use actix_web::web::Json;
-use actix_web::{Result, error, web};
+use actix_web::{error, web, Result};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use api_macros::api_endpoint;
-use database::DbPool;
 use database::models::{Item as DatabaseItem, LogEntry};
+use database::DbPool;
 use serde::{Deserialize, Deserializer};
 use shared::token_permissions;
-use tracing::{Instrument, info_span};
+use tracing::{info_span, Instrument};
 use ts_rs::TS;
 
 #[api_endpoint(method = "PATCH", path = "itemdata/{itemId}")]

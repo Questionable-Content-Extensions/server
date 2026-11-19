@@ -1,12 +1,12 @@
 use crate::models::{ComicId, ComicIdInvalidity, Token};
 use crate::util::{ensure_is_authorized, ensure_is_valid};
-use actix_web::{HttpResponse, Result, error, web};
+use actix_web::{error, web, HttpResponse, Result};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
-use database::DbPool;
 use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
+use database::DbPool;
 use parse_display::Display;
-use semval::{Validate, context::Context as ValidationContext};
+use semval::{context::Context as ValidationContext, Validate};
 use serde::Deserialize;
 use shared::token_permissions;
 

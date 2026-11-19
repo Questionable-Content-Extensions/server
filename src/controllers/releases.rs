@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use actix_web::{HttpRequest, HttpResponse, Result, error, web};
+use actix_web::{error, web, HttpRequest, HttpResponse, Result};
 use arc_swap::ArcSwap;
 use chrono::{DateTime, Duration, Utc};
 use rand::RngExt;
 use reqwest::Client;
 use serde::Deserialize;
-use tracing::{Instrument, debug, info_span, trace};
+use tracing::{debug, info_span, trace, Instrument};
 
 use crate::util::Either;
 

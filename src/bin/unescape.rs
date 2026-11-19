@@ -1,6 +1,6 @@
 //! Utility binary that unescapes escape sequences in a file and prints the result.
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{anyhow, bail, Result};
 
 /// # Errors
 ///
