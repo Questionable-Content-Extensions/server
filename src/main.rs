@@ -48,6 +48,7 @@ async fn main() -> Result<()> {
         .with_default(Level::TRACE);
 
     let tracer_provider = init_tracer_provider(environment::honeycomb_key()).unwrap();
+    let _tracer_provider_guard = TracerProviderGuard(tracer_provider.clone());
     let telemetry =
         tracing_opentelemetry::layer().with_tracer(tracer_provider.tracer(SERVICE_NAME));
     let subscriber = tracing_subscriber::Registry::default()
@@ -404,6 +405,19 @@ fn tracer_provider_builder() -> TracerProviderBuilder {
         .with_resource(Resource::builder().with_service_name(SERVICE_NAME).build())
 }
 
+/// Shuts down the tracer provider when dropped, so spans still queued for export are flushed on
+/// every exit path out of `main`, including early error returns.
+#[derive(Debug)]
+struct TracerProviderGuard(SdkTracerProvider);
+
+impl Drop for TracerProviderGuard {
+    fn drop(&mut self) {
+        if let Err(e) = self.0.shutdown() {
+            error!("Failed to shut down the tracer provider: {e}");
+        }
+    }
+}
+
 struct DomainRootSpanBuilder;
 
 impl RootSpanBuilder for DomainRootSpanBuilder {
@@ -524,6 +538,36 @@ mod tests {
             .expect("the provider hands its resource to the exporter")
             .get(&opentelemetry::Key::from_static_str("service.name"));
         assert_eq!(service_name, Some(opentelemetry::Value::from(SERVICE_NAME)));
+    }
+
+    #[test]
+    fn tracer_provider_guard_flushes_batched_spans_on_drop() {
+        let exporter = RecordingExporter::default();
+        let provider = tracer_provider_builder()
+            .with_batch_exporter(exporter.clone())
+            .build();
+        let guard = TracerProviderGuard(provider.clone());
+        let subscriber = tracing_subscriber::Registry::default()
+            .with(tracing_opentelemetry::layer().with_tracer(provider.tracer(SERVICE_NAME)));
+
+        tracing::subscriber::with_default(subscriber, || {
+            tracing::info_span!("queued_span").in_scope(|| {});
+        });
+        assert!(
+            exporter.spans.lock().unwrap().is_empty(),
+            "the batch processor holds the span until its next scheduled export"
+        );
+
+        drop(guard);
+
+        let span_names: Vec<_> = exporter
+            .spans
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|span| span.name.clone())
+            .collect();
+        assert_eq!(span_names, ["queued_span"]);
     }
 
     /// Span exporter that keeps every exported span and the resource the provider assigns it.
