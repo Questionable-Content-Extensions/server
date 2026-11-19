@@ -9,7 +9,14 @@
         "type_info": {
           "type": "Short",
           "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "collation": 63,
           "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "id"
+          }
         }
       },
       {
@@ -18,7 +25,14 @@
         "type_info": {
           "type": "Long",
           "flags": "NOT_NULL",
+          "collation": 63,
           "max_size": 11
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "image_type"
+          }
         }
       },
       {
@@ -27,7 +41,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "is_guest_comic"
+          }
         }
       },
       {
@@ -36,7 +57,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "is_non_canon"
+          }
         }
       },
       {
@@ -45,7 +73,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "has_no_cast"
+          }
         }
       },
       {
@@ -54,7 +89,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "has_no_location"
+          }
         }
       },
       {
@@ -63,7 +105,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "has_no_storyline"
+          }
         }
       },
       {
@@ -72,7 +121,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "has_no_title"
+          }
         }
       },
       {
@@ -81,7 +137,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "has_no_tagline"
+          }
         }
       },
       {
@@ -90,7 +153,14 @@
         "type_info": {
           "type": "VarString",
           "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "collation": 224,
           "max_size": 1020
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "title"
+          }
         }
       },
       {
@@ -99,7 +169,14 @@
         "type_info": {
           "type": "VarString",
           "flags": "",
+          "collation": 224,
           "max_size": 1020
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "tagline"
+          }
         }
       },
       {
@@ -108,7 +185,14 @@
         "type_info": {
           "type": "Datetime",
           "flags": "MULTIPLE_KEY | BINARY",
+          "collation": 63,
           "max_size": 19
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "publish_date"
+          }
         }
       },
       {
@@ -117,7 +201,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "is_accurate_publish_date"
+          }
         }
       },
       {
@@ -126,8 +217,10 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED | BINARY",
+          "collation": 63,
           "max_size": 6
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 14,
@@ -135,8 +228,10 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED | BINARY",
+          "collation": 63,
           "max_size": 6
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 15,
@@ -144,7 +239,14 @@
         "type_info": {
           "type": "Blob",
           "flags": "BLOB | NO_DEFAULT_VALUE",
+          "collation": 224,
           "max_size": 67108860
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.News",
+            "name": "news"
+          }
         }
       }
     ],

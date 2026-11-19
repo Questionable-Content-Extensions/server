@@ -9,7 +9,14 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED | NO_DEFAULT_VALUE",
+          "collation": 63,
           "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "Comic",
+            "name": "before_comic"
+          }
         }
       },
       {
@@ -18,8 +25,10 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED",
+          "collation": 63,
           "max_size": 6
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 2,
@@ -27,8 +36,10 @@
         "type_info": {
           "type": "Long",
           "flags": "",
+          "collation": 63,
           "max_size": 8
-        }
+        },
+        "origin": "Expression"
       }
     ],
     "parameters": {

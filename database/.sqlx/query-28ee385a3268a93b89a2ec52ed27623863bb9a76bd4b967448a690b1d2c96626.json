@@ -9,7 +9,14 @@
         "type_info": {
           "type": "VarString",
           "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "collation": 224,
           "max_size": 200
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Token",
+            "name": "identifier"
+          }
         }
       },
       {
@@ -18,7 +25,14 @@
         "type_info": {
           "type": "Datetime",
           "flags": "NOT_NULL | BINARY | NO_DEFAULT_VALUE",
+          "collation": 63,
           "max_size": 19
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.LogEntry",
+            "name": "date_time"
+          }
         }
       },
       {
@@ -27,7 +41,14 @@
         "type_info": {
           "type": "Blob",
           "flags": "NOT_NULL | BLOB | NO_DEFAULT_VALUE",
+          "collation": 224,
           "max_size": 4294967295
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.LogEntry",
+            "name": "action"
+          }
         }
       }
     ],

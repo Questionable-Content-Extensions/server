@@ -9,8 +9,10 @@
         "type_info": {
           "type": "Long",
           "flags": "BINARY",
+          "collation": 63,
           "max_size": 2
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 1,
@@ -18,8 +20,10 @@
         "type_info": {
           "type": "LongLong",
           "flags": "NOT_NULL | BINARY",
+          "collation": 63,
           "max_size": 21
-        }
+        },
+        "origin": "Expression"
       }
     ],
     "parameters": {

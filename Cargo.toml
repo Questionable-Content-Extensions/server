@@ -17,12 +17,12 @@ futures = { workspace = true }
 sqlx = { workspace = true }
 tracing = { workspace = true }
 
-actix-files = "0.6"
-actix-http = "3"
-actix-multipart = "0.7"
-actix-web = "4"
+actix-files = "0.7"
+actix-http = "3.20.3"
+actix-multipart = "0.8"
+actix-web = "4.18.2"
 actix-web-grants = "4.1"
-actix-web-lab = "0.26"
+actix-web-lab = "0.29"
 anyhow = "1.0"
 api-macros = { git = "https://github.com/ilyvion/api-macros" }
 arc-swap = "1"
@@ -43,7 +43,7 @@ rand = { workspace = true }
 regex = "1"
 reqwest = { version = "0.13", features = ["json"] }
 reqwest-011 = { package = "reqwest", version = "0.11" }
-scraper = "0.27"
+scraper = "0.29"
 semval = "0.5"
 serde = "1.0.184"
 serde_json = "1.0"
@@ -67,8 +67,9 @@ members = ["database", "shared"]
 chrono = { version = "0.4", features = ["serde"] }
 futures = "0.3"
 rand = "0.10"
-sqlx = { version = "0.8.6", features = [
-    "runtime-tokio-native-tls",
+sqlx = { version = "0.9", features = [
+    "runtime-tokio",
+    "tls-native-tls",
     "mysql",
     "macros",
     "migrate",

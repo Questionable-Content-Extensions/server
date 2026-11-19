@@ -9,7 +9,14 @@
         "type_info": {
           "type": "Short",
           "flags": "NOT_NULL | PRIMARY_KEY | UNIQUE_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "collation": 63,
           "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.News",
+            "name": "comic_id"
+          }
         }
       },
       {
@@ -18,7 +25,14 @@
         "type_info": {
           "type": "Date",
           "flags": "NOT_NULL | BINARY | NO_DEFAULT_VALUE",
+          "collation": 63,
           "max_size": 10
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.News",
+            "name": "last_updated"
+          }
         }
       },
       {
@@ -27,7 +41,14 @@
         "type_info": {
           "type": "Blob",
           "flags": "NOT_NULL | BLOB | NO_DEFAULT_VALUE",
+          "collation": 224,
           "max_size": 67108860
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.News",
+            "name": "news"
+          }
         }
       },
       {
@@ -36,7 +57,14 @@
         "type_info": {
           "type": "Double",
           "flags": "NOT_NULL",
+          "collation": 63,
           "max_size": 22
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.News",
+            "name": "update_factor"
+          }
         }
       },
       {
@@ -45,7 +73,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.News",
+            "name": "is_locked"
+          }
         }
       }
     ],

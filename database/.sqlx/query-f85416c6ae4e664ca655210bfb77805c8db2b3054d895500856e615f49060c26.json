@@ -9,7 +9,14 @@
         "type_info": {
           "type": "Tiny",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 3
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.stats_cache_meta",
+            "name": "needs_refresh"
+          }
         }
       }
     ],

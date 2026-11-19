@@ -9,7 +9,14 @@
         "type_info": {
           "type": "Short",
           "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "collation": 63,
           "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "id"
+          }
         }
       },
       {
@@ -18,8 +25,10 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED | BINARY",
+          "collation": 63,
           "max_size": 6
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 2,
@@ -27,8 +36,10 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED | BINARY",
+          "collation": 63,
           "max_size": 6
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 3,
@@ -36,8 +47,10 @@
         "type_info": {
           "type": "LongLong",
           "flags": "NOT_NULL | BINARY",
+          "collation": 63,
           "max_size": 21
-        }
+        },
+        "origin": "Expression"
       }
     ],
     "parameters": {

@@ -9,8 +9,10 @@
         "type_info": {
           "type": "VarString",
           "flags": "",
+          "collation": 224,
           "max_size": 40
-        }
+        },
+        "origin": "Expression"
       }
     ],
     "parameters": {

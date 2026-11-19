@@ -9,7 +9,14 @@
         "type_info": {
           "type": "Short",
           "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "collation": 63,
           "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "id"
+          }
         }
       },
       {
@@ -18,7 +25,14 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED",
+          "collation": 63,
           "max_size": 5
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "start_comic_id"
+          }
         }
       },
       {
@@ -27,7 +41,14 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED",
+          "collation": 63,
           "max_size": 5
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "end_comic_id"
+          }
         }
       },
       {
@@ -36,7 +57,14 @@
         "type_info": {
           "type": "Short",
           "flags": "PRIMARY_KEY | MULTIPLE_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "collation": 63,
           "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Occurrence",
+            "name": "comic_id"
+          }
         }
       }
     ],

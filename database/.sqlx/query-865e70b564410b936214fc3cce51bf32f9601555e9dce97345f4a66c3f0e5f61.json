@@ -9,8 +9,10 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED | BINARY",
+          "collation": 63,
           "max_size": 6
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 1,
@@ -18,8 +20,10 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED | BINARY",
+          "collation": 63,
           "max_size": 6
-        }
+        },
+        "origin": "Expression"
       }
     ],
     "parameters": {

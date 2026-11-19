@@ -9,7 +9,14 @@
         "type_info": {
           "type": "Short",
           "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "collation": 63,
           "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "id"
+          }
         }
       },
       {
@@ -18,7 +25,14 @@
         "type_info": {
           "type": "VarString",
           "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "collation": 224,
           "max_size": 1020
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "title"
+          }
         }
       },
       {
@@ -27,8 +41,10 @@
         "type_info": {
           "type": "VarString",
           "flags": "",
+          "collation": 224,
           "max_size": 40
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 3,
@@ -36,7 +52,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "is_guest_comic"
+          }
         }
       },
       {
@@ -45,7 +68,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "is_non_canon"
+          }
         }
       }
     ],

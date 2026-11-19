@@ -9,7 +9,14 @@
         "type_info": {
           "type": "VarString",
           "flags": "",
+          "collation": 224,
           "max_size": 1020
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Comic",
+            "name": "tagline"
+          }
         }
       }
     ],

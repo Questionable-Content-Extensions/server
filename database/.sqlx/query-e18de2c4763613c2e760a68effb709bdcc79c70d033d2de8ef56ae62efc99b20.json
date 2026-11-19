@@ -9,8 +9,10 @@
         "type_info": {
           "type": "Long",
           "flags": "BINARY",
+          "collation": 63,
           "max_size": 4
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 1,
@@ -18,7 +20,14 @@
         "type_info": {
           "type": "Short",
           "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "collation": 63,
           "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "id"
+          }
         }
       },
       {
@@ -27,7 +36,14 @@
         "type_info": {
           "type": "VarString",
           "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "collation": 224,
           "max_size": 1020
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "name"
+          }
         }
       }
     ],

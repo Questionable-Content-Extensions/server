@@ -9,7 +9,14 @@
         "type_info": {
           "type": "String",
           "flags": "NOT_NULL | PRIMARY_KEY | NO_DEFAULT_VALUE",
+          "collation": 224,
           "max_size": 144
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Token",
+            "name": "id"
+          }
         }
       },
       {
@@ -18,7 +25,14 @@
         "type_info": {
           "type": "VarString",
           "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "collation": 224,
           "max_size": 200
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Token",
+            "name": "identifier"
+          }
         }
       },
       {
@@ -27,7 +41,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Token",
+            "name": "can_add_image_to_item"
+          }
         }
       },
       {
@@ -36,7 +57,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Token",
+            "name": "can_add_item_to_comic"
+          }
         }
       },
       {
@@ -45,7 +73,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Token",
+            "name": "can_change_comic_data"
+          }
         }
       },
       {
@@ -54,7 +89,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Token",
+            "name": "can_change_item_data"
+          }
         }
       },
       {
@@ -63,7 +105,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Token",
+            "name": "can_remove_image_from_item"
+          }
         }
       },
       {
@@ -72,7 +121,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Token",
+            "name": "can_remove_item_from_comic"
+          }
         }
       },
       {
@@ -81,7 +137,14 @@
         "type_info": {
           "type": "Bit",
           "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
           "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Token",
+            "name": "can_add_advance_comic"
+          }
         }
       }
     ],

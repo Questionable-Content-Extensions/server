@@ -9,7 +9,14 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED | NO_DEFAULT_VALUE",
+          "collation": 63,
           "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "Occurrence",
+            "name": "first"
+          }
         }
       },
       {
@@ -18,7 +25,14 @@
         "type_info": {
           "type": "Short",
           "flags": "UNSIGNED | NO_DEFAULT_VALUE",
+          "collation": 63,
           "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "Occurrence",
+            "name": "last"
+          }
         }
       },
       {
@@ -27,8 +41,10 @@
         "type_info": {
           "type": "LongLong",
           "flags": "NOT_NULL",
+          "collation": 63,
           "max_size": 21
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 3,
@@ -36,8 +52,10 @@
         "type_info": {
           "type": "LongLong",
           "flags": "NOT_NULL",
+          "collation": 63,
           "max_size": 21
-        }
+        },
+        "origin": "Expression"
       },
       {
         "ordinal": 4,
@@ -45,8 +63,10 @@
         "type_info": {
           "type": "LongLong",
           "flags": "NOT_NULL",
+          "collation": 63,
           "max_size": 21
-        }
+        },
+        "origin": "Expression"
       }
     ],
     "parameters": {

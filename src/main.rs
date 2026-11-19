@@ -6,26 +6,26 @@ use actix_files::{Files, NamedFile};
 use actix_http::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
 use actix_web::web::PayloadConfig;
-use actix_web::{error, web, App, Error, FromRequest, HttpMessage, HttpServer};
+use actix_web::{App, Error, FromRequest, HttpMessage, HttpServer, error, web};
 use actix_web_grants::GrantsMiddleware;
-use anyhow::{anyhow, Context as _, Result};
-use database::models::stats::TopRankedStintRow as DbTopRankedStintRow;
-use database::models::Token as DatabaseToken;
+use anyhow::{Context as _, Result, anyhow};
 use database::DbPool;
+use database::models::Token as DatabaseToken;
+use database::models::stats::TopRankedStintRow as DbTopRankedStintRow;
 use futures::stream::{FuturesUnordered, StreamExt};
-use futures::{pin_mut, FutureExt};
-use opentelemetry::sdk::trace::Tracer;
-use opentelemetry::sdk::Resource;
-use opentelemetry::trace::TraceError;
+use futures::{FutureExt, pin_mut};
 use opentelemetry::KeyValue;
+use opentelemetry::sdk::Resource;
+use opentelemetry::sdk::trace::Tracer;
+use opentelemetry::trace::TraceError;
 use opentelemetry_otlp::WithExportConfig;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::broadcast;
-use tokio::time::{sleep, Duration};
-use tracing::{error, info, Level, Span};
+use tokio::time::{Duration, sleep};
+use tracing::{Level, Span, error, info};
 use tracing_actix_web::{DefaultRootSpanBuilder, RootSpanBuilder, TracingLogger};
 use tracing_subscriber::layer::SubscriberExt;
 use util::environment;
@@ -103,11 +103,7 @@ async fn main() -> Result<()> {
                 .service(
                     Files::new("/", "./build/")
                         .index_file("index.html")
-                        .default_handler(web::to(|| async {
-                            NamedFile::open_async("./build/index.html")
-                                .await
-                                .map_err(error::ErrorInternalServerError)
-                        })),
+                        .default_handler(web::to(|| open_named_file("./build/index.html"))),
                 )
         })
         .disable_signals()
@@ -225,7 +221,7 @@ async fn main() -> Result<()> {
 
     #[cfg(unix)]
     let mut sig_term_signal_stream = {
-        use tokio::signal::unix::{signal, SignalKind};
+        use tokio::signal::unix::{SignalKind, signal};
 
         signal(SignalKind::terminate())?
     };
@@ -279,6 +275,14 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Opens `path` on the blocking thread pool, mapping any failure to a 500 response.
+async fn open_named_file(path: &'static str) -> Result<NamedFile, Error> {
+    web::block(move || NamedFile::open(path))
+        .await
+        .map_err(error::ErrorInternalServerError)?
+        .map_err(error::ErrorInternalServerError)
 }
 
 // Older extension clients only know how to send the token as a `token` field in the
@@ -423,7 +427,34 @@ impl RootSpanBuilder for DomainRootSpanBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use actix_web::http::StatusCode;
     use actix_web::test::TestRequest;
+    use actix_web::{Responder, body};
+
+    #[actix_web::test]
+    async fn open_named_file_serves_existing_file_contents() {
+        let file = open_named_file("./Cargo.toml")
+            .await
+            .expect("Cargo.toml exists in the package root");
+        let request = TestRequest::default().to_http_request();
+
+        let response = file.respond_to(&request);
+        assert_eq!(response.status(), StatusCode::OK);
+        let bytes = body::to_bytes(response.into_body()).await.unwrap();
+        assert_eq!(bytes, std::fs::read("./Cargo.toml").unwrap());
+    }
+
+    #[actix_web::test]
+    async fn open_named_file_maps_missing_file_to_internal_server_error() {
+        let error = open_named_file("./does-not-exist/index.html")
+            .await
+            .expect_err("the file does not exist");
+
+        assert_eq!(
+            error.as_response_error().status_code(),
+            StatusCode::INTERNAL_SERVER_ERROR
+        );
+    }
 
     #[test]
     fn bearer_token_from_headers_parses_valid_bearer_token() {
