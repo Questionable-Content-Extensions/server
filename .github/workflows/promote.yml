@@ -3,6 +3,10 @@ name: Promote Staging to Production
 on:
     workflow_dispatch:
 
+permissions:
+    contents: read
+    deployments: write
+
 jobs:
     promote:
         runs-on: ubuntu-latest
@@ -26,6 +30,9 @@ jobs:
                   ssh_host: ${{ secrets.deploy_target }}
                   ssh_port: ${{ secrets.deploy_port }}
 
+            # The server's deploy key runs a forced command, /usr/local/bin/ci-deploy, that
+            # allows only this exact command. Changing it needs a matching change to that
+            # wrapper, or the promotion fails with "ci-deploy: command not allowed".
             - name: Trigger promote script on server
               run: |
                   ssh -i ~/.ssh/id -p ${{ secrets.deploy_port }} \
