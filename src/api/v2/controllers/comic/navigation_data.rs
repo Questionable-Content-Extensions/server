@@ -1,10 +1,10 @@
 use crate::api::v2::models::{NavigationData, UnhydratedItemNavigationData};
 use crate::models::ComicId;
-use actix_web::{error, Result};
+use actix_web::{Result, error};
+use database::DbPoolConnection;
 use database::models::{
     Item as DatabaseItem, ItemFirstLastCount, ItemId as DatabaseItemId, PreviousAppearances,
 };
-use database::DbPoolConnection;
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
 

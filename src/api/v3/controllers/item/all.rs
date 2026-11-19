@@ -1,11 +1,11 @@
 use crate::api::v3::models::{ItemColor, ItemList, ItemType};
 use actix_web::web::Json;
-use actix_web::{error, web, Result};
+use actix_web::{Result, error, web};
 use api_macros::api_endpoint;
-use database::models::Item as DatabaseItem;
 use database::DbPool;
+use database::models::Item as DatabaseItem;
 use std::convert::{TryFrom, TryInto};
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 
 #[api_endpoint(method = "GET", path = "itemdata/")]
 #[tracing::instrument(skip(pool))]

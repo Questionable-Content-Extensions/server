@@ -1,9 +1,9 @@
 use actix_web::web::Json;
-use actix_web::{error, web, Result};
+use actix_web::{Result, error, web};
 use actix_web_lab::extract::Query;
 use api_macros::api_endpoint;
-use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence};
 use serde::Deserialize;
 use std::collections::HashSet;
 use tracing::info;

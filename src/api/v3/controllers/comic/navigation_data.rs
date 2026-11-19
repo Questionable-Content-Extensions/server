@@ -1,6 +1,6 @@
 use crate::api::v3::models::{NavigationData, UnhydratedItemNavigationData};
 use crate::models::ComicId;
-use actix_web::{error, Result};
+use actix_web::{Result, error};
 use database::models::{
     ComicId as DatabaseComicId, Item as DatabaseItem, ItemFirstLastCount, ItemId as DatabaseItemId,
     PreviousAppearances,

@@ -1,9 +1,9 @@
 use crate::api::v2::models::{ComicList, Exclusion};
 use crate::models::ItemId;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_lab::extract::Query;
-use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, Occurrence as DatabaseOccurrence};
 use serde::Deserialize;
 use std::collections::HashSet;
 use tracing::info;

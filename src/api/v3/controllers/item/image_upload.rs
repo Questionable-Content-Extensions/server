@@ -1,15 +1,15 @@
 use crate::models::Token;
-use crate::util::{ensure_is_authorized, read_capped, MAX_IMAGE_BYTES};
+use crate::util::{MAX_IMAGE_BYTES, ensure_is_authorized, read_capped};
 use actix_multipart::Multipart;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use crc32c::crc32c;
-use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;
+use database::models::{Item as DatabaseItem, LogEntry};
 use futures::StreamExt;
 use shared::token_permissions;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 
 #[tracing::instrument(skip(pool, image_upload_form, auth), fields(image.size, image.crc32c, permissions = ?auth.authorities))]
 pub async fn image_upload(

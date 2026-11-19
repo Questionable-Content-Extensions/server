@@ -1,11 +1,11 @@
 use crate::api::v3::models::LogEntry;
 use crate::util::ensure_is_authorized;
 use actix_web::web::Json;
-use actix_web::{error, web, Result};
+use actix_web::{Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use api_macros::api_endpoint;
-use database::models::LogEntry as DatabaseLogEntry;
 use database::DbPool;
+use database::models::LogEntry as DatabaseLogEntry;
 use serde::{Deserialize, Serialize};
 use shared::token_permissions;
 use ts_rs::TS;

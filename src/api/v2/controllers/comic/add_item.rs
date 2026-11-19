@@ -1,18 +1,18 @@
 use crate::api::v2::controllers::comic::patch_comic::update_flag;
 use crate::api::v2::models::ItemType;
 use crate::util::{andify_comma_string, ensure_is_authorized, ensure_is_valid};
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
-use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
 use parse_display::Display;
-use semval::context::Context as ValidationContext;
 use semval::Validate;
+use semval::context::Context as ValidationContext;
 use serde::Deserialize;
 use shared::token_permissions;
 use std::fmt::Write;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 
 use crate::models::{ComicId, ComicIdInvalidity, False, Token, True};
 

@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use actix_web::{error, web, HttpRequest, HttpResponse, Result};
+use actix_web::{HttpRequest, HttpResponse, Result, error, web};
 use arc_swap::ArcSwap;
 use chrono::{DateTime, Duration, Utc};
 use rand::RngExt;
 use reqwest::Client;
 use serde::Deserialize;
-use tracing::{debug, info_span, trace, Instrument};
+use tracing::{Instrument, debug, info_span, trace};
 
 use crate::util::Either;
 
@@ -172,55 +172,55 @@ fn validate_cache(
     let cache = SCRIPT_CACHE.load();
     let cache_expired = cache.expiration - Utc::now() <= Duration::seconds(jitter);
     trace!(?cache.expiration, cache_expired);
-    if !cache_expired {
-        if let Some((cached_asset, cached_file)) = match script_file {
+    if !cache_expired
+        && let Some((cached_asset, cached_file)) = match script_file {
             ScriptFile::User => cache.user.as_ref(),
             ScriptFile::Meta => cache.meta.as_ref(),
-        } {
-            trace!(?cached_asset, cached_file);
-            let etag = req
-                .headers()
-                .get("If-None-Match")
-                .and_then(|h| h.to_str().ok());
-            let last_modified = req
-                .headers()
-                .get("If-Modified-Since")
-                .and_then(|h| h.to_str().ok());
+        }
+    {
+        trace!(?cached_asset, cached_file);
+        let etag = req
+            .headers()
+            .get("If-None-Match")
+            .and_then(|h| h.to_str().ok());
+        let last_modified = req
+            .headers()
+            .get("If-Modified-Since")
+            .and_then(|h| h.to_str().ok());
 
-            if let Some(etag) = etag {
-                if etag == cached_asset.node_id {
-                    debug!(etag, "ETag match");
-                    return Ok(Either::Right(
-                        HttpResponse::NotModified()
-                            .insert_header(("ETag", cached_asset.node_id.clone()))
-                            .finish(),
-                    ));
-                }
-            }
-            if let Some(last_modified) = last_modified {
-                if last_modified == cached_asset.updated_at.to_rfc2822().replace("+0000", "GMT") {
-                    debug!(last_modified, "Last Modified match");
-                    return Ok(Either::Right(
-                        HttpResponse::NotModified()
-                            .insert_header(("ETag", cached_asset.node_id.clone()))
-                            .finish(),
-                    ));
-                }
-            }
-
-            debug!("Cache miss in client; cache hit in server. Returning cached asset.");
+        if let Some(etag) = etag
+            && etag == cached_asset.node_id
+        {
+            debug!(etag, "ETag match");
             return Ok(Either::Right(
-                HttpResponse::Ok()
-                    .content_type("text/javascript; charset=utf-8")
+                HttpResponse::NotModified()
                     .insert_header(("ETag", cached_asset.node_id.clone()))
-                    .insert_header((
-                        "Last-Modified",
-                        cached_asset.updated_at.to_rfc2822().replace("+0000", "GMT"),
-                    ))
-                    .insert_header(("X-Script-Cached", "true"))
-                    .body(cached_file.to_owned()),
+                    .finish(),
             ));
         }
+        if let Some(last_modified) = last_modified
+            && last_modified == cached_asset.updated_at.to_rfc2822().replace("+0000", "GMT")
+        {
+            debug!(last_modified, "Last Modified match");
+            return Ok(Either::Right(
+                HttpResponse::NotModified()
+                    .insert_header(("ETag", cached_asset.node_id.clone()))
+                    .finish(),
+            ));
+        }
+
+        debug!("Cache miss in client; cache hit in server. Returning cached asset.");
+        return Ok(Either::Right(
+            HttpResponse::Ok()
+                .content_type("text/javascript; charset=utf-8")
+                .insert_header(("ETag", cached_asset.node_id.clone()))
+                .insert_header((
+                    "Last-Modified",
+                    cached_asset.updated_at.to_rfc2822().replace("+0000", "GMT"),
+                ))
+                .insert_header(("X-Script-Cached", "true"))
+                .body(cached_file.to_owned()),
+        ));
     }
     Ok(Either::Left((script_file, cache, cache_expired)))
 }

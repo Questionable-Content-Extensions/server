@@ -2,15 +2,15 @@ use crate::api::v3::models::{ItemColor, ItemType};
 use crate::models::{ComicId, ItemId, Token};
 use crate::util::{andify_comma_string, ensure_is_authorized};
 use actix_web::web::Json;
-use actix_web::{error, web, Result};
+use actix_web::{Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use api_macros::api_endpoint;
-use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;
+use database::models::{Item as DatabaseItem, LogEntry};
 use serde::{Deserialize, Deserializer};
 use shared::token_permissions;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
 #[api_endpoint(method = "PATCH", path = "itemdata/{itemId}")]
@@ -54,12 +54,12 @@ pub async fn patch_item(
         .or(old_item.start_comic_id);
     let effective_end_comic_id =
         end_comic_id.map_or(old_item.end_comic_id, |end| end.map(ComicId::into_inner));
-    if let (Some(start), Some(end)) = (effective_start_comic_id, effective_end_comic_id) {
-        if end < start {
-            return Err(error::ErrorBadRequest(anyhow!(
-                "endComicId ({end}) cannot be before startComicId ({start})"
-            )));
-        }
+    if let (Some(start), Some(end)) = (effective_start_comic_id, effective_end_comic_id)
+        && end < start
+    {
+        return Err(error::ErrorBadRequest(anyhow!(
+            "endComicId ({end}) cannot be before startComicId ({start})"
+        )));
     }
 
     let mut updated = Vec::with_capacity(5);

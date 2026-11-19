@@ -1,16 +1,16 @@
 use crate::api::v3::models::AdvanceComicListItem;
 use crate::models::{ComicId, Token};
-use crate::util::{ensure_is_authorized, ComicUpdaterTrigger};
+use crate::util::{ComicUpdaterTrigger, ensure_is_authorized};
 use actix_web::web::Json;
-use actix_web::{error, web, Result};
+use actix_web::{Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use api_macros::api_endpoint;
 use chrono::{DateTime, Utc};
-use database::models::{Comic as DatabaseComic, LogEntry};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, LogEntry};
 use serde::Deserialize;
 use shared::token_permissions;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
 #[api_endpoint(method = "POST", path = "comicdata/advance")]
@@ -45,12 +45,11 @@ pub async fn add_advance_comic(
     if let Some(existing) = DatabaseComic::by_id(&mut *transaction, comic_id)
         .await
         .map_err(error::ErrorInternalServerError)?
+        && existing.hidden == 0
     {
-        if existing.hidden == 0 {
-            return Err(error::ErrorConflict(format!(
-                "Comic #{comic_id} is already published and cannot be used for an advance comic"
-            )));
-        }
+        return Err(error::ErrorConflict(format!(
+            "Comic #{comic_id} is already published and cannot be used for an advance comic"
+        )));
     }
 
     DatabaseComic::insert_advance_comic(

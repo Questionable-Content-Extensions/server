@@ -2,9 +2,9 @@ use crate::api::v3::models::{
     EditorData, MissingNavigationData, NavigationData, PresentEditorData,
 };
 use crate::models::{ComicId, True};
-use actix_web::{error, Result};
-use database::models::{Comic as DatabaseComic, NavigationResult};
+use actix_web::{Result, error};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, NavigationResult};
 use std::convert::TryInto;
 
 #[tracing::instrument(skip(pool))]

@@ -2,15 +2,15 @@ use crate::api::v3::models::ItemImageList;
 use crate::models::{ImageId, Token};
 use crate::util::ensure_is_authorized;
 use actix_web::web::Json;
-use actix_web::{error, web, HttpResponse, Result};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use api_macros::api_endpoint;
-use database::models::{Item as DatabaseItem, LogEntry};
 use database::DbPool;
+use database::models::{Item as DatabaseItem, LogEntry};
 use serde::Deserialize;
 use shared::token_permissions;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
 fn detect_mime_type(bytes: &[u8]) -> &'static str {

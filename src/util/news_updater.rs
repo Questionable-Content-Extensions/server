@@ -1,9 +1,9 @@
 use crate::models::ComicId;
 use anyhow::Result;
 use chrono::Utc;
-use database::models::{Comic, News};
 use database::DbPool;
-use futures::{select, FutureExt};
+use database::models::{Comic, News};
+use futures::{FutureExt, select};
 use regex::Regex;
 use reqwest::Client;
 use scraper::{Html, Selector};
@@ -11,8 +11,8 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::broadcast;
-use tokio::time::{sleep, Duration};
-use tracing::{debug, info, info_span, warn, Instrument};
+use tokio::time::{Duration, sleep};
+use tracing::{Instrument, debug, info, info_span, warn};
 
 const QC_COMIC_URL_BASE: &str = "https://questionablecontent.net/view.php?comic=";
 const TASK_DELAY_TIME: Duration = Duration::from_secs(5);
@@ -97,11 +97,11 @@ impl NewsUpdater {
 
             let news = News::by_comic_id(&mut *transaction, comic_id.into_inner()).await?;
 
-            if let Some(news) = &news {
-                if !news.is_outdated() {
-                    info!("News for comic #{} is not outdated.", comic_id);
-                    continue;
-                }
+            if let Some(news) = &news
+                && !news.is_outdated()
+            {
+                info!("News for comic #{} is not outdated.", comic_id);
+                continue;
             }
 
             info!("Fetching news in the background for comic #{}...", comic_id);

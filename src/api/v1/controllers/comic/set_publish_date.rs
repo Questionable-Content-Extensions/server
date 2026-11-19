@@ -1,12 +1,12 @@
 use crate::models::{ComicId, ComicIdInvalidity, Token};
-use crate::util::{ensure_is_authorized, ensure_is_valid, AddMonths};
-use actix_web::{error, web, HttpResponse, Result};
+use crate::util::{AddMonths, ensure_is_authorized, ensure_is_valid};
+use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use chrono::{DateTime, TimeZone, Utc};
-use database::models::{Comic as DatabaseComic, LogEntry};
 use database::DbPool;
+use database::models::{Comic as DatabaseComic, LogEntry};
 use parse_display::Display;
-use semval::{context::Context as ValidationContext, Validate};
+use semval::{Validate, context::Context as ValidationContext};
 use serde::Deserialize;
 use shared::token_permissions;
 
@@ -115,6 +115,8 @@ impl Validate for SetPublishDateBody {
 pub(crate) enum SetPublishDateBodyInvalidity {
     #[display("{0}")]
     ComicId(ComicIdInvalidity),
-    #[display("Provided publish date must be after the comic was started and no later than one month from today's date")]
+    #[display(
+        "Provided publish date must be after the comic was started and no later than one month from today's date"
+    )]
     PublishDate,
 }

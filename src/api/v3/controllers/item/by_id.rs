@@ -1,16 +1,16 @@
 use crate::api::v3::models::{ComicList, Exclusion, Item, ItemColor, ItemType, RelatedItem};
 use crate::models::ItemId;
 use actix_web::web::Json;
-use actix_web::{error, web, Result};
+use actix_web::{Result, error, web};
 use anyhow::anyhow;
 use api_macros::api_endpoint;
+use database::DbPool;
 use database::models::{
     Comic as DatabaseComic, Item as DatabaseItem, ItemWithStats, RelatedItem as RelatedDatabaseItem,
 };
-use database::DbPool;
 use serde::Deserialize;
 use std::convert::{TryFrom, TryInto};
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
 #[api_endpoint(method = "GET", path = "itemdata/{itemId}")]

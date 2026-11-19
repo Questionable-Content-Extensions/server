@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::api::v3::models::ItemColor;
 use crate::api::v3::models::stats::{
     AvgCastPerYear, BestFriendPair, BestFriendResponse, BreakoutYear, CastTurnoverYear,
     CharacterHomeTurfEntry, CharacterMeta, CharacterRegularity, CharacterSeasonEntry,
@@ -14,11 +15,11 @@ use crate::api::v3::models::stats::{
     ScheduleEvolutionYear, SocialHubEntry, TopRankedOverTimeResponse, TrendingItem, YearlyOverview,
     YearlyRankEntry, YearlySpotlightResponse, YearlySpotlightYear,
 };
-use crate::api::v3::models::ItemColor;
 use crate::models::{ComicId, ItemId};
 use actix_web::web::Json;
-use actix_web::{error, web, Result};
+use actix_web::{Result, error, web};
 use api_macros::api_endpoint;
+use database::DbPool;
 use database::models::stats::{
     AvgCastPerYearRow as DbAvgCastPerYearRow, BreakoutYearRow as DbBreakoutYearRow,
     CastTurnoverRow as DbCastTurnoverRow, CharacterHomeTurfRow as DbCharacterHomeTurfRow,
@@ -42,9 +43,8 @@ use database::models::stats::{
     TrendingItemRow as DbTrendingItemRow, YearlyAppearanceRow as DbYearlyAppearanceRow,
     YearlyOverviewRow as DbYearlyOverviewRow,
 };
-use database::DbPool;
 use serde::Deserialize;
-use tracing::{info_span, Instrument};
+use tracing::{Instrument, info_span};
 use ts_rs::TS;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
@@ -897,11 +897,11 @@ async fn character_home_turf(pool: web::Data<DbPool>) -> Result<Json<Vec<Charact
             location_name: r.location_name,
             comics_together: u32::try_from(r.comics_together).unwrap_or(u32::MAX),
         };
-        if let Some(last) = result.last_mut() {
-            if last.character_id == ItemId::from(r.character_id) {
-                last.locations.push(location);
-                continue;
-            }
+        if let Some(last) = result.last_mut()
+            && last.character_id == ItemId::from(r.character_id)
+        {
+            last.locations.push(location);
+            continue;
         }
         result.push(CharacterHomeTurfEntry {
             character_id: ItemId::from(r.character_id),

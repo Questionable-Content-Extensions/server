@@ -2,7 +2,7 @@
 name = "qcext-server"
 version = "0.1.0"
 authors = ["Alexander Krivács Schrøder <alexschrod@gmail.com>"]
-edition = "2021"
+edition = "2024"
 default-run = "qcext-server"
 publish = false
 

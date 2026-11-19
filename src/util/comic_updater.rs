@@ -1,17 +1,17 @@
 use crate::models::{ComicId, ImageType};
 use crate::util::{ComicUpdaterTrigger, NewsUpdater};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Datelike, Duration, NaiveTime, TimeZone, Timelike, Utc, Weekday};
 use const_format::concatcp;
-use database::models::Comic as DatabaseComic;
 use database::DbPool;
-use futures::{select, FutureExt};
+use database::models::Comic as DatabaseComic;
+use futures::{FutureExt, select};
 use ilyvion_util::string_extensions::StrExtensions;
 use reqwest::Client;
 use scraper::{Html, Selector};
 use tokio::sync::broadcast;
-use tokio::time::{sleep, Duration as StdDuration};
-use tracing::{info, info_span, Instrument};
+use tokio::time::{Duration as StdDuration, sleep};
+use tracing::{Instrument, info, info_span};
 
 static COMIC_IMAGE_SELECTOR: std::sync::LazyLock<Selector> =
     std::sync::LazyLock::new(|| Selector::parse("img[src*=\"/comics/\"]").expect("valid selector"));
@@ -201,33 +201,32 @@ impl ComicUpdater {
             };
 
             let parse_document_span = info_span!("parse_archive_document");
-            let comic_title = parse_document_span.in_scope(|| -> Result<String> {
-                let document = Html::parse_document(&qc_archive_page);
-                let comic_title_selector = format!("a[href*=\"comic={comic_id}\"]");
-                let comic_title_selector =
-                    Selector::parse(&comic_title_selector).expect("valid comic title selector");
-                let comic_title =
-                    document
-                        .select(&comic_title_selector)
-                        .next()
-                        .ok_or_else(|| {
+            let comic_title =
+                parse_document_span.in_scope(|| -> Result<String> {
+                    let document = Html::parse_document(&qc_archive_page);
+                    let comic_title_selector = format!("a[href*=\"comic={comic_id}\"]");
+                    let comic_title_selector =
+                        Selector::parse(&comic_title_selector).expect("valid comic title selector");
+                    let comic_title = document.select(&comic_title_selector).next().ok_or_else(
+                        || {
                             anyhow::anyhow!(
                                 "Could not fetch archive page, couldn't find comic title element",
                             )
-                        })?;
-                let comic_title = comic_title.inner_html();
-                let comic_title = comic_title
-                    .split_once(':')
-                    .ok_or_else(|| {
-                        anyhow::anyhow!(
-                            "Could not fetch archive page, couldn't find ':' in comic title",
-                        )
-                    })?
-                    .1
-                    .trim();
+                        },
+                    )?;
+                    let comic_title = comic_title.inner_html();
+                    let comic_title = comic_title
+                        .split_once(':')
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "Could not fetch archive page, couldn't find ':' in comic title",
+                            )
+                        })?
+                        .1
+                        .trim();
 
-                Ok(String::from(comic_title))
-            })?;
+                    Ok(String::from(comic_title))
+                })?;
             Some(comic_title)
         } else {
             None

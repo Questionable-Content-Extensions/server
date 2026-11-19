@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 
-use anyhow::{anyhow, Context};
+use anyhow::{Context, anyhow};
 use serde::{Serialize, Serializer};
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
