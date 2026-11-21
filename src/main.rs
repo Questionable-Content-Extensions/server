@@ -1,7 +1,10 @@
 //! Questionable Content Extensions server.
 
 use crate::models::Token;
-use crate::util::{ComicUpdater, ComicUpdaterTrigger, Either, NewsUpdater, TokenPermissionsCache};
+use crate::util::{
+    ComicUpdater, ComicUpdaterTrigger, Either, NewsUpdater, TokenPermissionsCache,
+    hide_server_error_details,
+};
 use actix_files::{Files, NamedFile};
 use actix_http::body::MessageBody;
 use actix_web::dev::{ServiceRequest, ServiceResponse};
@@ -92,6 +95,7 @@ async fn main() -> Result<()> {
                 .app_data(http_comic_updater_trigger.clone())
                 .app_data(PayloadConfig::new(1_048_576))
                 .wrap(auth)
+                .wrap(hide_server_error_details())
                 .wrap(actix_web::middleware::Compress::default()).wrap(actix_web::middleware::Logger::new(
                     r#"%{X-Forwarded-For}i (%{X-Real-IP}i) (QCExt version %{X-QCExt-Version}i) "%r" %s %b "%{Referer}i" "%{User-Agent}i" %T"#,
                 ))
