@@ -9,7 +9,10 @@ use tracing::{Instrument, info_span};
 use crate::api::v2::controllers::comic::navigation_data::{
     ItemNavigationDataSorting, fetch_all_item_navigation_data,
 };
-use crate::api::v2::models::{ItemColor, ItemList, ItemType, UnhydratedItemNavigationData};
+use crate::api::v2::models::{
+    ItemColor, ItemList, ItemType, UnhydratedItemNavigationData,
+    add_obsolete_script_warning_to_item_list,
+};
 use crate::models::{ComicId, ItemId};
 
 #[tracing::instrument(skip(pool))]
@@ -65,6 +68,7 @@ pub(crate) async fn all(pool: web::Data<DbPool>) -> Result<HttpResponse> {
     }
 
     items.sort_by_key(|i| Reverse(i.count));
+    add_obsolete_script_warning_to_item_list(&mut items);
 
     Ok(HttpResponse::Ok().json(items))
 }

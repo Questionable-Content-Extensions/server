@@ -1,8 +1,6 @@
 use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
 use anyhow::{Result, anyhow};
-use chrono::{DateTime, Datelike, TimeZone, Timelike, Utc};
 use futures::{Future, Stream, StreamExt};
-use ilyvion_util::chrono::days_from_month_in_year;
 use semval::{Invalidity, Validate};
 use std::cell::RefCell;
 use std::fmt::Display;
@@ -142,57 +140,6 @@ where
         return Err(anyhow!("{}", InvalidityFormatter::from(c)));
     }
     Ok(())
-}
-
-pub(crate) trait AddMonths {
-    fn add_months(self, add_months: u32) -> Self;
-}
-
-impl AddMonths for DateTime<Utc> {
-    fn add_months(self, mut add_months: u32) -> Self {
-        let mut year = self.year();
-        let mut month = self.month();
-        let mut day = self.day();
-
-        // Add whole years first
-        while add_months >= 12 {
-            year += 1;
-            add_months -= 12;
-        }
-
-        // Check if remaining months add up to cross another year boundary
-        month = if month + add_months > 12 {
-            year += 1;
-            (month + add_months) % 12
-        } else {
-            month + add_months
-        };
-
-        // Check if the day we have is bigger than the biggest day of the resulting month
-        // and if so, truncate
-        let days_in_month = u32::try_from(days_from_month_in_year(month, year).unwrap())
-            .expect("days in month are always 28-31");
-        if day > days_in_month {
-            day = days_in_month;
-        }
-
-        Utc.with_ymd_and_hms(year, month, day, self.hour(), self.minute(), self.second())
-            .unwrap()
-    }
-}
-
-#[test]
-fn test_add_month() {
-    let jan012000 = Utc.with_ymd_and_hms(2000, 1, 1, 0, 0, 0).unwrap();
-    for m in 1..12 {
-        let result = jan012000.add_months(m);
-        assert_eq!(result.month(), m + 1);
-    }
-
-    let jan312000 = Utc.with_ymd_and_hms(2000, 1, 31, 0, 0, 0).unwrap();
-    let result = jan312000.add_months(1);
-    assert_eq!(result.month(), 2);
-    assert_eq!(result.day(), 29);
 }
 
 /// Replaces the last comma in a string with `and` (if there's a single comma)

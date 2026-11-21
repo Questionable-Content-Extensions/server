@@ -4,7 +4,7 @@ use crate::api::v2::controllers::comic::navigation_data::{
 };
 use crate::api::v2::models::{
     Comic, ComicData, EditorData, Exclusion, Inclusion, ItemNavigationData, MissingComic,
-    MissingEditorData, PresentComic, Sorting,
+    MissingEditorData, PresentComic, Sorting, add_obsolete_script_warning_to_navigation_items,
 };
 use crate::models::{ComicId, False, True};
 use crate::util::NewsUpdater;
@@ -112,6 +112,8 @@ pub(crate) async fn by_id(
         };
 
     let comic = if let Some(comic) = comic {
+        let mut comic_navigation_items = comic_navigation_items;
+        add_obsolete_script_warning_to_navigation_items(&mut comic_navigation_items);
         Comic {
             comic: comic_id,
             editor_data,

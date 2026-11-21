@@ -97,8 +97,6 @@ async fn main() -> Result<()> {
                 ))
                 .wrap(TracingLogger::<DomainRootSpanBuilder>::new());
 
-            // Because of legacy reasons, the old API needs to be directly at the root.
-            // Any newer APIs should be mounted *inside* v1's `configure`
             a.service(web::scope("/api").configure(api::configure))
                 .service(web::scope("/releases").configure(controllers::releases::configure))
                 .service(

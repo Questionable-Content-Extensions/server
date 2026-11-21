@@ -15,6 +15,9 @@ pub use item_color::*;
 mod item_type;
 pub use item_type::*;
 
+mod obsolete_script_warning;
+pub use obsolete_script_warning::*;
+
 #[expect(
     clippy::struct_field_names,
     reason = "field name matches the serialized API field name"

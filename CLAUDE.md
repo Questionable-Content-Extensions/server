@@ -6,7 +6,6 @@ This CLAUDE.md is shared between qcext-server and qcext-client. The latter does 
 
 - **Never read `.env`**.
 - **Never run `git commit`, `git push`, `git stash`** or other git commands that cause repo or index mutation unless the user explicitly says to.
-- **Never delete unused code** — mark it as unused instead, or ask.
 - **Run end-of-feature checks** (see Frontend/Backend sections) before declaring work done.
 - **Never manually edit `bindings/*`.**
 - **Never pipe `./run_*` script output through `head` or `tail`** — if you need to filter or reduce output, pipe through `jq` instead, e.g. `./run_eslint.sh | jq .count`.
@@ -29,8 +28,6 @@ You can use the database url `mysql://claude:claude@127.0.0.1:3306/dphoenix_qcna
 Commit messages must follow Conventional Commit formats. These should be single-line and under 100 characters long. This is enforced with a git hook. Do not ever manually run `git commit` unless explicitly instructed to by the user.
 
 # Code changes
-
-Never delete code just because it appears unused — not even when refactoring. Ask the user first. Suppressing the warning (`#[expect(dead_code)]`, `_` prefix, etc.) is always acceptable instead.
 
 Compiler/lint errors during a multi-step edit are expected and should be ignored. Only run the end-of-feature checks (see below) once all planned changes are complete.
 

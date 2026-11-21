@@ -26,33 +26,6 @@ impl Item {
     ///
     /// Returns a database error if the query fails.
     #[tracing::instrument(skip(executor))]
-    pub async fn occurrences_in_comic_mapped_by_id<'e, 'c: 'e, E>(
-        executor: E,
-        comic_id: u16,
-    ) -> sqlx::Result<BTreeMap<u16, Self>>
-    where
-        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
-    {
-        sqlx::query_as!(
-            Self,
-            r#"
-                SELECT `i`.*
-                FROM `Item` `i`
-                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
-                WHERE `o`.`comic_id` = ?
-            "#,
-            comic_id,
-        )
-        .fetch(executor)
-        .map_ok(|i| (i.id, i))
-        .try_collect()
-        .await
-    }
-
-    /// # Errors
-    ///
-    /// Returns a database error if the query fails.
-    #[tracing::instrument(skip(executor))]
     pub async fn occurrences_in_comic_by_id<'e, 'c: 'e, E>(
         executor: E,
         comic_id: u16,
@@ -124,27 +97,6 @@ impl Item {
             "#,
         )
         .fetch_all(executor)
-        .await
-    }
-
-    /// # Errors
-    ///
-    /// Returns a database error if the query fails.
-    #[tracing::instrument(skip(executor))]
-    pub async fn all_mapped_by_id<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<BTreeMap<u16, Self>>
-    where
-        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
-    {
-        sqlx::query_as!(
-            Self,
-            r#"
-                SELECT *
-                FROM `Item`
-            "#,
-        )
-        .fetch(executor)
-        .map_ok(|i| (i.id, i))
-        .try_collect()
         .await
     }
 
