@@ -356,24 +356,43 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<HashSet<Str
         .ok_or_else(|| anyhow!("Could not get TokenPermissionsCache from request"))
         .map_err(error::ErrorInternalServerError)?;
 
-    if let Some(permissions) = cache.get(&token_str) {
-        return Ok(permissions);
-    }
-
     let pool = request
         .app_data::<web::Data<DbPool>>()
         .ok_or_else(|| anyhow!("Could not get DbPool from request"))
         .map_err(error::ErrorInternalServerError)?;
-    let mut conn = pool
-        .acquire()
-        .await
-        .map_err(error::ErrorInternalServerError)?;
 
-    let permissions = DatabaseToken::get_permissions_for_token(&mut *conn, token_str.clone())
-        .await
-        .map_err(error::ErrorInternalServerError)?;
+    permissions_for_method(cache, request.method(), token_str, |token_str| async move {
+        let mut conn = pool
+            .acquire()
+            .await
+            .map_err(error::ErrorInternalServerError)?;
+        DatabaseToken::get_permissions_for_token(&mut *conn, token_str)
+            .await
+            .map_err(error::ErrorInternalServerError)
+    })
+    .await
+}
 
-    cache.set(token_str, permissions.clone());
+/// Resolves `token`'s permissions, serving safe methods from `cache` and always calling `lookup`
+/// for mutating ones, so a revoked permission stops authorizing changes immediately.
+async fn permissions_for_method<F, Fut>(
+    cache: &TokenPermissionsCache,
+    method: &actix_web::http::Method,
+    token: String,
+    lookup: F,
+) -> Result<HashSet<String>, Error>
+where
+    F: FnOnce(String) -> Fut,
+    Fut: Future<Output = Result<HashSet<String>, Error>>,
+{
+    if method.is_safe()
+        && let Some(permissions) = cache.get(&token)
+    {
+        return Ok(permissions);
+    }
+
+    let permissions = lookup(token.clone()).await?;
+    cache.set(token, permissions.clone());
 
     Ok(permissions)
 }
@@ -590,6 +609,97 @@ mod tests {
         fn set_resource(&mut self, resource: &Resource) {
             *self.resource.lock().unwrap() = Some(resource.clone());
         }
+    }
+
+    fn cache_with_stale_grant(token: &str) -> TokenPermissionsCache {
+        let cache = TokenPermissionsCache::new();
+        cache.set(
+            token.to_string(),
+            HashSet::from(["can_add_item".to_string()]),
+        );
+        cache
+    }
+
+    async fn revoked_lookup(_token: String) -> Result<HashSet<String>, Error> {
+        Ok(HashSet::new())
+    }
+
+    #[actix_web::test]
+    async fn permissions_for_method_ignores_cache_for_mutating_methods() {
+        for method in [
+            actix_web::http::Method::POST,
+            actix_web::http::Method::PATCH,
+            actix_web::http::Method::PUT,
+            actix_web::http::Method::DELETE,
+        ] {
+            let cache = cache_with_stale_grant("tok");
+
+            let permissions =
+                permissions_for_method(&cache, &method, "tok".to_string(), revoked_lookup)
+                    .await
+                    .unwrap();
+
+            assert!(permissions.is_empty(), "{method} used the cached grant");
+            assert_eq!(
+                cache.get("tok"),
+                Some(HashSet::new()),
+                "{method} did not refresh the cache"
+            );
+        }
+    }
+
+    #[actix_web::test]
+    async fn permissions_for_method_serves_safe_methods_from_cache() {
+        for method in [
+            actix_web::http::Method::GET,
+            actix_web::http::Method::HEAD,
+            actix_web::http::Method::OPTIONS,
+        ] {
+            let cache = cache_with_stale_grant("tok");
+
+            let permissions =
+                permissions_for_method(&cache, &method, "tok".to_string(), |_| async {
+                    panic!("{method} looked up a cached token")
+                })
+                .await
+                .unwrap();
+
+            assert_eq!(permissions, HashSet::from(["can_add_item".to_string()]));
+        }
+    }
+
+    #[actix_web::test]
+    async fn permissions_for_method_looks_up_and_caches_on_safe_method_miss() {
+        let cache = TokenPermissionsCache::new();
+        let granted = HashSet::from(["can_add_item".to_string()]);
+
+        let permissions = permissions_for_method(
+            &cache,
+            &actix_web::http::Method::GET,
+            "tok".to_string(),
+            |_| async { Ok(HashSet::from(["can_add_item".to_string()])) },
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(permissions, granted);
+        assert_eq!(cache.get("tok"), Some(granted));
+    }
+
+    #[actix_web::test]
+    async fn permissions_for_method_propagates_lookup_errors_without_caching() {
+        let cache = TokenPermissionsCache::new();
+
+        let result = permissions_for_method(
+            &cache,
+            &actix_web::http::Method::POST,
+            "tok".to_string(),
+            |_| async { Err(error::ErrorInternalServerError("db down")) },
+        )
+        .await;
+
+        assert!(result.is_err());
+        assert!(cache.get("tok").is_none());
     }
 
     #[test]
