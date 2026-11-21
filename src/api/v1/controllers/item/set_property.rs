@@ -13,10 +13,13 @@ use shared::token_permissions;
 pub(crate) async fn set_property(
     pool: web::Data<DbPool>,
     request: web::Json<SetItemPropertyBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_ITEM_DATA)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     let mut transaction = pool
         .begin()
@@ -41,7 +44,7 @@ pub(crate) async fn set_property(
             if old_item.name.is_empty() {
                 LogEntry::log_action(
                     &mut *transaction,
-                    request.token.to_string(),
+                    token.to_string(),
                     format!(
                         "Set name of {} #{} to \"{}\"",
                         old_item.r#type, request.item_id, request.value
@@ -54,7 +57,7 @@ pub(crate) async fn set_property(
             } else {
                 LogEntry::log_action(
                     &mut *transaction,
-                    request.token.to_string(),
+                    token.to_string(),
                     format!(
                         "Changed name of {} #{} from \"{}\" to \"{}\"",
                         old_item.r#type, request.item_id, old_item.name, request.value
@@ -74,7 +77,7 @@ pub(crate) async fn set_property(
             if old_item.short_name.is_empty() {
                 LogEntry::log_action(
                     &mut *transaction,
-                    request.token.to_string(),
+                    token.to_string(),
                     format!(
                         "Set shortName of {} #{} to \"{}\"",
                         old_item.r#type, item_id, request.value
@@ -87,7 +90,7 @@ pub(crate) async fn set_property(
             } else {
                 LogEntry::log_action(
                     &mut *transaction,
-                    request.token.to_string(),
+                    token.to_string(),
                     format!(
                         "Changed shortName of {} #{} from \"{}\" to \"{}\"",
                         old_item.r#type, request.item_id, old_item.short_name, request.value
@@ -119,7 +122,7 @@ pub(crate) async fn set_property(
 
             LogEntry::log_action(
                 &mut *transaction,
-                request.token.to_string(),
+                token.to_string(),
                 format!(
                     "Changed color of {} #{} from \"{}\" to \"{}\"",
                     old_item.r#type, item_id, old_color, new_color
@@ -151,6 +154,7 @@ pub(crate) async fn set_property(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SetItemPropertyBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     token: Token,
     #[serde(rename = "item")]
     item_id: ItemId,

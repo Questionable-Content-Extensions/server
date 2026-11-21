@@ -12,10 +12,13 @@ use shared::token_permissions;
 pub(crate) async fn set_tagline(
     pool: web::Data<DbPool>,
     request: web::Json<SetTaglineBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     ensure_is_valid(&*request).map_err(error::ErrorBadRequest)?;
 
@@ -45,7 +48,7 @@ pub(crate) async fn set_tagline(
         Some(old_tagline) if !old_tagline.is_empty() => {
             LogEntry::log_action(
                 &mut *transaction,
-                request.token.to_string(),
+                token.to_string(),
                 format!(
                     "Changed tagline on comic #{} from \"{}\" to \"{}\"",
                     request.comic_id, old_tagline, request.tagline
@@ -59,7 +62,7 @@ pub(crate) async fn set_tagline(
         _ => {
             LogEntry::log_action(
                 &mut *transaction,
-                request.token.to_string(),
+                token.to_string(),
                 format!(
                     "Set tagline on comic #{} to \"{}\"",
                     request.comic_id, request.tagline
@@ -83,6 +86,7 @@ pub(crate) async fn set_tagline(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SetTaglineBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     token: Token,
     comic_id: ComicId,
     tagline: String,

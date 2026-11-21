@@ -13,12 +13,15 @@ use shared::token_permissions;
 pub(crate) async fn add_item(
     pool: web::Data<DbPool>,
     request: web::Json<AddItemToComicBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     const CREATE_NEW_ITEM_ID: i16 = -1;
 
     ensure_is_authorized(&auth, token_permissions::CAN_ADD_ITEM_TO_COMIC)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     ensure_is_valid(&*request).map_err(error::ErrorBadRequest)?;
 
@@ -58,7 +61,7 @@ pub(crate) async fn add_item(
 
         LogEntry::log_action(
             &mut *transaction,
-            request.token.to_string(),
+            token.to_string(),
             format!("Created {new_item_type} #{new_item_id} ({new_item_name})"),
             None,
             Some(new_item_id),
@@ -110,7 +113,7 @@ pub(crate) async fn add_item(
 
     LogEntry::log_action(
         &mut *transaction,
-        request.token.to_string(),
+        token.to_string(),
         format!(
             "Added {} #{} ({}) to comic #{}",
             item.r#type, item.id, item.name, request.comic_id
@@ -132,6 +135,7 @@ pub(crate) async fn add_item(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AddItemToComicBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     token: Token,
     comic_id: ComicId,
     item_id: i16,

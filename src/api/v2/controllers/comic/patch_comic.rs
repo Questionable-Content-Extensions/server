@@ -16,10 +16,13 @@ pub(crate) async fn patch_comic(
     pool: web::Data<DbPool>,
     request: web::Json<PatchComicBody>,
     comic_id: web::Path<ComicId>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     let mut transaction = pool
         .begin()
@@ -33,7 +36,7 @@ pub(crate) async fn patch_comic(
         .map_err(error::ErrorInternalServerError)?;
 
     let PatchComicBody {
-        token,
+        token: _,
         publish_date,
         title,
         tagline,
@@ -427,6 +430,7 @@ pub(super) async fn update_flag(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PatchComicBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     pub token: Token,
 
     pub publish_date: Option<PublishDatePatch>,

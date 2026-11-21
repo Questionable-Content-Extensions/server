@@ -21,10 +21,13 @@ use crate::models::{ComicId, ComicIdInvalidity, False, Token, True};
 pub(crate) async fn add_item(
     pool: web::Data<DbPool>,
     request: web::Json<AddItemToComicBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_ADD_ITEM_TO_COMIC)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     let request = request.into_inner();
     ensure_is_valid(&request).map_err(error::ErrorBadRequest)?;
@@ -61,7 +64,7 @@ pub(crate) async fn add_item(
 
             LogEntry::log_action(
                 &mut *transaction,
-                request.token.to_string(),
+                token.to_string(),
                 format!(
                     "Created {} #{} ({})",
                     new.new_item_type.as_str(),
@@ -112,14 +115,7 @@ pub(crate) async fn add_item(
         ItemType::Storyline => (FlagType::HasNoStoryline, comic.has_no_storyline != 0),
     };
     if flag_needs_update {
-        update_flag(
-            flagtype,
-            false,
-            request.comic_id,
-            request.token,
-            &mut transaction,
-        )
-        .await?;
+        update_flag(flagtype, false, request.comic_id, token, &mut transaction).await?;
     }
 
     Occurrence::create(&mut *transaction, id, comic_id)
@@ -135,7 +131,7 @@ pub(crate) async fn add_item(
     );
     LogEntry::log_action(
         &mut *transaction,
-        request.token.to_string(),
+        token.to_string(),
         &action,
         Some(comic_id),
         Some(id),
@@ -155,10 +151,13 @@ pub(crate) async fn add_item(
 pub(crate) async fn add_items(
     pool: web::Data<DbPool>,
     request: web::Json<AddItemsToComicBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_ADD_ITEM_TO_COMIC)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     let request = request.into_inner();
     ensure_is_valid(&request).map_err(error::ErrorBadRequest)?;
@@ -216,14 +215,7 @@ pub(crate) async fn add_items(
                 ),
             };
         if flag_needs_update {
-            update_flag(
-                flagtype,
-                false,
-                request.comic_id,
-                request.token,
-                &mut transaction,
-            )
-            .await?;
+            update_flag(flagtype, false, request.comic_id, token, &mut transaction).await?;
             *flag = 0;
         }
 
@@ -233,7 +225,7 @@ pub(crate) async fn add_items(
 
         LogEntry::log_action(
             &mut *transaction,
-            request.token.to_string(),
+            token.to_string(),
             format!(
                 "Added {} #{} ({}) to comic #{}",
                 item.r#type.as_str(),
@@ -272,6 +264,7 @@ pub(crate) async fn add_items(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddItemToComicBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     pub token: Token,
     pub comic_id: ComicId,
     #[serde(flatten)]
@@ -320,6 +313,7 @@ pub enum AddItemToComicBodyInvalidity {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AddItemsToComicBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     pub token: Token,
     pub comic_id: ComicId,
     pub items: Vec<ExistingItem>,

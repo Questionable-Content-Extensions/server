@@ -16,10 +16,13 @@ pub(crate) async fn patch_item(
     pool: web::Data<DbPool>,
     request: web::Json<PatchItemBody>,
     item_id: web::Path<ItemId>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_ITEM_DATA)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     let item_id = item_id.into_inner().into_inner();
 
@@ -35,7 +38,7 @@ pub(crate) async fn patch_item(
         .ok_or_else(|| error::ErrorNotFound(anyhow!("No item with id {item_id} exists")))?;
 
     let PatchItemBody {
-        token,
+        token: _,
         name,
         short_name,
         color,
@@ -193,6 +196,7 @@ pub(crate) async fn patch_item(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct PatchItemBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     pub token: Token,
 
     pub name: Option<String>,

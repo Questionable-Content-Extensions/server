@@ -43,10 +43,13 @@ pub(crate) async fn delete(
     pool: web::Data<DbPool>,
     image_id: web::Path<u32>,
     request: web::Json<DeleteImageBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_REMOVE_IMAGE_FROM_ITEM)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     let mut transaction = pool
         .begin()
@@ -73,7 +76,7 @@ pub(crate) async fn delete(
 
     LogEntry::log_action(
         &mut *transaction,
-        request.token.to_string(),
+        token.to_string(),
         format!("Deleted image #{image_id}"),
         None,
         Some(item_id),
@@ -94,10 +97,13 @@ pub(crate) async fn set_primary(
     pool: web::Data<DbPool>,
     item_id: web::Path<u16>,
     request: web::Json<SetPrimaryImageBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_ITEM_DATA)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     let mut transaction = pool
         .begin()
@@ -120,7 +126,7 @@ pub(crate) async fn set_primary(
 
     LogEntry::log_action(
         &mut *transaction,
-        request.token.to_string(),
+        token.to_string(),
         format!(
             "Set image #{} as primary for item #{}",
             request.image_id, item_id
@@ -142,12 +148,14 @@ pub(crate) async fn set_primary(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DeleteImageBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     token: Token,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SetPrimaryImageBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     token: Token,
     image_id: ImageId,
 }

@@ -17,10 +17,13 @@ use tracing::{Instrument, info_span};
 pub(crate) async fn remove_item(
     pool: web::Data<DbPool>,
     request: web::Json<RemoveItemFromComicBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_REMOVE_ITEM_FROM_COMIC)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     ensure_is_valid(&*request).map_err(error::ErrorBadRequest)?;
 
@@ -62,7 +65,7 @@ pub(crate) async fn remove_item(
     );
     LogEntry::log_action(
         &mut *transaction,
-        request.token.to_string(),
+        token.to_string(),
         &action,
         Some(comic_id),
         Some(item_id),
@@ -82,6 +85,7 @@ pub(crate) async fn remove_item(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RemoveItemFromComicBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     token: Token,
     comic_id: ComicId,
     item_id: ItemId,

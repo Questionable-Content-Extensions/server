@@ -12,9 +12,10 @@ use shared::token_permissions;
 pub(crate) async fn set_guest(
     pool: web::Data<DbPool>,
     request: web::Json<SetFlagBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    set_flag(pool, request, auth, FlagType::IsGuestComic).await?;
+    set_flag(pool, request, *token, auth, FlagType::IsGuestComic).await?;
 
     Ok(HttpResponse::Ok().body("Guest comic set or updated for comic"))
 }
@@ -22,9 +23,10 @@ pub(crate) async fn set_guest(
 pub(crate) async fn set_non_canon(
     pool: web::Data<DbPool>,
     request: web::Json<SetFlagBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    set_flag(pool, request, auth, FlagType::IsNonCanon).await?;
+    set_flag(pool, request, *token, auth, FlagType::IsNonCanon).await?;
 
     Ok(HttpResponse::Ok().body("Non-canon set or updated for comic"))
 }
@@ -32,9 +34,10 @@ pub(crate) async fn set_non_canon(
 pub(crate) async fn set_no_cast(
     pool: web::Data<DbPool>,
     request: web::Json<SetFlagBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    set_flag(pool, request, auth, FlagType::HasNoCast).await?;
+    set_flag(pool, request, *token, auth, FlagType::HasNoCast).await?;
 
     Ok(HttpResponse::Ok().body("No cast set or updated for comic"))
 }
@@ -42,9 +45,10 @@ pub(crate) async fn set_no_cast(
 pub(crate) async fn set_no_location(
     pool: web::Data<DbPool>,
     request: web::Json<SetFlagBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    set_flag(pool, request, auth, FlagType::HasNoLocation).await?;
+    set_flag(pool, request, *token, auth, FlagType::HasNoLocation).await?;
 
     Ok(HttpResponse::Ok().body("No location set or updated for comic"))
 }
@@ -52,9 +56,10 @@ pub(crate) async fn set_no_location(
 pub(crate) async fn set_no_storyline(
     pool: web::Data<DbPool>,
     request: web::Json<SetFlagBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    set_flag(pool, request, auth, FlagType::HasNoStoryline).await?;
+    set_flag(pool, request, *token, auth, FlagType::HasNoStoryline).await?;
 
     Ok(HttpResponse::Ok().body("No storyline set or updated for comic"))
 }
@@ -62,9 +67,10 @@ pub(crate) async fn set_no_storyline(
 pub(crate) async fn set_no_title(
     pool: web::Data<DbPool>,
     request: web::Json<SetFlagBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    set_flag(pool, request, auth, FlagType::HasNoTitle).await?;
+    set_flag(pool, request, *token, auth, FlagType::HasNoTitle).await?;
 
     Ok(HttpResponse::Ok().body("No title set or updated for comic"))
 }
@@ -72,9 +78,10 @@ pub(crate) async fn set_no_title(
 pub(crate) async fn set_no_tagline(
     pool: web::Data<DbPool>,
     request: web::Json<SetFlagBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
-    set_flag(pool, request, auth, FlagType::HasNoTagline).await?;
+    set_flag(pool, request, *token, auth, FlagType::HasNoTagline).await?;
 
     Ok(HttpResponse::Ok().body("No tagline set or updated for comic"))
 }
@@ -83,6 +90,7 @@ pub(crate) async fn set_no_tagline(
 async fn set_flag(
     pool: web::Data<DbPool>,
     request: web::Json<SetFlagBody>,
+    token: Token,
     auth: AuthDetails,
     flag: FlagType,
 ) -> Result<()> {
@@ -177,7 +185,7 @@ async fn set_flag(
 
     LogEntry::log_action(
         &mut *transaction,
-        request.token.to_string(),
+        token.to_string(),
         format!(
             "Set comic #{} {}",
             request.comic_id,
@@ -215,6 +223,7 @@ pub enum FlagType {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SetFlagBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     token: Token,
     comic_id: ComicId,
     flag_value: bool,

@@ -12,10 +12,13 @@ use shared::token_permissions;
 pub(crate) async fn set_title(
     pool: web::Data<DbPool>,
     request: web::Json<SetTitleBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     ensure_is_valid(&*request).map_err(error::ErrorBadRequest)?;
 
@@ -44,7 +47,7 @@ pub(crate) async fn set_title(
     if old_title.is_empty() {
         LogEntry::log_action(
             &mut *transaction,
-            request.token.to_string(),
+            token.to_string(),
             format!(
                 "Set title on comic #{} to \"{}\"",
                 request.comic_id, request.title
@@ -57,7 +60,7 @@ pub(crate) async fn set_title(
     } else {
         LogEntry::log_action(
             &mut *transaction,
-            request.token.to_string(),
+            token.to_string(),
             format!(
                 "Changed title on comic #{} from \"{}\" to \"{}\"",
                 request.comic_id, old_title, request.title
@@ -80,6 +83,7 @@ pub(crate) async fn set_title(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SetTitleBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     token: Token,
     comic_id: ComicId,
     title: String,

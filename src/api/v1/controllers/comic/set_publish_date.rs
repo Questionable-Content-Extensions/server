@@ -13,10 +13,13 @@ use shared::token_permissions;
 pub(crate) async fn set_publish_date(
     pool: web::Data<DbPool>,
     request: web::Json<SetPublishDateBody>,
+    token: web::ReqData<Token>,
     auth: AuthDetails,
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
         .map_err(error::ErrorForbidden)?;
+
+    let token = *token;
 
     ensure_is_valid(&*request).map_err(error::ErrorBadRequest)?;
 
@@ -46,7 +49,7 @@ pub(crate) async fn set_publish_date(
     if let Some(old_publish_date) = old_publish_date {
         LogEntry::log_action(
             &mut *transaction,
-            request.token.to_string(),
+            token.to_string(),
             format!(
                 "Changed publish date on comic #{} from \"{}\" to \"{}\"",
                 request.comic_id,
@@ -64,7 +67,7 @@ pub(crate) async fn set_publish_date(
     } else {
         LogEntry::log_action(
             &mut *transaction,
-            request.token.to_string(),
+            token.to_string(),
             format!(
                 "Set publish date on comic #{} to \"{}\"",
                 request.comic_id,
@@ -90,6 +93,7 @@ pub(crate) async fn set_publish_date(
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SetPublishDateBody {
+    #[expect(dead_code, reason = "required in the request body for legacy clients")]
     token: Token,
     comic_id: ComicId,
     publish_date: DateTime<Utc>,
