@@ -320,6 +320,10 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<HashSet<Str
 
     let token = if let Some(token) = token_from_query_or_header {
         token
+    } else if !has_json_body(request.request()) {
+        // Handlers of other body types, such as the v2 multipart image upload, look up their
+        // own token, so their bodies are left unbuffered and subject only to their own limits.
+        return Ok(HashSet::new());
     } else {
         let (http_request, payload) = request.parts_mut();
 
@@ -373,6 +377,15 @@ async fn extract_permissions(request: &mut ServiceRequest) -> Result<HashSet<Str
             .map_err(error::ErrorInternalServerError)
     })
     .await
+}
+
+/// Whether the request declares a JSON body, using the same content types `web::Json` accepts.
+fn has_json_body(http_request: &actix_web::HttpRequest) -> bool {
+    matches!(
+        http_request.mime_type(),
+        Ok(Some(mime)) if mime.subtype() == actix_web::mime::JSON
+            || mime.suffix() == Some(actix_web::mime::JSON)
+    )
 }
 
 /// Resolves `token`'s permissions, serving safe methods from `cache` and always calling `lookup`
@@ -500,6 +513,105 @@ mod tests {
             .to_http_request();
 
         assert_eq!(bearer_token_from_headers(&request), Some(Token::from(uuid)));
+    }
+
+    const PAYLOAD_LIMIT: usize = 1_048_576;
+
+    fn request_with_body(content_type: &str, body: Vec<u8>) -> ServiceRequest {
+        TestRequest::post()
+            .app_data(PayloadConfig::new(PAYLOAD_LIMIT))
+            .insert_header(("Content-Type", content_type))
+            .set_payload(body)
+            .to_srv_request()
+    }
+
+    async fn remaining_body(request: &mut ServiceRequest) -> Vec<u8> {
+        let mut payload = request.take_payload();
+        let mut body = Vec::new();
+        while let Some(chunk) = payload.next().await {
+            body.extend_from_slice(&chunk.unwrap());
+        }
+        body
+    }
+
+    #[actix_web::test]
+    async fn extract_permissions_leaves_multipart_body_over_payload_limit_unread() {
+        let body = vec![0xAB; 2 * PAYLOAD_LIMIT];
+        let mut request = request_with_body("multipart/form-data; boundary=x", body.clone());
+
+        let permissions = extract_permissions(&mut request).await.unwrap();
+
+        assert!(permissions.is_empty());
+        assert_eq!(remaining_body(&mut request).await, body);
+    }
+
+    #[actix_web::test]
+    async fn extract_permissions_leaves_body_without_content_type_unread() {
+        let body = vec![0xAB; 2 * PAYLOAD_LIMIT];
+        let mut request = TestRequest::post()
+            .app_data(PayloadConfig::new(PAYLOAD_LIMIT))
+            .set_payload(body.clone())
+            .to_srv_request();
+
+        let permissions = extract_permissions(&mut request).await.unwrap();
+
+        assert!(permissions.is_empty());
+        assert_eq!(remaining_body(&mut request).await, body);
+    }
+
+    #[actix_web::test]
+    async fn extract_permissions_restores_json_body_without_token() {
+        let body = br#"{"title":"x"}"#.to_vec();
+        let mut request = request_with_body("application/json", body.clone());
+
+        let permissions = extract_permissions(&mut request).await.unwrap();
+
+        assert!(permissions.is_empty());
+        assert_eq!(remaining_body(&mut request).await, body);
+    }
+
+    #[actix_web::test]
+    async fn extract_permissions_reads_json_body_for_a_token() {
+        let body = vec![b' '; 2 * PAYLOAD_LIMIT];
+        let mut request = request_with_body("application/merge-patch+json", body);
+
+        let error = extract_permissions(&mut request)
+            .await
+            .expect_err("the JSON body is buffered and exceeds the payload limit");
+
+        assert_eq!(
+            error.as_response_error().status_code(),
+            StatusCode::PAYLOAD_TOO_LARGE
+        );
+    }
+
+    #[test]
+    fn has_json_body_accepts_json_content_types() {
+        for content_type in [
+            "application/json",
+            "application/json; charset=utf-8",
+            "application/merge-patch+json",
+        ] {
+            let request = TestRequest::default()
+                .insert_header(("Content-Type", content_type))
+                .to_http_request();
+            assert!(has_json_body(&request), "{content_type}");
+        }
+    }
+
+    #[test]
+    fn has_json_body_rejects_other_content_types() {
+        for content_type in [
+            "multipart/form-data; boundary=x",
+            "application/x-www-form-urlencoded",
+            "text/plain",
+        ] {
+            let request = TestRequest::default()
+                .insert_header(("Content-Type", content_type))
+                .to_http_request();
+            assert!(!has_json_body(&request), "{content_type}");
+        }
+        assert!(!has_json_body(&TestRequest::default().to_http_request()));
     }
 
     #[test]
