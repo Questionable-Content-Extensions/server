@@ -1,11 +1,14 @@
 use crate::api::v2::models::{ItemColor, ItemType};
 use crate::models::{ItemId, Token};
-use crate::util::{andify_comma_string, ensure_is_authorized};
+use crate::util::{TextTooLong, andify_comma_string, ensure_is_authorized, ensure_is_valid};
 use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use database::DbPool;
-use database::models::{Item as DatabaseItem, LogEntry};
+use database::models::{
+    ITEM_NAME_MAX_CHARS, ITEM_SHORT_NAME_MAX_CHARS, Item as DatabaseItem, LogEntry,
+};
+use semval::{Validate, ValidationResult};
 use serde::Deserialize;
 use shared::token_permissions;
 use tracing::{Instrument, info_span};
@@ -21,6 +24,8 @@ pub(crate) async fn patch_item(
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_ITEM_DATA)
         .map_err(error::ErrorForbidden)?;
+
+    ensure_is_valid(&*request).map_err(error::ErrorBadRequest)?;
 
     let token = *token;
 
@@ -203,4 +208,68 @@ pub(crate) struct PatchItemBody {
     pub short_name: Option<String>,
     pub color: Option<String>,
     pub r#type: Option<ItemType>,
+}
+
+impl Validate for PatchItemBody {
+    type Invalidity = TextTooLong;
+    fn validate(&self) -> ValidationResult<Self::Invalidity> {
+        TextTooLong::collect([
+            TextTooLong::check("name", self.name.as_deref(), ITEM_NAME_MAX_CHARS),
+            TextTooLong::check(
+                "shortName",
+                self.short_name.as_deref(),
+                ITEM_SHORT_NAME_MAX_CHARS,
+            ),
+        ])
+        .into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn body(name: Option<String>, short_name: Option<String>) -> PatchItemBody {
+        PatchItemBody {
+            token: Token::from(uuid::Uuid::nil()),
+            name,
+            short_name,
+            color: None,
+            r#type: None,
+        }
+    }
+
+    #[test]
+    fn names_at_their_column_limits_are_valid() {
+        let body = body(
+            Some("a".repeat(ITEM_NAME_MAX_CHARS)),
+            Some("a".repeat(ITEM_SHORT_NAME_MAX_CHARS)),
+        );
+
+        assert!(ensure_is_valid(&body).is_ok());
+    }
+
+    #[test]
+    fn an_overlong_name_is_rejected_naming_the_limit() {
+        let body = body(Some("a".repeat(ITEM_NAME_MAX_CHARS + 1)), None);
+
+        let error = ensure_is_valid(&body).unwrap_err().to_string();
+
+        assert!(
+            error.contains("name must be at most 255 characters"),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn an_overlong_short_name_is_rejected_naming_the_limit() {
+        let body = body(None, Some("a".repeat(ITEM_SHORT_NAME_MAX_CHARS + 1)));
+
+        let error = ensure_is_valid(&body).unwrap_err().to_string();
+
+        assert!(
+            error.contains("shortName must be at most 50 characters"),
+            "{error}"
+        );
+    }
 }

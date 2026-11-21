@@ -1,3 +1,4 @@
+mod column_limits;
 mod comic;
 #[cfg(test)]
 mod db_tests;
@@ -13,6 +14,7 @@ mod token;
 
 use std::borrow::Borrow;
 
+pub use column_limits::*;
 pub use comic::*;
 pub use item::*;
 pub use item_type::*;

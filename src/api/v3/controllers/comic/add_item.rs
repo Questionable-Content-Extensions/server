@@ -1,14 +1,18 @@
 use crate::api::v3::controllers::comic::patch_comic::{FlagType, update_flag};
 use crate::api::v3::models::ItemType;
 use crate::models::{ComicId, ComicIdInvalidity, False, Token, True};
-use crate::util::{andify_comma_string, ensure_is_authorized, ensure_is_valid};
+use crate::util::{
+    TextTooLong, andify_comma_string, ensure_is_authorized, ensure_is_valid, short_name_from_name,
+};
 use actix_web::web::Json;
 use actix_web::{Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use anyhow::anyhow;
 use api_macros::api_endpoint;
 use database::DbPool;
-use database::models::{Comic as DatabaseComic, Item as DatabaseItem, LogEntry, Occurrence};
+use database::models::{
+    Comic as DatabaseComic, ITEM_NAME_MAX_CHARS, Item as DatabaseItem, LogEntry, Occurrence,
+};
 use parse_display::Display;
 use semval::Validate;
 use semval::context::Context as ValidationContext;
@@ -55,7 +59,7 @@ pub async fn add_item(
             let result = DatabaseItem::create(
                 &mut *transaction,
                 &new.new_item_name,
-                &new.new_item_name,
+                &short_name_from_name(&new.new_item_name),
                 (new.new_item_type).into(),
             )
             .await
@@ -321,6 +325,35 @@ mod tests {
             None
         );
     }
+
+    fn new_item_body(new_item_name: &str) -> AddItemToComicBody {
+        serde_json::from_value(serde_json::json!({
+            "comicId": 1,
+            "new": true,
+            "newItemName": new_item_name,
+            "newItemType": "cast",
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn new_item_name_at_the_name_column_limit_is_valid() {
+        let body = new_item_body(&"a".repeat(ITEM_NAME_MAX_CHARS));
+
+        assert!(ensure_is_valid(&body).is_ok());
+    }
+
+    #[test]
+    fn overlong_new_item_name_is_rejected_naming_the_limit() {
+        let body = new_item_body(&"a".repeat(ITEM_NAME_MAX_CHARS + 1));
+
+        let error = ensure_is_valid(&body).unwrap_err().to_string();
+
+        assert!(
+            error.contains("newItemName must be at most 255 characters"),
+            "{error}"
+        );
+    }
 }
 
 #[derive(Debug, Deserialize, TS)]
@@ -355,6 +388,18 @@ impl Validate for AddItemToComicBody {
                 },
                 AddItemToComicBodyInvalidity::EmptyNewItemName,
             )
+            .merge_result_with(
+                TextTooLong::collect([match &self.item {
+                    ItemBody::New(new) => TextTooLong::check(
+                        "newItemName",
+                        Some(&new.new_item_name),
+                        ITEM_NAME_MAX_CHARS,
+                    ),
+                    ItemBody::Existing(_) => None,
+                }])
+                .into_result(),
+                AddItemToComicBodyInvalidity::NewItemNameTooLong,
+            )
             .into()
     }
 }
@@ -369,6 +414,8 @@ pub enum AddItemToComicBodyInvalidity {
     ItemIdInvalid,
     #[display("newItemName value is empty")]
     EmptyNewItemName,
+    #[display("{0}")]
+    NewItemNameTooLong(TextTooLong),
 }
 
 #[derive(Debug, Deserialize, TS)]

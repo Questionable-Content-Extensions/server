@@ -1,11 +1,14 @@
 use crate::api::v2::controllers::comic::add_item::FlagType;
 use crate::models::{ComicId, Token};
-use crate::util::{andify_comma_string, ensure_is_authorized};
+use crate::util::{TextTooLong, andify_comma_string, ensure_is_authorized, ensure_is_valid};
 use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
 use chrono::{DateTime, TimeZone, Utc};
-use database::models::{Comic as DatabaseComic, LogEntry};
+use database::models::{
+    COMIC_TAGLINE_MAX_CHARS, COMIC_TITLE_MAX_CHARS, Comic as DatabaseComic, LogEntry,
+};
 use database::{DbPool, DbTransaction};
+use semval::{Validate, ValidationResult};
 use serde::Deserialize;
 use shared::token_permissions;
 use tracing::{Instrument, info_span};
@@ -21,6 +24,7 @@ pub(crate) async fn patch_comic(
 ) -> Result<HttpResponse> {
     ensure_is_authorized(&auth, token_permissions::CAN_CHANGE_COMIC_DATA)
         .map_err(error::ErrorForbidden)?;
+    ensure_is_valid(&*request).map_err(error::ErrorBadRequest)?;
 
     let token = *token;
 
@@ -443,6 +447,61 @@ pub(crate) struct PatchComicBody {
     pub has_no_storyline: Option<bool>,
     pub has_no_title: Option<bool>,
     pub has_no_tagline: Option<bool>,
+}
+
+impl Validate for PatchComicBody {
+    type Invalidity = TextTooLong;
+    fn validate(&self) -> ValidationResult<Self::Invalidity> {
+        TextTooLong::collect([
+            TextTooLong::check("title", self.title.as_deref(), COMIC_TITLE_MAX_CHARS),
+            TextTooLong::check("tagline", self.tagline.as_deref(), COMIC_TAGLINE_MAX_CHARS),
+        ])
+        .into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    fn body(title: &str, tagline: &str) -> PatchComicBody {
+        serde_json::from_value(json!({
+            "token": uuid::Uuid::nil(),
+            "title": title,
+            "tagline": tagline,
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn title_and_tagline_at_their_column_limits_are_valid() {
+        let body = body(
+            &"a".repeat(COMIC_TITLE_MAX_CHARS),
+            &"a".repeat(COMIC_TAGLINE_MAX_CHARS),
+        );
+
+        assert!(ensure_is_valid(&body).is_ok());
+    }
+
+    #[test]
+    fn an_overlong_title_and_tagline_are_rejected_naming_the_limits() {
+        let body = body(
+            &"a".repeat(COMIC_TITLE_MAX_CHARS + 1),
+            &"a".repeat(COMIC_TAGLINE_MAX_CHARS + 1),
+        );
+
+        let error = ensure_is_valid(&body).unwrap_err().to_string();
+
+        assert!(
+            error.contains("title must be at most 255 characters"),
+            "{error}"
+        );
+        assert!(
+            error.contains("tagline must be at most 255 characters"),
+            "{error}"
+        );
+    }
 }
 
 #[derive(Debug, Deserialize)]

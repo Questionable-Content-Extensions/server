@@ -1,7 +1,10 @@
 use actix_web_grants::authorities::{AuthDetails, AuthoritiesCheck};
 use anyhow::{Result, anyhow};
+use database::models::ITEM_SHORT_NAME_MAX_CHARS;
 use futures::{Future, Stream, StreamExt};
+use semval::context::Context as ValidationContext;
 use semval::{Invalidity, Validate};
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::fmt::Display;
 use std::pin::Pin;
@@ -144,6 +147,47 @@ where
     Ok(())
 }
 
+/// A text field longer than its database column allows.
+#[derive(Copy, Clone, Debug, parse_display::Display, Eq, PartialEq)]
+#[display("{field} must be at most {max_chars} characters")]
+pub struct TextTooLong {
+    pub field: &'static str,
+    pub max_chars: usize,
+}
+
+impl TextTooLong {
+    /// `Some` if `value` has more than `max_chars` characters.
+    pub fn check(field: &'static str, value: Option<&str>, max_chars: usize) -> Option<Self> {
+        value
+            .is_some_and(|value| has_more_chars_than(value, max_chars))
+            .then_some(Self { field, max_chars })
+    }
+
+    /// Collects the results of [`TextTooLong::check`] into a validation context.
+    pub fn collect(checks: impl IntoIterator<Item = Option<Self>>) -> ValidationContext<Self> {
+        checks
+            .into_iter()
+            .flatten()
+            .fold(ValidationContext::new(), ValidationContext::invalidate)
+    }
+}
+
+/// The short name a new item gets from its name: the name itself, or, if the
+/// name is longer than `Item.short_name` allows, its start ending in `…`.
+pub fn short_name_from_name(name: &str) -> Cow<'_, str> {
+    if !has_more_chars_than(name, ITEM_SHORT_NAME_MAX_CHARS) {
+        return Cow::Borrowed(name);
+    }
+    let kept: String = name.chars().take(ITEM_SHORT_NAME_MAX_CHARS - 1).collect();
+    Cow::Owned(kept + "…")
+}
+
+/// Counts characters (Unicode scalar values) as `MariaDB` does for `utf8mb4`
+/// `varchar` columns.
+fn has_more_chars_than(value: &str, max_chars: usize) -> bool {
+    value.chars().nth(max_chars).is_some()
+}
+
 /// Replaces the last comma in a string with `and` (if there's a single comma)
 /// or with `, and` if there's multiple.
 pub fn andify_comma_string(changed: &mut String) {
@@ -197,6 +241,53 @@ pub(crate) mod test_support {
             Ok::<_, PayloadError>(body.slice(start..body.len().min(start + 64 * 1024)))
         });
         Multipart::new(&headers, futures::stream::iter(chunks))
+    }
+}
+
+#[cfg(test)]
+mod text_length_tests {
+    use super::*;
+
+    #[test]
+    fn text_at_the_limit_is_accepted() {
+        assert_eq!(TextTooLong::check("name", Some(&"a".repeat(5)), 5), None);
+    }
+
+    #[test]
+    fn text_over_the_limit_is_rejected_with_the_field_and_limit() {
+        let invalidity = TextTooLong::check("name", Some(&"a".repeat(6)), 5).unwrap();
+
+        assert_eq!(invalidity.to_string(), "name must be at most 5 characters");
+    }
+
+    #[test]
+    fn text_length_counts_characters_not_bytes() {
+        assert_eq!(TextTooLong::check("name", Some("ææææø"), 5), None);
+    }
+
+    #[test]
+    fn absent_text_is_accepted() {
+        assert_eq!(TextTooLong::check("name", None, 0), None);
+    }
+
+    #[test]
+    fn short_name_from_name_keeps_a_name_that_fits() {
+        let name = "ø".repeat(ITEM_SHORT_NAME_MAX_CHARS);
+
+        assert_eq!(short_name_from_name(&name), name);
+    }
+
+    #[test]
+    fn short_name_from_name_ends_an_overlong_name_in_an_ellipsis() {
+        let name = format!("{}xyz", "ø".repeat(ITEM_SHORT_NAME_MAX_CHARS - 1));
+
+        let short_name = short_name_from_name(&name);
+
+        assert_eq!(
+            short_name,
+            format!("{}…", "ø".repeat(ITEM_SHORT_NAME_MAX_CHARS - 1))
+        );
+        assert_eq!(short_name.chars().count(), ITEM_SHORT_NAME_MAX_CHARS);
     }
 }
 
