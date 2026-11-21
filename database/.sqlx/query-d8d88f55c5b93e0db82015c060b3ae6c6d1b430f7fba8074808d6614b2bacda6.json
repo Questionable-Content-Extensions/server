@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `i2`.`id`,\n                    `i2`.`short_name`,\n                    `i2`.`name`,\n                    `i2`.`type`,\n                    `i2`.`color_blue`,\n                    `i2`.`color_green`,\n                    `i2`.`color_red`,\n                    COUNT(`i2`.`id`) as `count`\n                FROM `Item` `i`\n                JOIN `Occurrence` `o` ON `i`.`id` = `o`.`item_id`\n                JOIN `Occurrence` `o2` ON `o`.`comic_id` = `o2`.`comic_id`\n                JOIN Item `i2` ON `o2`.`item_id` = `i2`.`id`\n                WHERE `i`.`id` = ?\n                    AND `i2`.`id` <> `i`.`id`\n                    AND `i2`.`type` = ?\n                GROUP BY `i2`.`id`\n                ORDER BY `count` DESC\n                LIMIT ?\n            ",
+  "query": "\n                SELECT\n                    `i2`.`id`,\n                    `i2`.`short_name`,\n                    `i2`.`name`,\n                    `i2`.`type`,\n                    `i2`.`color_blue`,\n                    `i2`.`color_green`,\n                    `i2`.`color_red`,\n                    COUNT(`i2`.`id`) as `count`\n                FROM `Item` `i`\n                JOIN `v_visible_occurrence` `o` ON `i`.`id` = `o`.`item_id`\n                JOIN `v_visible_occurrence` `o2` ON `o`.`comic_id` = `o2`.`comic_id`\n                JOIN Item `i2` ON `o2`.`item_id` = `i2`.`id`\n                WHERE `i`.`id` = ?\n                    AND `i2`.`id` <> `i`.`id`\n                    AND `i2`.`type` = ?\n                GROUP BY `i2`.`id`\n                ORDER BY `count` DESC\n                LIMIT ?\n            ",
   "describe": {
     "columns": [
       {
@@ -141,5 +141,5 @@
       false
     ]
   },
-  "hash": "f3d9b8cb6b20856e070c66a738505cefbaff42713ab0fe2697ecfbcc3d930585"
+  "hash": "d8d88f55c5b93e0db82015c060b3ae6c6d1b430f7fba8074808d6614b2bacda6"
 }

@@ -282,7 +282,7 @@ impl Comic {
             Self,
             r#"
                 SELECT c.* FROM `Comic` c
-                JOIN `Occurrence` o on o.`comic_id` = c.`id`
+                JOIN `v_visible_occurrence` o on o.`comic_id` = c.`id`
                 WHERE o.`item_id` = ?
                 ORDER BY c.`id` ASC
             "#,
@@ -311,7 +311,7 @@ impl Comic {
         let count = sqlx::query_scalar!(
             r#"
                 SELECT COUNT(*) FROM `Comic` c
-                JOIN `Occurrence` o ON o.`comic_id` = c.`id`
+                JOIN `v_visible_occurrence` o ON o.`comic_id` = c.`id`
                 WHERE o.`item_id` = ?
                     AND c.`id` != ?
                     AND (? IS NULL OR c.`is_guest_comic` = ?)
@@ -336,7 +336,7 @@ impl Comic {
         sqlx::query_scalar!(
             r#"
                 SELECT c.`id` FROM `Comic` c
-                JOIN `Occurrence` o ON o.`comic_id` = c.`id`
+                JOIN `v_visible_occurrence` o ON o.`comic_id` = c.`id`
                 WHERE o.`item_id` = ?
                     AND c.`id` != ?
                     AND (? IS NULL OR c.`is_guest_comic` = ?)

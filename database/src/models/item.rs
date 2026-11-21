@@ -91,7 +91,7 @@ impl Item {
                     `i`.`end_comic_id`,
                     COUNT(`o`.`comic_id`) AS `count`
                 FROM `Item` `i`
-                LEFT JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                LEFT JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`
                 GROUP BY `i`.`id`
                 ORDER BY `count` DESC
             "#,
@@ -166,7 +166,7 @@ impl Item {
                     MIN(`comic_id`) AS `first`,
                     MAX(`comic_id`) AS `last`,
                     COUNT(`comic_id`) AS `count`
-                FROM `Occurrence`
+                FROM `v_visible_occurrence`
                 WHERE `item_id` = ?
                 GROUP by `item_id`
             "#,
@@ -202,10 +202,10 @@ impl Item {
                             MIN(`comic_id`) AS first,
                             MAX(`comic_id`) AS last,
                             COUNT(`comic_id`) AS `count`
-                        FROM `Occurrence`
+                        FROM `v_visible_occurrence`
                         WHERE `item_id` = ?
                     ) AS occ
-                    CROSS JOIN (SELECT COUNT(*) AS total_comics FROM `Comic`) AS comics
+                    CROSS JOIN (SELECT COUNT(*) AS total_comics FROM `v_visible_comic`) AS comics
                     CROSS JOIN (
                         SELECT COUNT(*) AS image_count
                         FROM `ItemImage`
@@ -261,10 +261,10 @@ impl Item {
                         MIN(`comic_id`) AS first,
                         MAX(`comic_id`) AS last,
                         COUNT(`comic_id`) AS `count`
-                    FROM `Occurrence`
+                    FROM `v_visible_occurrence`
                     WHERE `item_id` = ?
                 ) AS occ
-                CROSS JOIN (SELECT COUNT(*) AS total_comics FROM `Comic`) AS comics
+                CROSS JOIN (SELECT COUNT(*) AS total_comics FROM `v_visible_comic`) AS comics
                 CROSS JOIN (
                     SELECT COUNT(*) AS image_count, MIN(`id`) AS first_image_id
                     FROM `ItemImage`
@@ -944,7 +944,7 @@ impl Item {
                     `i`.`end_comic_id` AS `end_comic_id`,
                     `o`.`comic_id` AS `occurrence_comic_id`
                 FROM `Item` `i`
-                LEFT JOIN `Occurrence` `o`
+                LEFT JOIN `v_visible_occurrence` `o`
                     ON `o`.`item_id` = `i`.`id`
                     AND `o`.`comic_id` >= `i`.`start_comic_id`
                     AND (`i`.`end_comic_id` IS NULL OR `o`.`comic_id` < `i`.`end_comic_id`)
@@ -988,8 +988,8 @@ impl Item {
                     `i2`.`color_red`,
                     COUNT(`i2`.`id`) as `count`
                 FROM `Item` `i`
-                JOIN `Occurrence` `o` ON `i`.`id` = `o`.`item_id`
-                JOIN `Occurrence` `o2` ON `o`.`comic_id` = `o2`.`comic_id`
+                JOIN `v_visible_occurrence` `o` ON `i`.`id` = `o`.`item_id`
+                JOIN `v_visible_occurrence` `o2` ON `o`.`comic_id` = `o2`.`comic_id`
                 JOIN Item `i2` ON `o2`.`item_id` = `i2`.`id`
                 WHERE `i`.`id` = ?
                     AND `i2`.`id` <> `i`.`id`

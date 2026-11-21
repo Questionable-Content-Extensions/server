@@ -46,7 +46,7 @@ impl Occurrence {
     {
         sqlx::query_scalar!(
             r#"
-                SELECT `comic_id` FROM `Occurrence`
+                SELECT `comic_id` FROM `v_visible_occurrence`
                 WHERE
                     `item_id` = ?
             "#,

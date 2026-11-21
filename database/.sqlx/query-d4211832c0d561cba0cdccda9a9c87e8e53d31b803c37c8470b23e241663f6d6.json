@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT c.* FROM `Comic` c\n                JOIN `Occurrence` o on o.`comic_id` = c.`id`\n                WHERE o.`item_id` = ?\n                ORDER BY c.`id` ASC\n            ",
+  "query": "\n                SELECT c.* FROM `Comic` c\n                JOIN `v_visible_occurrence` o on o.`comic_id` = c.`id`\n                WHERE o.`item_id` = ?\n                ORDER BY c.`id` ASC\n            ",
   "describe": {
     "columns": [
       {
@@ -248,5 +248,5 @@
       false
     ]
   },
-  "hash": "915da40398a3521ec7f324e2e65753b6b68a65b0d1b94964e0c6f439777b47ea"
+  "hash": "d4211832c0d561cba0cdccda9a9c87e8e53d31b803c37c8470b23e241663f6d6"
 }

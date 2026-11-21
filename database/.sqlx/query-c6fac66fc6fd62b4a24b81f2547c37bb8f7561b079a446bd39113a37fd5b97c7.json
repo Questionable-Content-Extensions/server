@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `item_id` AS `id`,\n                    MIN(`comic_id`) AS `first`,\n                    MAX(`comic_id`) AS `last`,\n                    COUNT(`comic_id`) AS `count`\n                FROM `Occurrence`\n                WHERE `item_id` = ?\n                GROUP by `item_id`\n            ",
+  "query": "\n                SELECT\n                    `item_id` AS `id`,\n                    MIN(`comic_id`) AS `first`,\n                    MAX(`comic_id`) AS `last`,\n                    COUNT(`comic_id`) AS `count`\n                FROM `v_visible_occurrence`\n                WHERE `item_id` = ?\n                GROUP by `item_id`\n            ",
   "describe": {
     "columns": [
       {
@@ -14,7 +14,7 @@
         },
         "origin": {
           "Table": {
-            "table": "dphoenix_qcnav.Occurrence",
+            "table": "dphoenix_qcnav.v_visible_occurrence",
             "name": "item_id"
           }
         }
@@ -63,5 +63,5 @@
       false
     ]
   },
-  "hash": "f95d8b69af9939012fd33a0fb2bc0f9865ea197736527470d82c16696bbbc33c"
+  "hash": "c6fac66fc6fd62b4a24b81f2547c37bb8f7561b079a446bd39113a37fd5b97c7"
 }

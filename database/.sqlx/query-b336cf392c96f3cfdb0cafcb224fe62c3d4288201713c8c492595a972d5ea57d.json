@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT `comic_id` FROM `Occurrence`\n                WHERE\n                    `item_id` = ?\n            ",
+  "query": "\n                SELECT `comic_id` FROM `v_visible_occurrence`\n                WHERE\n                    `item_id` = ?\n            ",
   "describe": {
     "columns": [
       {
@@ -14,7 +14,7 @@
         },
         "origin": {
           "Table": {
-            "table": "dphoenix_qcnav.Occurrence",
+            "table": "dphoenix_qcnav.v_visible_occurrence",
             "name": "comic_id"
           }
         }
@@ -27,5 +27,5 @@
       false
     ]
   },
-  "hash": "0b8cda73bf288c260b501b08bbd47fa1504333ec3cb8488fec1520dfb2cd916c"
+  "hash": "b336cf392c96f3cfdb0cafcb224fe62c3d4288201713c8c492595a972d5ea57d"
 }

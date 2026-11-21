@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`short_name`,\n                    `i`.`name`,\n                    `i`.`type`,\n                    `i`.`color_blue`,\n                    `i`.`color_green`,\n                    `i`.`color_red`,\n                    `i`.`primary_image`,\n                    `i`.`start_comic_id`,\n                    `i`.`end_comic_id`,\n                    COUNT(`o`.`comic_id`) AS `count`\n                FROM `Item` `i`\n                LEFT JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                GROUP BY `i`.`id`\n                ORDER BY `count` DESC\n            ",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`short_name`,\n                    `i`.`name`,\n                    `i`.`type`,\n                    `i`.`color_blue`,\n                    `i`.`color_green`,\n                    `i`.`color_red`,\n                    `i`.`primary_image`,\n                    `i`.`start_comic_id`,\n                    `i`.`end_comic_id`,\n                    COUNT(`o`.`comic_id`) AS `count`\n                FROM `Item` `i`\n                LEFT JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                GROUP BY `i`.`id`\n                ORDER BY `count` DESC\n            ",
   "describe": {
     "columns": [
       {
@@ -192,5 +192,5 @@
       false
     ]
   },
-  "hash": "fbbd9ef59bf98d431c957974def0d0922b23aa33cd0a98855bea2db767d50966"
+  "hash": "00065dffa7622c370f209c8ed2cde66ef949d30ade907e0b568774786c2df6be"
 }

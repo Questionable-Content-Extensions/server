@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `i`.`id` AS `item_id`,\n                    `i`.`start_comic_id` AS `start_comic_id!: u16`,\n                    `i`.`end_comic_id` AS `end_comic_id`,\n                    `o`.`comic_id` AS `occurrence_comic_id`\n                FROM `Item` `i`\n                LEFT JOIN `Occurrence` `o`\n                    ON `o`.`item_id` = `i`.`id`\n                    AND `o`.`comic_id` >= `i`.`start_comic_id`\n                    AND (`i`.`end_comic_id` IS NULL OR `o`.`comic_id` < `i`.`end_comic_id`)\n                WHERE `i`.`type` = 'storyline'\n                    AND `i`.`start_comic_id` <= ?\n                    AND (`i`.`end_comic_id` IS NULL OR ? < `i`.`end_comic_id`)\n                ORDER BY `i`.`id`, `o`.`comic_id`\n            ",
+  "query": "\n                SELECT\n                    `i`.`id` AS `item_id`,\n                    `i`.`start_comic_id` AS `start_comic_id!: u16`,\n                    `i`.`end_comic_id` AS `end_comic_id`,\n                    `o`.`comic_id` AS `occurrence_comic_id`\n                FROM `Item` `i`\n                LEFT JOIN `v_visible_occurrence` `o`\n                    ON `o`.`item_id` = `i`.`id`\n                    AND `o`.`comic_id` >= `i`.`start_comic_id`\n                    AND (`i`.`end_comic_id` IS NULL OR `o`.`comic_id` < `i`.`end_comic_id`)\n                WHERE `i`.`type` = 'storyline'\n                    AND `i`.`start_comic_id` <= ?\n                    AND (`i`.`end_comic_id` IS NULL OR ? < `i`.`end_comic_id`)\n                ORDER BY `i`.`id`, `o`.`comic_id`\n            ",
   "describe": {
     "columns": [
       {
@@ -62,7 +62,7 @@
         },
         "origin": {
           "Table": {
-            "table": "dphoenix_qcnav.Occurrence",
+            "table": "dphoenix_qcnav.o",
             "name": "comic_id"
           }
         }
@@ -78,5 +78,5 @@
       true
     ]
   },
-  "hash": "3c0252569f2e72979b51baa651997ab7761ed98a6e303a3d4a8f2688b3eda9f8"
+  "hash": "22ed0776c9e6ef7969132fd6655431d32ce89daf11b260c3dc631f529d9b41df"
 }

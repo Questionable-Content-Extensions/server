@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`short_name`,\n                    `i`.`name`,\n                    `i`.`type`,\n                    `i`.`color_blue`,\n                    `i`.`color_green`,\n                    `i`.`color_red`,\n                    `i`.`primary_image`,\n                    `i`.`start_comic_id`,\n                    `i`.`end_comic_id`,\n                    occ.first AS `first: u16`,\n                    occ.last AS `last: u16`,\n                    occ.count,\n                    comics.total_comics,\n                    imgs.image_count,\n                    imgs.first_image_id AS `first_image_id: u32`\n                FROM `Item` `i`\n                CROSS JOIN (\n                    SELECT\n                        MIN(`comic_id`) AS first,\n                        MAX(`comic_id`) AS last,\n                        COUNT(`comic_id`) AS `count`\n                    FROM `Occurrence`\n                    WHERE `item_id` = ?\n                ) AS occ\n                CROSS JOIN (SELECT COUNT(*) AS total_comics FROM `Comic`) AS comics\n                CROSS JOIN (\n                    SELECT COUNT(*) AS image_count, MIN(`id`) AS first_image_id\n                    FROM `ItemImage`\n                    WHERE `item_id` = ?\n                ) AS imgs\n                WHERE `i`.`id` = ?\n            ",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`short_name`,\n                    `i`.`name`,\n                    `i`.`type`,\n                    `i`.`color_blue`,\n                    `i`.`color_green`,\n                    `i`.`color_red`,\n                    `i`.`primary_image`,\n                    `i`.`start_comic_id`,\n                    `i`.`end_comic_id`,\n                    occ.first AS `first: u16`,\n                    occ.last AS `last: u16`,\n                    occ.count,\n                    comics.total_comics,\n                    imgs.image_count,\n                    imgs.first_image_id AS `first_image_id: u32`\n                FROM `Item` `i`\n                CROSS JOIN (\n                    SELECT\n                        MIN(`comic_id`) AS first,\n                        MAX(`comic_id`) AS last,\n                        COUNT(`comic_id`) AS `count`\n                    FROM `v_visible_occurrence`\n                    WHERE `item_id` = ?\n                ) AS occ\n                CROSS JOIN (SELECT COUNT(*) AS total_comics FROM `v_visible_comic`) AS comics\n                CROSS JOIN (\n                    SELECT COUNT(*) AS image_count, MIN(`id`) AS first_image_id\n                    FROM `ItemImage`\n                    WHERE `item_id` = ?\n                ) AS imgs\n                WHERE `i`.`id` = ?\n            ",
   "describe": {
     "columns": [
       {
@@ -168,32 +168,22 @@
         "name": "first: u16",
         "type_info": {
           "type": "Short",
-          "flags": "UNSIGNED | NO_DEFAULT_VALUE",
+          "flags": "UNSIGNED",
           "collation": 63,
           "max_size": 6
         },
-        "origin": {
-          "Table": {
-            "table": "Occurrence",
-            "name": "first"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 11,
         "name": "last: u16",
         "type_info": {
           "type": "Short",
-          "flags": "UNSIGNED | NO_DEFAULT_VALUE",
+          "flags": "UNSIGNED",
           "collation": 63,
           "max_size": 6
         },
-        "origin": {
-          "Table": {
-            "table": "Occurrence",
-            "name": "last"
-          }
-        }
+        "origin": "Expression"
       },
       {
         "ordinal": 12,
@@ -267,5 +257,5 @@
       true
     ]
   },
-  "hash": "5c8ac9c44e50a3cf6e1e50c0e256fd800bb99356fc6dc403ad2a283774b55b9d"
+  "hash": "c4e0c411dae3dd030812ba1c3ffece4aea48033dbbc402c3bb0fd22ed6b2076b"
 }

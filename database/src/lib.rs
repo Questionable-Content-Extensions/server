@@ -98,6 +98,94 @@ mod tests {
         }
     }
 
+    #[test]
+    fn public_item_queries_read_only_visible_comics() {
+        let occurrence: &[&str] = &["`Occurrence`"];
+        let occurrence_and_comic: &[&str] = &["`Occurrence`", "`Comic`"];
+        let functions = [
+            (
+                "item.rs",
+                include_str!("models/item.rs"),
+                "all_with_counts",
+                occurrence,
+            ),
+            (
+                "item.rs",
+                include_str!("models/item.rs"),
+                "first_and_last_apperance_and_count_by_id",
+                occurrence,
+            ),
+            (
+                "item.rs",
+                include_str!("models/item.rs"),
+                "occurrence_stats_by_id",
+                occurrence_and_comic,
+            ),
+            (
+                "item.rs",
+                include_str!("models/item.rs"),
+                "by_id_with_stats",
+                occurrence_and_comic,
+            ),
+            (
+                "item.rs",
+                include_str!("models/item.rs"),
+                "active_storylines_by_comic_id",
+                occurrence,
+            ),
+            (
+                "item.rs",
+                include_str!("models/item.rs"),
+                "related_items_by_id_and_type_with_mapping",
+                occurrence,
+            ),
+            (
+                "comic.rs",
+                include_str!("models/comic.rs"),
+                "all_with_item_id_mapped",
+                occurrence,
+            ),
+            (
+                "comic.rs",
+                include_str!("models/comic.rs"),
+                "random_comic_id_with_item_id",
+                occurrence,
+            ),
+            (
+                "occurrence.rs",
+                include_str!("models/occurrence.rs"),
+                "comic_id_occurrence_by_item_id",
+                occurrence,
+            ),
+        ];
+
+        for (file, source, function, tables) in functions {
+            let body = function_source(source, function)
+                .unwrap_or_else(|| panic!("models/{file} has no function `{function}`"));
+            for line in body.lines() {
+                if line.trim_start().starts_with("//") {
+                    continue;
+                }
+                for table in tables {
+                    assert!(
+                        !line.contains(table),
+                        "models/{file}: `{function}` reads {table} directly; read \
+                         `v_visible_comic` or `v_visible_occurrence` so hidden comics stay out \
+                         of the public item data:\n{line}"
+                    );
+                }
+            }
+        }
+    }
+
+    /// Returns the source from `pub async fn {name}` up to the next `pub async fn`.
+    fn function_source<'s>(source: &'s str, name: &str) -> Option<&'s str> {
+        const FN: &str = "pub async fn ";
+        let start = source.find(&format!("{FN}{name}<"))?;
+        let rest = &source[start + FN.len()..];
+        Some(rest.find(FN).map_or(rest, |end| &rest[..end]))
+    }
+
     /// Maps each view name to the last `CREATE ... VIEW` statement that defines it, in migration
     /// order.
     fn latest_view_definitions() -> BTreeMap<String, String> {

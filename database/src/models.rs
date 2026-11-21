@@ -1,4 +1,8 @@
 mod comic;
+#[cfg(test)]
+mod db_tests;
+#[cfg(test)]
+mod hidden_comic_fixture;
 mod item;
 mod item_type;
 mod log_entry;

@@ -1,0 +1,74 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    occ.first AS `first: u16`,\n                    occ.last AS `last: u16`,\n                    occ.count,\n                    comics.total_comics,\n                    imgs.image_count\n                FROM\n                    (\n                        SELECT\n                            MIN(`comic_id`) AS first,\n                            MAX(`comic_id`) AS last,\n                            COUNT(`comic_id`) AS `count`\n                        FROM `v_visible_occurrence`\n                        WHERE `item_id` = ?\n                    ) AS occ\n                    CROSS JOIN (SELECT COUNT(*) AS total_comics FROM `v_visible_comic`) AS comics\n                    CROSS JOIN (\n                        SELECT COUNT(*) AS image_count\n                        FROM `ItemImage`\n                        WHERE `item_id` = ?\n                    ) AS imgs\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "first: u16",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "collation": 63,
+          "max_size": 6
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "last: u16",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "collation": 63,
+          "max_size": 6
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "count",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "total_comics",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "image_count",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "42bbec10cc05ec92d8bbfaa56f7a881e40c21f59c1da761d2696e695015f1ea8"
+}
