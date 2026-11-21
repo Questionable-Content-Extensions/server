@@ -79,6 +79,25 @@ mod tests {
         }
     }
 
+    #[test]
+    fn stats_queries_read_only_visible_comics() {
+        let source = include_str!("models/stats.rs");
+
+        for (index, line) in source.lines().enumerate() {
+            if line.trim_start().starts_with("//") {
+                continue;
+            }
+            for table in ["`Comic`", "`Occurrence`"] {
+                assert!(
+                    !line.contains(table),
+                    "models/stats.rs:{} reads {table} directly; read `v_visible_comic` or \
+                     `v_visible_occurrence` so hidden comics stay out of the public stats:\n{line}",
+                    index + 1
+                );
+            }
+        }
+    }
+
     /// Maps each view name to the last `CREATE ... VIEW` statement that defines it, in migration
     /// order.
     fn latest_view_definitions() -> BTreeMap<String, String> {

@@ -1,0 +1,72 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`name`,\n                    MONTH(`c`.`publish_date`) AS `month`,\n                    COUNT(*) AS `appearances`\n                FROM `Item` `i`\n                JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`\n                WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL\n                  AND `i`.`id` IN (\n                    SELECT `item_id` FROM `v_visible_occurrence`\n                    GROUP BY `item_id`\n                    HAVING COUNT(*) >= 50\n                  )\n                GROUP BY `i`.`id`, MONTH(`c`.`publish_date`)\n                ORDER BY `i`.`id`, `month`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "collation": 63,
+          "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "collation": 224,
+          "max_size": 1020
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "month",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "collation": 63,
+          "max_size": 2
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "25dcef8704dc1a0a51c561b3a4eb247c371261610d3603600f7f3df15d6e1bf8"
+}

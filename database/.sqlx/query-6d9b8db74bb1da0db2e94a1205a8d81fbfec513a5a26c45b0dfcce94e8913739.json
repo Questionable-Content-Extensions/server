@@ -1,0 +1,38 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    YEAR(`c`.`publish_date`) AS `year`,\n                    COUNT(*) AS `comics_together`\n                FROM `v_visible_occurrence` `o1`\n                JOIN `v_visible_occurrence` `o2`\n                    ON `o1`.`comic_id` = `o2`.`comic_id`\n                    AND `o2`.`item_id` = ?\n                JOIN `v_visible_comic` `c` ON `o1`.`comic_id` = `c`.`id`\n                WHERE `o1`.`item_id` = ? AND `c`.`publish_date` IS NOT NULL\n                GROUP BY YEAR(`c`.`publish_date`)\n                ORDER BY `year`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "collation": 63,
+          "max_size": 4
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "comics_together",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "6d9b8db74bb1da0db2e94a1205a8d81fbfec513a5a26c45b0dfcce94e8913739"
+}

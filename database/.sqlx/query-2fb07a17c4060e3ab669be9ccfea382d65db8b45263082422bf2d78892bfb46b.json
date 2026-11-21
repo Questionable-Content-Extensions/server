@@ -1,0 +1,72 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `i`.`id`,\n                    `i`.`name`,\n                    COUNT(*) AS `appearances`,\n                    CAST(AVG(GREATEST(0, `cast_count`.`cnt` - 1)) AS DOUBLE) AS `avg_co_cast`\n                FROM `Item` `i`\n                JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN (\n                    SELECT `o2`.`comic_id`, COUNT(*) AS `cnt`\n                    FROM `v_visible_occurrence` `o2`\n                    JOIN `Item` `i2` ON `o2`.`item_id` = `i2`.`id` AND `i2`.`type` = 'cast'\n                    GROUP BY `o2`.`comic_id`\n                ) `cast_count` ON `cast_count`.`comic_id` = `o`.`comic_id`\n                WHERE `i`.`type` = 'cast'\n                GROUP BY `i`.`id`\n                HAVING COUNT(*) >= 10\n                ORDER BY `avg_co_cast` ASC, `i`.`id`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "collation": 63,
+          "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "collation": 224,
+          "max_size": 1020
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "avg_co_cast",
+        "type_info": {
+          "type": "Double",
+          "flags": "BINARY",
+          "collation": 63,
+          "max_size": 22
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "2fb07a17c4060e3ab669be9ccfea382d65db8b45263082422bf2d78892bfb46b"
+}

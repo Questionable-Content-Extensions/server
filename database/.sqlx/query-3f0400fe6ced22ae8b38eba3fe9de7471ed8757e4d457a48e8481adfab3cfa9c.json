@@ -1,0 +1,50 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    YEAR(`publish_date`) AS `year`,\n                    DAYOFWEEK(`publish_date`) AS `dow`,\n                    COUNT(*) AS `comics`\n                FROM `v_visible_comic`\n                WHERE `publish_date` IS NOT NULL\n                GROUP BY YEAR(`publish_date`), DAYOFWEEK(`publish_date`)\n                ORDER BY `year`, `dow`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "collation": 63,
+          "max_size": 4
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "dow",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "collation": 63,
+          "max_size": 1
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "comics",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "3f0400fe6ced22ae8b38eba3fe9de7471ed8757e4d457a48e8481adfab3cfa9c"
+}

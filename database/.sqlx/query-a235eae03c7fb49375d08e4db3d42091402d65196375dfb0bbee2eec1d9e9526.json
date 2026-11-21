@@ -1,0 +1,84 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                WITH `cutoff` AS (\n                    SELECT DATE_SUB(MAX(`publish_date`), INTERVAL 365 DAY) AS `d` FROM `v_visible_comic`\n                )\n                SELECT\n                    `i`.`id`,\n                    `i`.`name`,\n                    COUNT(*) AS `total_appearances`,\n                    COUNT(CASE WHEN `c`.`publish_date` >= `cutoff`.`d` THEN 1 END) AS `recent_appearances`,\n                    CAST(\n                        DATEDIFF(MAX(`c`.`publish_date`), MIN(`c`.`publish_date`)) / 365.25\n                    AS DOUBLE) AS `career_years`\n                FROM `Item` `i`\n                JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`\n                JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`\n                CROSS JOIN `cutoff`\n                WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL\n                GROUP BY `i`.`id`\n                HAVING COUNT(*) >= 5\n                ORDER BY `recent_appearances` DESC, `i`.`id`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | AUTO_INCREMENT",
+          "collation": 63,
+          "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "collation": 224,
+          "max_size": 1020
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.Item",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "total_appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "recent_appearances",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "career_years",
+        "type_info": {
+          "type": "Double",
+          "flags": "BINARY",
+          "collation": 63,
+          "max_size": 22
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "a235eae03c7fb49375d08e4db3d42091402d65196375dfb0bbee2eec1d9e9526"
+}

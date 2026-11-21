@@ -56,7 +56,7 @@
         "name": "count!: i64",
         "type_info": {
           "type": "LongLong",
-          "flags": "BINARY",
+          "flags": "NOT_NULL | BINARY",
           "collation": 63,
           "max_size": 21
         },
@@ -70,7 +70,7 @@
       false,
       true,
       true,
-      true
+      false
     ]
   },
   "hash": "16504385d9f4f08f3f13d17af94389b1d52dd94ff86f61fdd39d0f2ed6f5314b"

@@ -169,7 +169,9 @@ All SQL queries (`sqlx::query`, `sqlx::query_as`, `sqlx::query_scalar`, etc.) be
 Once a backend feature is finished, run these checks in order:
 
 1. `cargo clippy --workspace --all-targets` — Clippy/compiler errors
-2. `cargo test --workspace -- --skip export_bindings --skip __export_endpoint` — tests
+2. `cargo test --workspace -- --skip export_bindings --skip __export_endpoint --skip db_tests` — tests
+
+Database-backed tests (`#[sqlx::test]`) take over a minute, so the command above skips them. They live in modules named `db_tests` (e.g. `database/src/models/stats/db_tests.rs`); put any new `#[sqlx::test]` tests in a `db_tests` module too. Run them only when a change can affect database behavior: SQL queries, migrations, views, triggers, or the database tests themselves. To run them, drop `--skip db_tests` from the command.
 
 If any type that affects bindings is added/modified/deleted, run `./update_bindings.sh` so that `ts-rs` can reproduce the bindings for the frontend (written to `./bindings/`). _Do not manually edit files within `./bindings`_.
 

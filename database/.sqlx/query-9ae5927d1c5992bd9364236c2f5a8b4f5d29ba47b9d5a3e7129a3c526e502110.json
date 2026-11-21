@@ -1,0 +1,50 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `gaps`.`before_comic`,\n                    `gaps`.`after_comic`,\n                    `gaps`.`gap_days`\n                FROM (\n                    SELECT\n                        `c`.`id` AS `before_comic`,\n                        LEAD(`c`.`id`) OVER (ORDER BY `c`.`publish_date`, `c`.`id`) AS `after_comic`,\n                        DATEDIFF(\n                            LEAD(`c`.`publish_date`) OVER (ORDER BY `c`.`publish_date`, `c`.`id`),\n                            `c`.`publish_date`\n                        ) AS `gap_days`\n                    FROM `v_visible_comic` `c`\n                    WHERE `c`.`publish_date` IS NOT NULL\n                ) `gaps`\n                WHERE `gaps`.`gap_days` IS NOT NULL AND `gaps`.`gap_days` > 6\n                ORDER BY `gaps`.`gap_days` DESC, `gaps`.`before_comic`\n                LIMIT 20\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "before_comic",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "collation": 63,
+          "max_size": 6
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "after_comic",
+        "type_info": {
+          "type": "Short",
+          "flags": "UNSIGNED",
+          "collation": 63,
+          "max_size": 6
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "gap_days",
+        "type_info": {
+          "type": "Long",
+          "flags": "",
+          "collation": 63,
+          "max_size": 8
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "9ae5927d1c5992bd9364236c2f5a8b4f5d29ba47b9d5a3e7129a3c526e502110"
+}

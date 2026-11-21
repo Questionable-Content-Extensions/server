@@ -1,0 +1,38 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT MONTH(`publish_date`) AS `month`, COUNT(*) AS `comics`\n                FROM `v_visible_comic`\n                WHERE `publish_date` IS NOT NULL\n                GROUP BY `month`\n                ORDER BY `month`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "month",
+        "type_info": {
+          "type": "Long",
+          "flags": "BINARY",
+          "collation": 63,
+          "max_size": 2
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "comics",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false
+    ]
+  },
+  "hash": "eff7feabc11d72a4717d8da3dd3a990af34baa8ab66e2eb5822d69d7937bdbce"
+}

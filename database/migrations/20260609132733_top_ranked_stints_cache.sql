@@ -83,7 +83,7 @@ SELECT
 FROM `stints` `s`;
 
 INSERT INTO `stats_cache_meta` (`cache_key`, `last_comic_id`)
-SELECT 'cast_rank_stints', MAX(`o`.`comic_id`)
+SELECT 'cast_rank_stints', COALESCE(MAX(`o`.`comic_id`), 0)
 FROM `Occurrence` `o`
 JOIN `Item` `i` ON `i`.`id` = `o`.`item_id`
 WHERE `i`.`type` = 'cast';

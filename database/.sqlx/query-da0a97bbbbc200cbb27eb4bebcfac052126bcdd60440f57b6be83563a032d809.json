@@ -1,0 +1,43 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `c`.`id` AS `comic_id`,\n                    COUNT(`i`.`id`) AS `cast_count`\n                FROM `v_visible_comic` `c`\n                JOIN `v_visible_occurrence` `o` ON `c`.`id` = `o`.`comic_id`\n                JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                WHERE `i`.`type` = 'cast'\n                GROUP BY `c`.`id`\n                ORDER BY `cast_count` DESC, `c`.`id`\n                LIMIT 25\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "comic_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "collation": 63,
+          "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.c",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "cast_count",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "da0a97bbbbc200cbb27eb4bebcfac052126bcdd60440f57b6be83563a032d809"
+}

@@ -1,0 +1,74 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                WITH `loc_yr` AS (\n                    SELECT DISTINCT YEAR(`c`.`publish_date`) AS `yr`, `o`.`item_id`\n                    FROM `v_visible_occurrence` `o`\n                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`\n                    JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`\n                    WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL\n                ),\n                `loc_first` AS (\n                    SELECT `item_id`, MIN(`yr`) AS `first_yr`\n                    FROM `loc_yr`\n                    GROUP BY `item_id`\n                )\n                SELECT\n                    `cur`.`yr` AS `year`,\n                    COUNT(CASE WHEN `first`.`first_yr` = `cur`.`yr` THEN 1 END) AS `new_locations`,\n                    COUNT(CASE WHEN `first`.`first_yr` < `cur`.`yr` AND `prev`.`item_id` IS NOT NULL THEN 1 END) AS `continuing_locations`,\n                    COUNT(CASE WHEN `first`.`first_yr` < `cur`.`yr` AND `prev`.`item_id` IS NULL THEN 1 END) AS `returning_locations`,\n                    (\n                        SELECT COUNT(DISTINCT `p`.`item_id`)\n                        FROM `loc_yr` `p`\n                        LEFT JOIN `loc_yr` `n`\n                            ON `n`.`item_id` = `p`.`item_id` AND `n`.`yr` = `cur`.`yr`\n                        WHERE `p`.`yr` = `cur`.`yr` - 1\n                          AND `n`.`item_id` IS NULL\n                    ) AS `dropped_locations`\n                FROM `loc_yr` `cur`\n                JOIN `loc_first` `first` ON `first`.`item_id` = `cur`.`item_id`\n                LEFT JOIN `loc_yr` `prev`\n                    ON `prev`.`item_id` = `cur`.`item_id` AND `prev`.`yr` = `cur`.`yr` - 1\n                GROUP BY `cur`.`yr`\n                ORDER BY `cur`.`yr`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "",
+          "collation": 63,
+          "max_size": 5
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "new_locations",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "continuing_locations",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "returning_locations",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "NOT_NULL | BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "dropped_locations",
+        "type_info": {
+          "type": "LongLong",
+          "flags": "BINARY",
+          "collation": 63,
+          "max_size": 21
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "d717a6a36c014d7b11909b2ba9328092d19b3ccdf836234f34419f89d56b9780"
+}

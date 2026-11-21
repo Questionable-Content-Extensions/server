@@ -26,10 +26,10 @@ impl ItemStats {
                     MAX(`o`.`comic_id`) AS `last_comic`,
                     COUNT(*) AS `appearances`
                 FROM `Item` `i`
-                JOIN `Occurrence` `o` ON `i`.`id` = `o`.`item_id`
+                JOIN `v_visible_occurrence` `o` ON `i`.`id` = `o`.`item_id`
                 WHERE `i`.`type` = 'cast'
                 GROUP BY `i`.`id`
-                ORDER BY `appearances` DESC
+                ORDER BY `appearances` DESC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -54,10 +54,10 @@ impl ItemStats {
                     MAX(`o`.`comic_id`) AS `last_comic`,
                     COUNT(*) AS `appearances`
                 FROM `Item` `i`
-                JOIN `Occurrence` `o` ON `i`.`id` = `o`.`item_id`
+                JOIN `v_visible_occurrence` `o` ON `i`.`id` = `o`.`item_id`
                 WHERE `i`.`type` = 'location'
                 GROUP BY `i`.`id`
-                ORDER BY `appearances` DESC
+                ORDER BY `appearances` DESC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -96,25 +96,25 @@ impl CoAppearance {
                     `i2`.`name` AS `character2_name`,
                     `app2`.`total` AS `character2_appearances`,
                     COUNT(*) AS `comics_together`
-                FROM `Occurrence` `o1`
-                JOIN `Occurrence` `o2`
+                FROM `v_visible_occurrence` `o1`
+                JOIN `v_visible_occurrence` `o2`
                     ON `o1`.`comic_id` = `o2`.`comic_id`
                     AND `o1`.`item_id` < `o2`.`item_id`
                 JOIN `Item` `i1` ON `o1`.`item_id` = `i1`.`id`
                 JOIN `Item` `i2` ON `o2`.`item_id` = `i2`.`id`
                 JOIN (
                     SELECT `item_id`, COUNT(*) AS `total`
-                    FROM `Occurrence`
+                    FROM `v_visible_occurrence`
                     GROUP BY `item_id`
                 ) `app1` ON `o1`.`item_id` = `app1`.`item_id`
                 JOIN (
                     SELECT `item_id`, COUNT(*) AS `total`
-                    FROM `Occurrence`
+                    FROM `v_visible_occurrence`
                     GROUP BY `item_id`
                 ) `app2` ON `o2`.`item_id` = `app2`.`item_id`
                 WHERE `i1`.`type` = 'cast' AND `i2`.`type` = 'cast'
                 GROUP BY `o1`.`item_id`, `o2`.`item_id`
-                ORDER BY `comics_together` DESC
+                ORDER BY `comics_together` DESC, `o1`.`item_id`, `o2`.`item_id`
                 LIMIT 100
             "#,
         )
@@ -154,12 +154,12 @@ impl YearlyAppearanceRow {
                     `i`.`color_green`,
                     `i`.`color_blue`,
                     COUNT(*) AS `appearances`
-                FROM `Comic` `c`
-                JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`
+                FROM `v_visible_comic` `c`
+                JOIN `v_visible_occurrence` `o` ON `c`.`id` = `o`.`comic_id`
                 JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                 WHERE `c`.`publish_date` IS NOT NULL AND `i`.`type` = 'cast'
                 GROUP BY `year`, `i`.`id`
-                ORDER BY `year`, `appearances` DESC
+                ORDER BY `year`, `appearances` DESC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -192,8 +192,8 @@ impl DebutsPerYearRow {
                     COUNT(CASE WHEN `i`.`type` = 'location' THEN 1 END) AS `location_debuts`
                 FROM (
                     SELECT `o`.`item_id`, YEAR(MIN(`c`.`publish_date`)) AS `year`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                     WHERE `c`.`publish_date` IS NOT NULL
                       AND `i`.`type` IN ('cast', 'location')
@@ -234,16 +234,16 @@ impl YearlyOverviewRow {
                     COUNT(CASE WHEN `fd`.`debut_year` = `yc`.`year` THEN 1 END) AS `new_cast`
                 FROM (
                     SELECT YEAR(`c`.`publish_date`) AS `year`, `o`.`item_id`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                     WHERE `c`.`publish_date` IS NOT NULL AND `i`.`type` = 'cast'
                     GROUP BY YEAR(`c`.`publish_date`), `o`.`item_id`
                 ) `yc`
                 JOIN (
                     SELECT `o`.`item_id`, YEAR(MIN(`c`.`publish_date`)) AS `debut_year`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                     WHERE `c`.`publish_date` IS NOT NULL AND `i`.`type` = 'cast'
                     GROUP BY `o`.`item_id`
@@ -276,7 +276,7 @@ impl PublicationMonthRow {
             Self,
             r#"
                 SELECT MONTH(`publish_date`) AS `month`, COUNT(*) AS `comics`
-                FROM `Comic`
+                FROM `v_visible_comic`
                 WHERE `publish_date` IS NOT NULL
                 GROUP BY `month`
                 ORDER BY `month`
@@ -306,7 +306,7 @@ impl PublicationDowRow {
             Self,
             r#"
                 SELECT DAYOFWEEK(`publish_date`) AS `dow`, COUNT(*) AS `comics`
-                FROM `Comic`
+                FROM `v_visible_comic`
                 WHERE `publish_date` IS NOT NULL
                 GROUP BY `dow`
                 ORDER BY `dow`
@@ -357,8 +357,8 @@ impl ComebackCharacterRow {
                                 PARTITION BY `o`.`item_id`
                                 ORDER BY `o`.`comic_id`
                             ) AS `prev_date`
-                        FROM `Occurrence` `o`
-                        JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                        FROM `v_visible_occurrence` `o`
+                        JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                         JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                         WHERE `i`.`type` = 'cast'
                           AND `c`.`publish_date` IS NOT NULL
@@ -387,7 +387,7 @@ impl ComebackCharacterRow {
                     AND `mg`.`max_gap_days` = `g`.`gap_days`
                 JOIN `Item` `i` ON `mg`.`item_id` = `i`.`id`
                 WHERE `mg`.`max_gap_days` >= 90
-                ORDER BY `mg`.`max_gap_days` DESC
+                ORDER BY `mg`.`max_gap_days` DESC, `i`.`id`
                 LIMIT 50
             "#,
         )
@@ -436,8 +436,8 @@ impl ComebackLocationRow {
                                 PARTITION BY `o`.`item_id`
                                 ORDER BY `o`.`comic_id`
                             ) AS `prev_date`
-                        FROM `Occurrence` `o`
-                        JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                        FROM `v_visible_occurrence` `o`
+                        JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                         JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                         WHERE `i`.`type` = 'location'
                           AND `c`.`publish_date` IS NOT NULL
@@ -466,7 +466,7 @@ impl ComebackLocationRow {
                     AND `mg`.`max_gap_days` = `g`.`gap_days`
                 JOIN `Item` `i` ON `mg`.`item_id` = `i`.`id`
                 WHERE `mg`.`max_gap_days` >= 90
-                ORDER BY `mg`.`max_gap_days` DESC
+                ORDER BY `mg`.`max_gap_days` DESC, `i`.`id`
                 LIMIT 50
             "#,
         )
@@ -502,13 +502,13 @@ impl LocationAffinityRow {
                     `ch`.`id` AS `character_id`,
                     `ch`.`name` AS `character_name`,
                     COUNT(*) AS `comics_together`
-                FROM `Occurrence` `ol`
-                JOIN `Occurrence` `oc` ON `ol`.`comic_id` = `oc`.`comic_id`
+                FROM `v_visible_occurrence` `ol`
+                JOIN `v_visible_occurrence` `oc` ON `ol`.`comic_id` = `oc`.`comic_id`
                 JOIN `Item` `l` ON `ol`.`item_id` = `l`.`id`
                 JOIN `Item` `ch` ON `oc`.`item_id` = `ch`.`id`
                 WHERE `l`.`type` = 'location' AND `ch`.`type` = 'cast'
                 GROUP BY `l`.`id`, `ch`.`id`
-                ORDER BY `l`.`id`, `comics_together` DESC
+                ORDER BY `l`.`id`, `comics_together` DESC, `ch`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -537,12 +537,12 @@ impl CrowdedComicRow {
                 SELECT
                     `c`.`id` AS `comic_id`,
                     COUNT(`i`.`id`) AS `cast_count`
-                FROM `Comic` `c`
-                JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`
+                FROM `v_visible_comic` `c`
+                JOIN `v_visible_occurrence` `o` ON `c`.`id` = `o`.`comic_id`
                 JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                 WHERE `i`.`type` = 'cast'
                 GROUP BY `c`.`id`
-                ORDER BY `cast_count` DESC
+                ORDER BY `cast_count` DESC, `c`.`id`
                 LIMIT 25
             "#,
         )
@@ -576,8 +576,8 @@ impl AvgCastPerYearRow {
                     SELECT
                         YEAR(`c`.`publish_date`) AS `pub_year`,
                         COUNT(`i`.`id`) AS `cast_count`
-                    FROM `Comic` `c`
-                    LEFT JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`
+                    FROM `v_visible_comic` `c`
+                    LEFT JOIN `v_visible_occurrence` `o` ON `c`.`id` = `o`.`comic_id`
                     LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id` AND `i`.`type` = 'cast'
                     WHERE `c`.`publish_date` IS NOT NULL
                     GROUP BY `c`.`id`, YEAR(`c`.`publish_date`)
@@ -623,12 +623,12 @@ impl LocationYearlyAppearanceRow {
                     `i`.`color_green`,
                     `i`.`color_blue`,
                     COUNT(*) AS `appearances`
-                FROM `Comic` `c`
-                JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`
+                FROM `v_visible_comic` `c`
+                JOIN `v_visible_occurrence` `o` ON `c`.`id` = `o`.`comic_id`
                 JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                 WHERE `c`.`publish_date` IS NOT NULL AND `i`.`type` = 'location'
                 GROUP BY `year`, `i`.`id`
-                ORDER BY `year`, `appearances` DESC
+                ORDER BY `year`, `appearances` DESC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -667,11 +667,11 @@ impl PublicationGapRow {
                             LEAD(`c`.`publish_date`) OVER (ORDER BY `c`.`publish_date`, `c`.`id`),
                             `c`.`publish_date`
                         ) AS `gap_days`
-                    FROM `Comic` `c`
+                    FROM `v_visible_comic` `c`
                     WHERE `c`.`publish_date` IS NOT NULL
                 ) `gaps`
                 WHERE `gaps`.`gap_days` IS NOT NULL AND `gaps`.`gap_days` > 6
-                ORDER BY `gaps`.`gap_days` DESC
+                ORDER BY `gaps`.`gap_days` DESC, `gaps`.`before_comic`
                 LIMIT 20
             "#,
         )
@@ -703,12 +703,12 @@ impl DebutDetailRow {
                     YEAR(MIN(`c`.`publish_date`)) AS `year`,
                     `i`.`id`,
                     `i`.`name`
-                FROM `Occurrence` `o`
-                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                FROM `v_visible_occurrence` `o`
+                JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                 JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                 WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
                 GROUP BY `i`.`id`
-                ORDER BY `year`, `i`.`name`
+                ORDER BY `year`, `i`.`name`, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -749,8 +749,8 @@ impl EnsembleRatioRow {
                     SELECT
                         YEAR(`c`.`publish_date`) AS `pub_year`,
                         COUNT(`i`.`id`) AS `cast_count`
-                    FROM `Comic` `c`
-                    LEFT JOIN `Occurrence` `o` ON `c`.`id` = `o`.`comic_id`
+                    FROM `v_visible_comic` `c`
+                    LEFT JOIN `v_visible_occurrence` `o` ON `c`.`id` = `o`.`comic_id`
                     LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id` AND `i`.`type` = 'cast'
                     WHERE `c`.`publish_date` IS NOT NULL
                     GROUP BY `c`.`id`, YEAR(`c`.`publish_date`)
@@ -799,8 +799,8 @@ impl CharacterRegularityRow {
                             `c`.`publish_date`,
                             LAG(`c`.`publish_date`) OVER (PARTITION BY `o`.`item_id` ORDER BY `o`.`comic_id`)
                         ) AS `gap_days`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
                     WHERE `i2`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
                 ) `g`
@@ -808,7 +808,7 @@ impl CharacterRegularityRow {
                 WHERE `g`.`gap_days` IS NOT NULL
                 GROUP BY `g`.`item_id`
                 HAVING COUNT(`g`.`gap_days`) >= 9
-                ORDER BY `stddev_gap_days` ASC
+                ORDER BY `stddev_gap_days` ASC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -850,8 +850,8 @@ impl LocationRegularityRow {
                             `c`.`publish_date`,
                             LAG(`c`.`publish_date`) OVER (PARTITION BY `o`.`item_id` ORDER BY `o`.`comic_id`)
                         ) AS `gap_days`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
                     WHERE `i2`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
                 ) `g`
@@ -859,7 +859,7 @@ impl LocationRegularityRow {
                 WHERE `g`.`gap_days` IS NOT NULL
                 GROUP BY `g`.`item_id`
                 HAVING COUNT(`g`.`gap_days`) >= 9
-                ORDER BY `stddev_gap_days` ASC
+                ORDER BY `stddev_gap_days` ASC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -898,25 +898,25 @@ impl LocationCoOccurrenceRow {
                     `l2`.`name` AS `location2_name`,
                     `app2`.`total` AS `location2_appearances`,
                     COUNT(*) AS `comics_together`
-                FROM `Occurrence` `ol1`
-                JOIN `Occurrence` `ol2`
+                FROM `v_visible_occurrence` `ol1`
+                JOIN `v_visible_occurrence` `ol2`
                     ON `ol1`.`comic_id` = `ol2`.`comic_id`
                     AND `ol1`.`item_id` < `ol2`.`item_id`
                 JOIN `Item` `l1` ON `ol1`.`item_id` = `l1`.`id`
                 JOIN `Item` `l2` ON `ol2`.`item_id` = `l2`.`id`
                 JOIN (
                     SELECT `item_id`, COUNT(*) AS `total`
-                    FROM `Occurrence`
+                    FROM `v_visible_occurrence`
                     GROUP BY `item_id`
                 ) `app1` ON `ol1`.`item_id` = `app1`.`item_id`
                 JOIN (
                     SELECT `item_id`, COUNT(*) AS `total`
-                    FROM `Occurrence`
+                    FROM `v_visible_occurrence`
                     GROUP BY `item_id`
                 ) `app2` ON `ol2`.`item_id` = `app2`.`item_id`
                 WHERE `l1`.`type` = 'location' AND `l2`.`type` = 'location'
                 GROUP BY `ol1`.`item_id`, `ol2`.`item_id`
-                ORDER BY `comics_together` DESC
+                ORDER BY `comics_together` DESC, `ol1`.`item_id`, `ol2`.`item_id`
                 LIMIT 50
             "#,
         )
@@ -948,26 +948,26 @@ impl CoAppearance {
                     `i2`.`name` AS `character2_name`,
                     `app2`.`total` AS `character2_appearances`,
                     COUNT(*) AS `comics_together`
-                FROM `Occurrence` `o1`
-                JOIN `Occurrence` `o2`
+                FROM `v_visible_occurrence` `o1`
+                JOIN `v_visible_occurrence` `o2`
                     ON `o1`.`comic_id` = `o2`.`comic_id`
                     AND `o1`.`item_id` < `o2`.`item_id`
                 JOIN `Item` `i1` ON `o1`.`item_id` = `i1`.`id`
                 JOIN `Item` `i2` ON `o2`.`item_id` = `i2`.`id`
                 JOIN (
                     SELECT `item_id`, COUNT(*) AS `total`
-                    FROM `Occurrence`
+                    FROM `v_visible_occurrence`
                     GROUP BY `item_id`
                 ) `app1` ON `o1`.`item_id` = `app1`.`item_id`
                 JOIN (
                     SELECT `item_id`, COUNT(*) AS `total`
-                    FROM `Occurrence`
+                    FROM `v_visible_occurrence`
                     GROUP BY `item_id`
                 ) `app2` ON `o2`.`item_id` = `app2`.`item_id`
                 WHERE `i1`.`type` = 'cast' AND `i2`.`type` = 'cast'
                 GROUP BY `o1`.`item_id`, `o2`.`item_id`
                 HAVING COUNT(*) >= 5
-                ORDER BY COUNT(*) / LEAST(`app1`.`total`, `app2`.`total`) DESC
+                ORDER BY COUNT(*) / LEAST(`app1`.`total`, `app2`.`total`) DESC, `o1`.`item_id`, `o2`.`item_id`
                 LIMIT 100
             "#,
         )
@@ -1004,18 +1004,18 @@ impl SocialHubRow {
                 FROM `Item` `i`
                 JOIN (
                     SELECT `item_id`, COUNT(*) AS `total`
-                    FROM `Occurrence`
+                    FROM `v_visible_occurrence`
                     GROUP BY `item_id`
                 ) `app` ON `app`.`item_id` = `i`.`id`
-                JOIN `Occurrence` `o1` ON `o1`.`item_id` = `i`.`id`
-                JOIN `Occurrence` `o2`
+                JOIN `v_visible_occurrence` `o1` ON `o1`.`item_id` = `i`.`id`
+                JOIN `v_visible_occurrence` `o2`
                     ON `o2`.`comic_id` = `o1`.`comic_id`
                     AND `o2`.`item_id` != `o1`.`item_id`
                 JOIN `Item` `i2` ON `i2`.`id` = `o2`.`item_id` AND `i2`.`type` = 'cast'
                 WHERE `i`.`type` = 'cast'
                 GROUP BY `i`.`id`
                 HAVING COUNT(DISTINCT `o2`.`item_id`) > 0
-                ORDER BY `distinct_partners` DESC
+                ORDER BY `distinct_partners` DESC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -1045,7 +1045,7 @@ impl TrendingItemRow {
             Self,
             r#"
                 WITH `cutoff` AS (
-                    SELECT DATE_SUB(MAX(`publish_date`), INTERVAL 365 DAY) AS `d` FROM `Comic`
+                    SELECT DATE_SUB(MAX(`publish_date`), INTERVAL 365 DAY) AS `d` FROM `v_visible_comic`
                 )
                 SELECT
                     `i`.`id`,
@@ -1056,13 +1056,13 @@ impl TrendingItemRow {
                         DATEDIFF(MAX(`c`.`publish_date`), MIN(`c`.`publish_date`)) / 365.25
                     AS DOUBLE) AS `career_years`
                 FROM `Item` `i`
-                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
-                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                 CROSS JOIN `cutoff`
                 WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
                 GROUP BY `i`.`id`
                 HAVING COUNT(*) >= 5
-                ORDER BY `recent_appearances` DESC
+                ORDER BY `recent_appearances` DESC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -1081,7 +1081,7 @@ impl TrendingItemRow {
             Self,
             r#"
                 WITH `cutoff` AS (
-                    SELECT DATE_SUB(MAX(`publish_date`), INTERVAL 365 DAY) AS `d` FROM `Comic`
+                    SELECT DATE_SUB(MAX(`publish_date`), INTERVAL 365 DAY) AS `d` FROM `v_visible_comic`
                 )
                 SELECT
                     `i`.`id`,
@@ -1092,13 +1092,13 @@ impl TrendingItemRow {
                         DATEDIFF(MAX(`c`.`publish_date`), MIN(`c`.`publish_date`)) / 365.25
                     AS DOUBLE) AS `career_years`
                 FROM `Item` `i`
-                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
-                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                 CROSS JOIN `cutoff`
                 WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
                 GROUP BY `i`.`id`
                 HAVING COUNT(*) >= 5
-                ORDER BY `recent_appearances` DESC
+                ORDER BY `recent_appearances` DESC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -1129,8 +1129,8 @@ impl CastTurnoverRow {
             r#"
                 WITH `char_yr` AS (
                     SELECT DISTINCT YEAR(`c`.`publish_date`) AS `yr`, `o`.`item_id`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                     WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
                 ),
@@ -1147,11 +1147,10 @@ impl CastTurnoverRow {
                     (
                         SELECT COUNT(DISTINCT `p`.`item_id`)
                         FROM `char_yr` `p`
+                        LEFT JOIN `char_yr` `n`
+                            ON `n`.`item_id` = `p`.`item_id` AND `n`.`yr` = `cur`.`yr`
                         WHERE `p`.`yr` = `cur`.`yr` - 1
-                          AND NOT EXISTS (
-                            SELECT 1 FROM `char_yr` `n`
-                            WHERE `n`.`item_id` = `p`.`item_id` AND `n`.`yr` = `cur`.`yr`
-                          )
+                          AND `n`.`item_id` IS NULL
                     ) AS `dropped_chars`
                 FROM `char_yr` `cur`
                 JOIN `char_first` `first` ON `first`.`item_id` = `cur`.`item_id`
@@ -1192,11 +1191,11 @@ impl CharacterSeasonRow {
                     MONTH(`c`.`publish_date`) AS `month`,
                     COUNT(*) AS `appearances`
                 FROM `Item` `i`
-                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
-                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                 WHERE `i`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
                   AND `i`.`id` IN (
-                    SELECT `item_id` FROM `Occurrence`
+                    SELECT `item_id` FROM `v_visible_occurrence`
                     GROUP BY `item_id`
                     HAVING COUNT(*) >= 50
                   )
@@ -1242,8 +1241,8 @@ impl BreakoutYearRow {
                         YEAR(`c`.`publish_date`) AS `yr`,
                         COUNT(*) AS `cnt`,
                         RANK() OVER (PARTITION BY `o`.`item_id` ORDER BY COUNT(*) DESC) AS `rnk`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
                     WHERE `i2`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
                     GROUP BY `o`.`item_id`, YEAR(`c`.`publish_date`)
@@ -1254,15 +1253,15 @@ impl BreakoutYearRow {
                         `o`.`item_id`,
                         COUNT(*) AS `total_appearances`,
                         COUNT(DISTINCT YEAR(`c`.`publish_date`)) AS `active_years`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
                     WHERE `i2`.`type` = 'cast' AND `c`.`publish_date` IS NOT NULL
                     GROUP BY `o`.`item_id`
                 ) `item_totals` ON `item_totals`.`item_id` = `ranked`.`item_id`
                 WHERE `ranked`.`rnk` = 1 AND `item_totals`.`active_years` >= 2
                 GROUP BY `ranked`.`item_id`, `ranked`.`cnt`, `item_totals`.`total_appearances`, `item_totals`.`active_years`
-                ORDER BY `ranked`.`cnt` DESC
+                ORDER BY `ranked`.`cnt` DESC, `ranked`.`item_id`
             "#,
         )
         .fetch_all(executor)
@@ -1305,9 +1304,9 @@ impl CharacterHomeTurfRow {
                         `ol`.`item_id` AS `loc_id`,
                         COUNT(*) AS `cnt`,
                         RANK() OVER (PARTITION BY `oc`.`item_id` ORDER BY COUNT(*) DESC) AS `rnk`
-                    FROM `Occurrence` `oc`
+                    FROM `v_visible_occurrence` `oc`
                     JOIN `Item` `ic2` ON `oc`.`item_id` = `ic2`.`id` AND `ic2`.`type` = 'cast'
-                    JOIN `Occurrence` `ol` ON `ol`.`comic_id` = `oc`.`comic_id`
+                    JOIN `v_visible_occurrence` `ol` ON `ol`.`comic_id` = `oc`.`comic_id`
                     JOIN `Item` `il2` ON `ol`.`item_id` = `il2`.`id` AND `il2`.`type` = 'location'
                     GROUP BY `oc`.`item_id`, `ol`.`item_id`
                 ) `ranked`
@@ -1315,12 +1314,12 @@ impl CharacterHomeTurfRow {
                 JOIN `Item` `il` ON `il`.`id` = `ranked`.`loc_id`
                 JOIN (
                     SELECT `item_id`, COUNT(*) AS `total`
-                    FROM `Occurrence`
-                    JOIN `Item` ON `Occurrence`.`item_id` = `Item`.`id` AND `Item`.`type` = 'cast'
+                    FROM `v_visible_occurrence`
+                    JOIN `Item` ON `v_visible_occurrence`.`item_id` = `Item`.`id` AND `Item`.`type` = 'cast'
                     GROUP BY `item_id`
                 ) `char_app` ON `char_app`.`item_id` = `ranked`.`item_id`
                 WHERE `ranked`.`rnk` = 1 AND `char_app`.`total` >= 10
-                ORDER BY CAST(`ranked`.`cnt` AS DOUBLE) / `char_app`.`total` DESC, `ranked`.`item_id` ASC
+                ORDER BY CAST(`ranked`.`cnt` AS DOUBLE) / `char_app`.`total` DESC, `ranked`.`item_id` ASC, `ranked`.`loc_id` ASC
             "#,
         )
         .fetch_all(executor)
@@ -1353,11 +1352,11 @@ impl PairEvolutionRow {
                 SELECT
                     YEAR(`c`.`publish_date`) AS `year`,
                     COUNT(*) AS `comics_together`
-                FROM `Occurrence` `o1`
-                JOIN `Occurrence` `o2`
+                FROM `v_visible_occurrence` `o1`
+                JOIN `v_visible_occurrence` `o2`
                     ON `o1`.`comic_id` = `o2`.`comic_id`
                     AND `o2`.`item_id` = ?
-                JOIN `Comic` `c` ON `o1`.`comic_id` = `c`.`id`
+                JOIN `v_visible_comic` `c` ON `o1`.`comic_id` = `c`.`id`
                 WHERE `o1`.`item_id` = ? AND `c`.`publish_date` IS NOT NULL
                 GROUP BY YEAR(`c`.`publish_date`)
                 ORDER BY `year`
@@ -1396,17 +1395,17 @@ impl LonerIndexRow {
                     COUNT(*) AS `appearances`,
                     CAST(AVG(GREATEST(0, `cast_count`.`cnt` - 1)) AS DOUBLE) AS `avg_co_cast`
                 FROM `Item` `i`
-                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`
                 JOIN (
                     SELECT `o2`.`comic_id`, COUNT(*) AS `cnt`
-                    FROM `Occurrence` `o2`
+                    FROM `v_visible_occurrence` `o2`
                     JOIN `Item` `i2` ON `o2`.`item_id` = `i2`.`id` AND `i2`.`type` = 'cast'
                     GROUP BY `o2`.`comic_id`
                 ) `cast_count` ON `cast_count`.`comic_id` = `o`.`comic_id`
                 WHERE `i`.`type` = 'cast'
                 GROUP BY `i`.`id`
                 HAVING COUNT(*) >= 10
-                ORDER BY `avg_co_cast` ASC
+                ORDER BY `avg_co_cast` ASC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -1448,19 +1447,19 @@ impl NeverMetRow {
                 FROM (
                     SELECT `i`.`id`, `i`.`name`, COUNT(*) AS `appearances`
                     FROM `Item` `i`
-                    JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                    JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`
                     WHERE `i`.`type` = 'cast'
                     GROUP BY `i`.`id`
-                    ORDER BY `appearances` DESC
+                    ORDER BY `appearances` DESC, `i`.`id`
                     LIMIT 100
                 ) `c1`
                 JOIN (
                     SELECT `i`.`id`, `i`.`name`, COUNT(*) AS `appearances`
                     FROM `Item` `i`
-                    JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                    JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`
                     WHERE `i`.`type` = 'cast'
                     GROUP BY `i`.`id`
-                    ORDER BY `appearances` DESC
+                    ORDER BY `appearances` DESC, `i`.`id`
                     LIMIT 100
                 ) `c2` ON `c1`.`id` < `c2`.`id`
                 LEFT JOIN (
@@ -1468,14 +1467,14 @@ impl NeverMetRow {
                         `o1`.`item_id` AS `char1_id`,
                         `o2`.`item_id` AS `char2_id`,
                         COUNT(*) AS `comics_together`
-                    FROM `Occurrence` `o1`
-                    JOIN `Occurrence` `o2`
+                    FROM `v_visible_occurrence` `o1`
+                    JOIN `v_visible_occurrence` `o2`
                         ON `o1`.`comic_id` = `o2`.`comic_id`
                         AND `o1`.`item_id` < `o2`.`item_id`
                     GROUP BY `o1`.`item_id`, `o2`.`item_id`
                 ) `ca` ON `ca`.`char1_id` = `c1`.`id` AND `ca`.`char2_id` = `c2`.`id`
                 WHERE COALESCE(`ca`.`comics_together`, 0) <= 2
-                ORDER BY `c1`.`appearances` + `c2`.`appearances` DESC
+                ORDER BY `c1`.`appearances` + `c2`.`appearances` DESC, `c1`.`id`, `c2`.`id`
                 LIMIT 200
             "#,
         )
@@ -1507,7 +1506,7 @@ impl PublishTimeRow {
                     YEAR(`publish_date`) AS `year`,
                     HOUR(`publish_date`) AS `hour`,
                     COUNT(*) AS `comics`
-                FROM `Comic`
+                FROM `v_visible_comic`
                 WHERE `publish_date` IS NOT NULL
                 GROUP BY YEAR(`publish_date`), HOUR(`publish_date`)
                 ORDER BY `year`, `hour`
@@ -1541,7 +1540,7 @@ impl ScheduleEvolutionRow {
                     YEAR(`publish_date`) AS `year`,
                     DAYOFWEEK(`publish_date`) AS `dow`,
                     COUNT(*) AS `comics`
-                FROM `Comic`
+                FROM `v_visible_comic`
                 WHERE `publish_date` IS NOT NULL
                 GROUP BY YEAR(`publish_date`), DAYOFWEEK(`publish_date`)
                 ORDER BY `year`, `dow`
@@ -1572,7 +1571,7 @@ impl PublishedDateRow {
                 SELECT `pub_date` FROM (
                     -- Weekday comics: count on their actual date
                     SELECT DATE_FORMAT(DATE(`publish_date`), '%Y-%m-%d') AS `pub_date`
-                    FROM `Comic`
+                    FROM `v_visible_comic`
                     WHERE `publish_date` IS NOT NULL
                       AND DAYOFWEEK(`publish_date`) BETWEEN 2 AND 6
                     UNION
@@ -1581,7 +1580,7 @@ impl PublishedDateRow {
                     SELECT DATE_FORMAT(DATE(DATE_ADD(`publish_date`, INTERVAL
                         CASE DAYOFWEEK(`publish_date`) WHEN 1 THEN 1 ELSE 2 END DAY
                     )), '%Y-%m-%d') AS `pub_date`
-                    FROM `Comic`
+                    FROM `v_visible_comic`
                     WHERE `publish_date` IS NOT NULL
                       AND DAYOFWEEK(`publish_date`) IN (1, 7)
                     UNION
@@ -1589,7 +1588,7 @@ impl PublishedDateRow {
                     --   Friday is excluded: an evening Fri post is still Friday's comic,
                     --   and bridging to Monday three days later would be too aggressive.
                     SELECT DATE_FORMAT(DATE(DATE_ADD(`publish_date`, INTERVAL 1 DAY)), '%Y-%m-%d') AS `pub_date`
-                    FROM `Comic`
+                    FROM `v_visible_comic`
                     WHERE `publish_date` IS NOT NULL
                       AND DAYOFWEEK(`publish_date`) BETWEEN 2 AND 5
                       AND TIME(`publish_date`) >= '20:00:00'
@@ -1625,7 +1624,7 @@ impl MonthlyHeatmapRow {
                     YEAR(`publish_date`) AS `year`,
                     MONTH(`publish_date`) AS `month`,
                     COUNT(*) AS `comics`
-                FROM `Comic`
+                FROM `v_visible_comic`
                 WHERE `publish_date` IS NOT NULL
                 GROUP BY YEAR(`publish_date`), MONTH(`publish_date`)
                 ORDER BY `year`, `month`
@@ -1663,7 +1662,7 @@ impl MilestoneComicRow {
                     DATE_FORMAT(`publish_date`, '%Y-%m-%d') AS `pub_date`,
                     `is_guest_comic`,
                     `is_non_canon`
-                FROM `Comic`
+                FROM `v_visible_comic`
                 WHERE `id` = 1
                    OR (`id` >= 100 AND `id` <= 1000 AND `id` % 100 = 0)
                    OR (`id` > 1000 AND `id` % 500 = 0)
@@ -1701,11 +1700,11 @@ impl LocationSeasonRow {
                     MONTH(`c`.`publish_date`) AS `month`,
                     COUNT(*) AS `appearances`
                 FROM `Item` `i`
-                JOIN `Occurrence` `o` ON `o`.`item_id` = `i`.`id`
-                JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                JOIN `v_visible_occurrence` `o` ON `o`.`item_id` = `i`.`id`
+                JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                 WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
                   AND `i`.`id` IN (
-                    SELECT `item_id` FROM `Occurrence`
+                    SELECT `item_id` FROM `v_visible_occurrence`
                     GROUP BY `item_id`
                     HAVING COUNT(*) >= 50
                   )
@@ -1751,8 +1750,8 @@ impl LocationBreakoutYearRow {
                         YEAR(`c`.`publish_date`) AS `yr`,
                         COUNT(*) AS `cnt`,
                         RANK() OVER (PARTITION BY `o`.`item_id` ORDER BY COUNT(*) DESC) AS `rnk`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
                     WHERE `i2`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
                     GROUP BY `o`.`item_id`, YEAR(`c`.`publish_date`)
@@ -1763,15 +1762,15 @@ impl LocationBreakoutYearRow {
                         `o`.`item_id`,
                         COUNT(*) AS `total_appearances`,
                         COUNT(DISTINCT YEAR(`c`.`publish_date`)) AS `active_years`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i2` ON `o`.`item_id` = `i2`.`id`
                     WHERE `i2`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
                     GROUP BY `o`.`item_id`
                 ) `item_totals` ON `item_totals`.`item_id` = `ranked`.`item_id`
                 WHERE `ranked`.`rnk` = 1 AND `item_totals`.`active_years` >= 2
                 GROUP BY `ranked`.`item_id`, `ranked`.`cnt`, `item_totals`.`total_appearances`, `item_totals`.`active_years`
-                ORDER BY `ranked`.`cnt` DESC
+                ORDER BY `ranked`.`cnt` DESC, `ranked`.`item_id`
             "#,
         )
         .fetch_all(executor)
@@ -1807,18 +1806,18 @@ impl LocationSocialHubRow {
                 FROM `Item` `i`
                 JOIN (
                     SELECT `item_id`, COUNT(*) AS `total`
-                    FROM `Occurrence`
+                    FROM `v_visible_occurrence`
                     GROUP BY `item_id`
                 ) `app` ON `app`.`item_id` = `i`.`id`
-                JOIN `Occurrence` `o1` ON `o1`.`item_id` = `i`.`id`
-                JOIN `Occurrence` `o2`
+                JOIN `v_visible_occurrence` `o1` ON `o1`.`item_id` = `i`.`id`
+                JOIN `v_visible_occurrence` `o2`
                     ON `o2`.`comic_id` = `o1`.`comic_id`
                     AND `o2`.`item_id` != `o1`.`item_id`
                 JOIN `Item` `i2` ON `i2`.`id` = `o2`.`item_id` AND `i2`.`type` = 'cast'
                 WHERE `i`.`type` = 'location'
                 GROUP BY `i`.`id`
                 HAVING COUNT(DISTINCT `o2`.`item_id`) > 0
-                ORDER BY `distinct_characters` DESC
+                ORDER BY `distinct_characters` DESC, `i`.`id`
             "#,
         )
         .fetch_all(executor)
@@ -1849,8 +1848,8 @@ impl LocationTurnoverRow {
             r#"
                 WITH `loc_yr` AS (
                     SELECT DISTINCT YEAR(`c`.`publish_date`) AS `yr`, `o`.`item_id`
-                    FROM `Occurrence` `o`
-                    JOIN `Comic` `c` ON `o`.`comic_id` = `c`.`id`
+                    FROM `v_visible_occurrence` `o`
+                    JOIN `v_visible_comic` `c` ON `o`.`comic_id` = `c`.`id`
                     JOIN `Item` `i` ON `o`.`item_id` = `i`.`id`
                     WHERE `i`.`type` = 'location' AND `c`.`publish_date` IS NOT NULL
                 ),
@@ -1867,11 +1866,10 @@ impl LocationTurnoverRow {
                     (
                         SELECT COUNT(DISTINCT `p`.`item_id`)
                         FROM `loc_yr` `p`
+                        LEFT JOIN `loc_yr` `n`
+                            ON `n`.`item_id` = `p`.`item_id` AND `n`.`yr` = `cur`.`yr`
                         WHERE `p`.`yr` = `cur`.`yr` - 1
-                          AND NOT EXISTS (
-                            SELECT 1 FROM `loc_yr` `n`
-                            WHERE `n`.`item_id` = `p`.`item_id` AND `n`.`yr` = `cur`.`yr`
-                          )
+                          AND `n`.`item_id` IS NULL
                     ) AS `dropped_locations`
                 FROM `loc_yr` `cur`
                 JOIN `loc_first` `first` ON `first`.`item_id` = `cur`.`item_id`
@@ -1903,7 +1901,7 @@ impl TopRankedStintRow {
     ///
     /// Everything runs inside a single transaction so readers never observe an empty
     /// table and a failed recompute rolls the delete back automatically.  Any trigger
-    /// that fires on `Occurrence` during the refresh blocks on the row lock and sets
+    /// that fires on `Occurrence` or `Comic` during the refresh blocks on the row lock and sets
     /// `needs_refresh = 1` again after our commit, so the next cycle picks it up.
     ///
     /// # Errors
@@ -1969,7 +1967,7 @@ impl TopRankedStintRow {
         sqlx::query_scalar!(
             r#"
                 SELECT MAX(`o`.`comic_id`)
-                FROM `Occurrence` `o`
+                FROM `v_visible_occurrence` `o`
                 JOIN `Item` `i` ON `i`.`id` = `o`.`item_id`
                 WHERE `i`.`type` = 'cast'
             "#,
@@ -2006,7 +2004,7 @@ impl TopRankedStintRow {
                     (`from_comic`, `to_comic_exclusive`, `item_id`, `appearances_at_takeover`)
                 WITH `cast_occurrences` AS (
                     SELECT `o`.`comic_id`, `o`.`item_id`
-                    FROM `Occurrence` `o`
+                    FROM `v_visible_occurrence` `o`
                     JOIN `Item` `i` ON `i`.`id` = `o`.`item_id`
                     WHERE `i`.`type` = 'cast'
                 ),
@@ -2096,3 +2094,6 @@ impl TopRankedStintRow {
         .await
     }
 }
+
+#[cfg(test)]
+mod db_tests;

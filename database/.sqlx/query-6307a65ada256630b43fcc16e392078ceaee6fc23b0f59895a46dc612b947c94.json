@@ -1,0 +1,38 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `sub`.`pub_year` AS `year`,\n                    CAST(AVG(`sub`.`cast_count`) AS DOUBLE) AS `avg_cast_size`\n                FROM (\n                    SELECT\n                        YEAR(`c`.`publish_date`) AS `pub_year`,\n                        COUNT(`i`.`id`) AS `cast_count`\n                    FROM `v_visible_comic` `c`\n                    LEFT JOIN `v_visible_occurrence` `o` ON `c`.`id` = `o`.`comic_id`\n                    LEFT JOIN `Item` `i` ON `o`.`item_id` = `i`.`id` AND `i`.`type` = 'cast'\n                    WHERE `c`.`publish_date` IS NOT NULL\n                    GROUP BY `c`.`id`, YEAR(`c`.`publish_date`)\n                ) `sub`\n                WHERE `sub`.`pub_year` IS NOT NULL\n                GROUP BY `sub`.`pub_year`\n                ORDER BY `sub`.`pub_year`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "year",
+        "type_info": {
+          "type": "Long",
+          "flags": "",
+          "collation": 63,
+          "max_size": 5
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "avg_cast_size",
+        "type_info": {
+          "type": "Double",
+          "flags": "BINARY",
+          "collation": 63,
+          "max_size": 22
+        },
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "6307a65ada256630b43fcc16e392078ceaee6fc23b0f59895a46dc612b947c94"
+}

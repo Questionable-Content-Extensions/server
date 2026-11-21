@@ -1,0 +1,94 @@
+{
+  "db_name": "MySQL",
+  "query": "\n                SELECT\n                    `id` AS `comic_id`,\n                    `title`,\n                    DATE_FORMAT(`publish_date`, '%Y-%m-%d') AS `pub_date`,\n                    `is_guest_comic`,\n                    `is_non_canon`\n                FROM `v_visible_comic`\n                WHERE `id` = 1\n                   OR (`id` >= 100 AND `id` <= 1000 AND `id` % 100 = 0)\n                   OR (`id` > 1000 AND `id` % 500 = 0)\n                ORDER BY `id`\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "comic_id",
+        "type_info": {
+          "type": "Short",
+          "flags": "NOT_NULL | PRIMARY_KEY | UNSIGNED | NO_DEFAULT_VALUE",
+          "collation": 63,
+          "max_size": 6
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.v_visible_comic",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": {
+          "type": "VarString",
+          "flags": "NOT_NULL | NO_DEFAULT_VALUE",
+          "collation": 224,
+          "max_size": 1020
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.v_visible_comic",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "pub_date",
+        "type_info": {
+          "type": "VarString",
+          "flags": "",
+          "collation": 224,
+          "max_size": 40
+        },
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 3,
+        "name": "is_guest_comic",
+        "type_info": {
+          "type": "Bit",
+          "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
+          "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.v_visible_comic",
+            "name": "is_guest_comic"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "is_non_canon",
+        "type_info": {
+          "type": "Bit",
+          "flags": "NOT_NULL | UNSIGNED",
+          "collation": 63,
+          "max_size": 1
+        },
+        "origin": {
+          "Table": {
+            "table": "dphoenix_qcnav.v_visible_comic",
+            "name": "is_non_canon"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "187c7ad55d4fe685e56d9c03310d1f37ea719b24734314920e7fe2c19b3d2129"
+}
