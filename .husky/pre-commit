@@ -22,7 +22,7 @@ has_database_changes() {
 if has_rust_changes; then
     cargo clippy --workspace --all-targets
     if [ "$SKIP_TESTS" != "1" ]; then
-        cargo test --workspace -- --skip export_bindings --skip __export_endpoint
+        cargo test --workspace -- --skip export_bindings --skip __export_endpoint --skip db_tests
     fi
     ./update_bindings.sh
     git add --all bindings
@@ -38,6 +38,9 @@ fi
 npx lint-staged
 
 if has_database_changes; then
+    if [ "$SKIP_TESTS" != "1" ]; then
+        cargo test --workspace -- db_tests
+    fi
     (
     cd database
     cargo sqlx prepare
