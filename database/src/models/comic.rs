@@ -26,23 +26,6 @@ pub struct Comic {
 }
 
 impl Comic {
-    /// # Errors
-    ///
-    /// Returns a database error if the query fails.
-    #[tracing::instrument(skip(executor))]
-    pub async fn count<'e, 'c: 'e, E>(executor: E) -> sqlx::Result<i64>
-    where
-        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
-    {
-        sqlx::query_scalar!(
-            r#"
-                SELECT COUNT(*) FROM `Comic`
-            "#,
-        )
-        .fetch_one(executor)
-        .await
-    }
-
     /// Latest known (non-hidden) comic id, used as the fallback right bound
     /// when computing visual segments for an open-ended storyline.
     ///
@@ -351,70 +334,6 @@ impl Comic {
             include_non_canon_comics,
             include_non_canon_comics,
             offset,
-        )
-        .fetch_optional(executor)
-        .await
-    }
-
-    /// # Errors
-    ///
-    /// Returns a database error if the query fails.
-    #[tracing::instrument(skip(executor))]
-    pub async fn previous_id<'e, 'c: 'e, E>(
-        executor: E,
-        id: u16,
-        include_guest_comics: Option<bool>,
-        include_non_canon_comics: Option<bool>,
-    ) -> sqlx::Result<Option<u16>>
-    where
-        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
-    {
-        sqlx::query_scalar!(
-            r#"
-                SELECT `id`
-                FROM `Comic`
-                WHERE `id` < ?
-                    AND (? is NULL OR `is_guest_comic` = ?)
-                    AND (? is NULL OR `is_non_canon` = ?)
-                ORDER BY `id` DESC
-            "#,
-            id,
-            include_guest_comics,
-            include_guest_comics,
-            include_non_canon_comics,
-            include_non_canon_comics,
-        )
-        .fetch_optional(executor)
-        .await
-    }
-
-    /// # Errors
-    ///
-    /// Returns a database error if the query fails.
-    #[tracing::instrument(skip(executor))]
-    pub async fn next_id<'e, 'c: 'e, E>(
-        executor: E,
-        id: u16,
-        include_guest_comics: Option<bool>,
-        include_non_canon_comics: Option<bool>,
-    ) -> sqlx::Result<Option<u16>>
-    where
-        E: 'e + sqlx::Executor<'c, Database = crate::DatabaseDriver>,
-    {
-        sqlx::query_scalar!(
-            r#"
-                SELECT `id`
-                FROM `Comic`
-                WHERE `id` > ?
-                    AND (? is NULL OR `is_guest_comic` = ?)
-                    AND (? is NULL OR `is_non_canon` = ?)
-                ORDER BY `id` ASC
-            "#,
-            id,
-            include_guest_comics,
-            include_guest_comics,
-            include_non_canon_comics,
-            include_non_canon_comics,
         )
         .fetch_optional(executor)
         .await
