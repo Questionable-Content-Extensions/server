@@ -29,6 +29,7 @@ use tokio::sync::broadcast;
 use tokio::time::{Duration, sleep};
 use tracing::{Level, Span, error, info};
 use tracing_actix_web::{DefaultRootSpanBuilder, RootSpanBuilder, TracingLogger};
+use tracing_subscriber::filter::Targets;
 use tracing_subscriber::layer::SubscriberExt;
 use util::environment;
 use uuid::Uuid;
@@ -44,11 +45,7 @@ mod models;
 async fn main() -> Result<()> {
     environment::init_dotenv();
 
-    let filter = tracing_subscriber::filter::Targets::new()
-        .with_target("hyper", Level::INFO)
-        .with_target("actix_http", Level::DEBUG)
-        .with_target("actix_server", Level::DEBUG)
-        .with_default(Level::TRACE);
+    let filter = tracing_filter();
 
     let tracer_provider = init_tracer_provider(environment::honeycomb_key()).unwrap();
     let _tracer_provider_guard = TracerProviderGuard(tracer_provider.clone());
@@ -412,6 +409,19 @@ where
     Ok(permissions)
 }
 
+/// Builds the per-target level filter for the tracing subscriber.
+///
+/// `h2` is capped because the OTLP exporter talks HTTP/2 to Honeycomb: at `TRACE`, every export
+/// emits `h2` spans that are themselves exported, sustaining a telemetry feedback loop.
+fn tracing_filter() -> Targets {
+    Targets::new()
+        .with_target("h2", Level::INFO)
+        .with_target("hyper", Level::INFO)
+        .with_target("actix_http", Level::DEBUG)
+        .with_target("actix_server", Level::DEBUG)
+        .with_default(Level::TRACE)
+}
+
 const SERVICE_NAME: &str = "qcext-server";
 
 /// Builds the tracer provider that batches spans and exports them to Honeycomb over OTLP/HTTP.
@@ -503,6 +513,26 @@ mod tests {
             error.as_response_error().status_code(),
             StatusCode::INTERNAL_SERVER_ERROR
         );
+    }
+
+    #[test]
+    fn tracing_filter_caps_noisy_dependency_targets() {
+        let filter = tracing_filter();
+
+        assert!(filter.would_enable("h2", &Level::INFO));
+        assert!(!filter.would_enable("h2", &Level::DEBUG));
+        assert!(!filter.would_enable("h2::proto::connection", &Level::TRACE));
+        assert!(filter.would_enable("hyper", &Level::INFO));
+        assert!(!filter.would_enable("hyper", &Level::DEBUG));
+        assert!(filter.would_enable("actix_http", &Level::DEBUG));
+        assert!(!filter.would_enable("actix_http", &Level::TRACE));
+        assert!(filter.would_enable("actix_server", &Level::DEBUG));
+        assert!(!filter.would_enable("actix_server", &Level::TRACE));
+    }
+
+    #[test]
+    fn tracing_filter_enables_trace_for_other_targets() {
+        assert!(tracing_filter().would_enable("qcext_server", &Level::TRACE));
     }
 
     #[test]
