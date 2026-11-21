@@ -12,7 +12,7 @@ use shared::token_permissions;
 use std::str::FromStr;
 use tracing::{Instrument, info_span};
 
-#[tracing::instrument(skip(pool, image_upload_form),fields(token,image.size,image.crc32c,permissions))]
+#[tracing::instrument(skip(pool, image_upload_form),fields(image.size,image.crc32c,permissions))]
 pub(crate) async fn image_upload(
     pool: web::Data<DbPool>,
     item_id: web::Path<u16>,
@@ -21,7 +21,6 @@ pub(crate) async fn image_upload(
     let FormData { token, image } = get_form_data(image_upload_form).await?;
 
     tracing::Span::current()
-        .record("token", token.to_string())
         .record("image.size", image.0.len())
         .record("image.crc32c", image.1);
 
@@ -153,6 +152,25 @@ mod tests {
         assert_eq!(
             err.as_response_error().status_code(),
             StatusCode::PAYLOAD_TOO_LARGE
+        );
+    }
+
+    #[test]
+    fn handler_does_not_record_the_token_on_its_span() {
+        let source = include_str!("image_upload.rs");
+        let handler = &source[..source.find("#[cfg(test)]").unwrap()];
+
+        let instrument = handler
+            .lines()
+            .find(|line| line.starts_with("#[tracing::instrument"))
+            .unwrap();
+        assert!(
+            !instrument.contains("token"),
+            "the span declares a token field: {instrument}"
+        );
+        assert!(
+            !handler.contains(r#".record("token""#),
+            "the handler records the token on its span"
         );
     }
 }

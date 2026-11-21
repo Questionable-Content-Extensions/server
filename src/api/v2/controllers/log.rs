@@ -1,5 +1,4 @@
 use crate::api::v2::models::LogEntry;
-use crate::models::Token;
 use crate::util::ensure_is_authorized;
 use actix_web::{HttpResponse, Result, error, web};
 use actix_web_grants::authorities::AuthDetails;
@@ -126,17 +125,16 @@ async fn get_by_item(
     }))
 }
 
+/// The token comes from the permission middleware, which also reads a legacy `token` query
+/// parameter; serde ignores that parameter here.
 #[derive(Debug, Deserialize)]
 struct LogQuery {
-    #[expect(unused)]
-    token: Token,
     page: u16,
 }
 
+/// See [`LogQuery`] for where the token comes from.
 #[derive(Debug, Deserialize)]
 struct LogByIdQuery {
-    #[expect(unused)]
-    token: Token,
     id: u16,
     page: u16,
 }
@@ -148,4 +146,40 @@ struct LogResponse {
     page: u16,
     page_count: u16,
     log_entry_count: i32,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const TOKEN: &str = "00000000-0000-0000-0000-000000000000";
+
+    #[test]
+    fn log_query_does_not_require_a_token() {
+        let query = web::Query::<LogQuery>::from_query("page=3").unwrap();
+
+        assert_eq!(query.page, 3);
+    }
+
+    #[test]
+    fn log_query_accepts_a_legacy_token_parameter() {
+        let query = web::Query::<LogQuery>::from_query(&format!("token={TOKEN}&page=3")).unwrap();
+
+        assert_eq!(query.page, 3);
+    }
+
+    #[test]
+    fn log_by_id_query_does_not_require_a_token() {
+        let query = web::Query::<LogByIdQuery>::from_query("id=7&page=3").unwrap();
+
+        assert_eq!((query.id, query.page), (7, 3));
+    }
+
+    #[test]
+    fn log_by_id_query_accepts_a_legacy_token_parameter() {
+        let query =
+            web::Query::<LogByIdQuery>::from_query(&format!("token={TOKEN}&id=7&page=3")).unwrap();
+
+        assert_eq!((query.id, query.page), (7, 3));
+    }
 }
